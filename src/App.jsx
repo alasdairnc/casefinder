@@ -7,6 +7,8 @@ import SearchArea from "./components/SearchArea.jsx";
 import StagedLoading from "./components/StagedLoading.jsx";
 import Results from "./components/Results.jsx";
 import ErrorMessage from "./components/ErrorMessage.jsx";
+import SearchHistory from "./components/SearchHistory.jsx";
+import { useSearchHistory } from "./hooks/useSearchHistory.js";
 
 function AppInner() {
   const t = useTheme();
@@ -15,6 +17,7 @@ function AppInner() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [filters, setFilters] = useState({
     jurisdiction: "all",
     courtLevel: "all",
@@ -22,6 +25,7 @@ function AppInner() {
   });
   const [verifications, setVerifications] = useState({});
   const resultsRef = useRef(null);
+  const { history, addToHistory, clearHistory, rerunQuery } = useSearchHistory();
 
   const verifyInBackground = async (cases) => {
     if (!cases?.length) return;
@@ -41,8 +45,10 @@ function AppInner() {
     }
   };
 
-  const analyzeScenario = async () => {
-    if (!query.trim()) return;
+  const analyzeScenario = async (overrideQuery, overrideFilters) => {
+    const activeQuery = overrideQuery ?? query;
+    const activeFilters = overrideFilters ?? filters;
+    if (!activeQuery.trim()) return;
     setLoading(true);
     setResult(null);
     setError(null);
@@ -51,7 +57,7 @@ function AppInner() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario: query.trim(), filters }),
+        body: JSON.stringify({ scenario: activeQuery.trim(), filters: activeFilters }),
       });
 
       if (!response.ok) {
@@ -64,6 +70,7 @@ function AppInner() {
 
       setVerifications({});
       setResult(data);
+      addToHistory(activeQuery.trim(), activeFilters, data);
       verifyInBackground(data.cases);
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -94,6 +101,30 @@ function AppInner() {
         query={query} setQuery={setQuery}
         onSubmit={analyzeScenario} loading={loading}
       />
+
+      {/* History toggle */}
+      {history.length > 0 && (
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "8px 24px 0", textAlign: "right" }}>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11,
+              letterSpacing: 1.5, textTransform: "uppercase",
+              color: t.textTertiary, padding: 0,
+              display: "inline-flex", alignItems: "center", gap: 6,
+            }}
+          >
+            <span>History</span>
+            <span style={{
+              fontSize: 10, color: t.tagText, background: t.tagBg,
+              padding: "1px 6px", border: `1px solid ${t.border}`,
+            }}>
+              {Math.min(history.length, 10)}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Examples */}
       {!result && !loading && !error && (
@@ -133,6 +164,22 @@ function AppInner() {
         {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
         {result && <Results data={result} verifications={verifications} />}
       </div>
+
+      {/* Search History modal */}
+      {historyOpen && (
+        <SearchHistory
+          history={history}
+          onClose={() => setHistoryOpen(false)}
+          clearHistory={clearHistory}
+          onSelect={(id) => {
+            const entry = rerunQuery(id);
+            if (!entry) return;
+            setQuery(entry.query);
+            setFilters(entry.filters);
+            analyzeScenario(entry.query, entry.filters);
+          }}
+        />
+      )}
 
       {/* Footer */}
       <footer style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px" }}>
