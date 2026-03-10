@@ -76,7 +76,6 @@ function AppInner() {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
     } catch (err) {
-      console.error(err);
       setError(
         err.message?.includes("parse")
           ? "The AI response couldn't be parsed. Try rephrasing your scenario with more detail."

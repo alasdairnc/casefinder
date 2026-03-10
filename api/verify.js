@@ -21,6 +21,10 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Vary", "Origin");
 
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -34,6 +38,9 @@ export default async function handler(req, res) {
 
   if (!Array.isArray(citations) || citations.length === 0) {
     return res.status(400).json({ error: "citations array is required" });
+  }
+  if (citations.length > 10) {
+    return res.status(400).json({ error: "Maximum 10 citations per request." });
   }
 
   const apiKey = process.env.CANLII_API_KEY || "";

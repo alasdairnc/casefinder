@@ -30,7 +30,9 @@ export default defineConfig(({ mode }) => {
 
             const chunks = [];
             for await (const chunk of req) chunks.push(chunk);
-            const body = JSON.parse(Buffer.concat(chunks).toString());
+            let body;
+            try { body = JSON.parse(Buffer.concat(chunks).toString()); }
+            catch { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Invalid JSON" })); return; }
             const { scenario, filters } = body;
 
             if (!scenario || typeof scenario !== "string" || !scenario.trim()) {
@@ -96,7 +98,10 @@ export default defineConfig(({ mode }) => {
 
             const chunks = [];
             for await (const chunk of req) chunks.push(chunk);
-            const { citations } = JSON.parse(Buffer.concat(chunks).toString());
+            let parsedBody;
+            try { parsedBody = JSON.parse(Buffer.concat(chunks).toString()); }
+            catch { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Invalid JSON" })); return; }
+            const { citations } = parsedBody;
 
             if (!Array.isArray(citations) || citations.length === 0) {
               res.writeHead(400, { "Content-Type": "application/json" });

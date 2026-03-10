@@ -8,6 +8,7 @@ import { checkRateLimit, getClientIp } from "./_rateLimit.js";
 
 async function callAnthropic(messages, system, apiKey) {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
+    signal: AbortSignal.timeout(25_000), // 25s — Vercel serverless limit is 30s
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -77,6 +78,10 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Vary", "Origin");
 
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -86,7 +91,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: `Rate limit exceeded. Try again after ${resetAt}.` });
   }
 
-  const { scenario, filters } = req.body;
+  const { scenario, filters: rawFilters } = req.body;
 
   if (!scenario || typeof scenario !== "string" || !scenario.trim()) {
     return res.status(400).json({ error: "Scenario is required" });
@@ -94,6 +99,21 @@ export default async function handler(req, res) {
   if (scenario.length > 5000) {
     return res.status(400).json({ error: "Scenario must be 5,000 characters or fewer." });
   }
+
+  // Whitelist filter values — prevents prompt injection via filter fields
+  const VALID_JURISDICTIONS = new Set([
+    "all","Ontario","British Columbia","Alberta","Quebec",
+    "Manitoba","Saskatchewan","Nova Scotia","New Brunswick",
+    "Newfoundland and Labrador","Prince Edward Island",
+  ]);
+  const VALID_COURT_LEVELS = new Set(["all","scc","appeal","superior","provincial"]);
+  const VALID_DATE_RANGES   = new Set(["all","5","10","20"]);
+
+  const filters = {
+    jurisdiction: VALID_JURISDICTIONS.has(rawFilters?.jurisdiction) ? rawFilters.jurisdiction : "all",
+    courtLevel:   VALID_COURT_LEVELS.has(rawFilters?.courtLevel)    ? rawFilters.courtLevel   : "all",
+    dateRange:    VALID_DATE_RANGES.has(rawFilters?.dateRange)       ? rawFilters.dateRange    : "all",
+  };
 
   try {
     const { result, raw, retryRaw } = await analyzeWithRetry(
@@ -106,7 +126,6 @@ export default async function handler(req, res) {
       return res.status(422).json({
         error:
           "The AI returned an unstructured response for this scenario. Try adding more detail — specify the location, what happened, and any relevant context.",
-        debug: { raw, retryRaw },
       });
     }
 
