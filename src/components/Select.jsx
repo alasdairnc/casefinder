@@ -25,7 +25,7 @@ export default function Select({ label, options, value, onChange }) {
           backgroundRepeat: "no-repeat",
           backgroundPosition: "right 12px center",
           boxSizing: "border-box",
-          transition: "background 0.3s, color 0.3s, border-color 0.3s",
+          transition: "background-color 0.3s, color 0.3s, border-color 0.3s",
         }}
       >
         {options.map(o => (

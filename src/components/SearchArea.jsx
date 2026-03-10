@@ -42,7 +42,7 @@ export default function SearchArea({ query, setQuery, onSubmit, loading }) {
           fontSize: "clamp(15px, 2.5vw, 17px)", padding: "20px 22px",
           resize: "vertical", minHeight: 120,
           outline: "none", lineHeight: 1.7,
-          boxSizing: "border-box", transition: "background 0.3s, color 0.3s, border-color 0.3s",
+          boxSizing: "border-box", transition: "background-color 0.3s, color 0.3s, border-color 0.3s",
         }}
         onFocus={(e) => e.target.style.borderColor = atLimit ? t.accentRed : t.text}
         onBlur={(e) => e.target.style.borderColor = atLimit ? t.accentRed : t.border}
