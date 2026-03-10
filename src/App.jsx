@@ -46,8 +46,8 @@ function AppInner() {
   };
 
   const analyzeScenario = async (overrideQuery, overrideFilters) => {
-    const activeQuery = overrideQuery ?? query;
-    const activeFilters = overrideFilters ?? filters;
+    const activeQuery = typeof overrideQuery === "string" ? overrideQuery : query;
+    const activeFilters = (overrideFilters && !overrideFilters.target) ? overrideFilters : filters;
     if (!activeQuery.trim()) return;
     setLoading(true);
     setResult(null);
