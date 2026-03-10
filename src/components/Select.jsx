@@ -17,7 +17,7 @@ export default function Select({ label, options, value, onChange }) {
         style={{
           width: "100%", padding: "10px 12px",
           fontFamily: "'Helvetica Neue', sans-serif", fontSize: 13,
-          background: t.inputBg, color: t.text,
+          backgroundColor: t.inputBg, color: t.text,
           border: `1px solid ${t.border}`,
           outline: "none", cursor: "pointer",
           appearance: "none",
