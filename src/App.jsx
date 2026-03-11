@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ThemeProvider, useTheme } from "./lib/ThemeContext.jsx";
 import { defaultLawTypes } from "./lib/constants.js";
 import Header from "./components/Header.jsx";
@@ -184,6 +185,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <AppInner />
+      <SpeedInsights />
     </ThemeProvider>
   );
 }
