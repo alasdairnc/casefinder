@@ -70,7 +70,7 @@ async function analyzeWithRetry(scenario, filters, apiKey) {
 
 export default async function handler(req, res) {
   const origin = req.headers.origin ?? "";
-  const allowed = ["https://casefinder-project.vercel.app"];
+  const allowed = ["https://casedive.ca", "https://casefinder-project.vercel.app"];
   if (allowed.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
