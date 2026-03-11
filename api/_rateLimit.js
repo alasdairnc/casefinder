@@ -1,21 +1,60 @@
 // api/_rateLimit.js — Sliding-window rate limiter for Vercel serverless
 //
-// State is per warm instance (resets on cold start). This is adequate for a
-// low-traffic personal project. For cross-instance persistence swap the Map
-// for Upstash Redis: https://upstash.com/docs/redis/sdks/ratelimit-ts/overview
+// Uses Upstash Redis for persistence across serverless instances.
+// Falls back to in-memory state if UPSTASH_REDIS_REST_URL is not configured.
 
-const store = new Map(); // ip → timestamp[]
+import { Redis } from "@upstash/redis";
+
 const MAX_REQUESTS = 10;
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+let redis = null;
+
+// Initialize Redis client only if credentials are provided
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+}
+
+// Fallback in-memory store for development
+const store = new Map();
 
 /**
  * Check whether the given IP is within the rate limit.
  * @param {string|null} ip
  * @returns {{ allowed: boolean, remaining: number, resetAt?: string }}
  */
-export function checkRateLimit(ip) {
+export async function checkRateLimit(ip) {
   const now = Date.now();
-  const key = ip ?? "unknown";
+  const key = `rl:${ip ?? "unknown"}`;
+
+  try {
+    // Try Redis if available
+    if (redis) {
+      const hitsJson = await redis.get(key);
+      let hits = hitsJson ? JSON.parse(hitsJson) : [];
+      hits = hits.filter((t) => now - t < WINDOW_MS);
+
+      if (hits.length >= MAX_REQUESTS) {
+        return {
+          allowed: false,
+          remaining: 0,
+          resetAt: new Date(hits[0] + WINDOW_MS).toISOString(),
+        };
+      }
+
+      hits.push(now);
+      await redis.setex(key, Math.ceil(WINDOW_MS / 1000), JSON.stringify(hits));
+
+      return { allowed: true, remaining: MAX_REQUESTS - hits.length };
+    }
+  } catch (err) {
+    console.error("Redis rate limit check failed, falling back to in-memory:", err.message);
+  }
+
+  // Fallback: in-memory store (development or Redis unavailable)
   const hits = (store.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
 
   if (hits.length >= MAX_REQUESTS) {
