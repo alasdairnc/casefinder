@@ -3,8 +3,9 @@ import { useTheme } from "../lib/ThemeContext.jsx";
 
 const stages = [
   "Analyzing scenario...",
-  "Identifying likely charges...",
-  "Searching Canadian case law...",
+  "Searching Criminal Code...",
+  "Searching case law & civil law...",
+  "Checking Charter implications...",
   "Building legal analysis...",
 ];
 
@@ -14,7 +15,7 @@ export default function StagedLoading() {
 
   useEffect(() => {
     const timers = stages.map((_, i) =>
-      setTimeout(() => setStage(i), i * 1800)
+      setTimeout(() => setStage(i), i * 1500)
     );
     return () => timers.forEach(clearTimeout);
   }, []);

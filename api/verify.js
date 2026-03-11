@@ -11,6 +11,9 @@ import {
   buildSearchUrl,
 } from "../src/lib/canlii.js";
 
+// Matches Criminal Code section references like "s. 348(1)(b)" or "s. 7"
+const CRIMINAL_CODE_PATTERN = /^s\.\s*\d+/i;
+
 export default async function handler(req, res) {
   const origin = req.headers.origin ?? "";
   const allowed = ["https://casefinder-project.vercel.app"];
@@ -50,6 +53,16 @@ export default async function handler(req, res) {
     citations.map(async (citation) => {
       if (!citation || typeof citation !== "string") {
         results[citation] = { status: "unparseable", searchUrl: buildSearchUrl(citation || "") };
+        return;
+      }
+
+      // Criminal Code section references — link to Justice Laws site
+      if (CRIMINAL_CODE_PATTERN.test(citation.trim())) {
+        results[citation] = {
+          status: "unverified",
+          url: "https://laws-lois.justice.gc.ca/eng/acts/c-46/",
+          searchUrl: buildSearchUrl(citation),
+        };
         return;
       }
 

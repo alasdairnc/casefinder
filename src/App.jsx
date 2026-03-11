@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { ThemeProvider, useTheme } from "./lib/ThemeContext.jsx";
-import { exampleScenarios } from "./lib/constants.js";
+import { defaultLawTypes } from "./lib/constants.js";
 import Header from "./components/Header.jsx";
 import FiltersPanel from "./components/FiltersPanel.jsx";
 import SearchArea from "./components/SearchArea.jsx";
@@ -16,26 +16,27 @@ function AppInner() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [filters, setFilters] = useState({
     jurisdiction: "all",
     courtLevel: "all",
     dateRange: "all",
+    lawTypes: { ...defaultLawTypes },
   });
   const [verifications, setVerifications] = useState({});
   const resultsRef = useRef(null);
   const { history, addToHistory, clearHistory, rerunQuery } = useSearchHistory();
 
-  const verifyInBackground = async (cases) => {
-    if (!cases?.length) return;
-    const citations = cases.map((c) => c.citation).filter(Boolean);
-    if (!citations.length) return;
+  const verifyInBackground = async (citations) => {
+    if (!citations?.length) return;
+    const filtered = citations.filter(Boolean);
+    if (!filtered.length) return;
     try {
       const res = await fetch("/api/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ citations }),
+        body: JSON.stringify({ citations: filtered.slice(0, 10) }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -71,7 +72,13 @@ function AppInner() {
       setVerifications({});
       setResult(data);
       addToHistory(activeQuery.trim(), activeFilters, data);
-      verifyInBackground(data.cases);
+
+      const citationsToVerify = [
+        ...(data.case_law || []).map(c => c.citation),
+        ...(data.criminal_code || []).map(c => c.citation),
+      ].filter(Boolean);
+      verifyInBackground(citationsToVerify);
+
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
@@ -101,7 +108,6 @@ function AppInner() {
         onSubmit={analyzeScenario} loading={loading}
       />
 
-      {/* History toggle */}
       {history.length > 0 && (
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "8px 24px 0", textAlign: "right" }}>
           <button
@@ -125,46 +131,12 @@ function AppInner() {
         </div>
       )}
 
-      {/* Examples */}
-      {!result && !loading && !error && (
-        <section style={{ maxWidth: 760, margin: "0 auto", padding: "32px 24px 0" }}>
-          <div style={{
-            fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-            letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 14,
-          }}>
-            Try an Example
-          </div>
-          {exampleScenarios.map((ex, i) => (
-            <button
-              key={i}
-              onClick={() => setQuery(ex)}
-              style={{
-                display: "block", width: "100%",
-                textAlign: "left", background: "transparent",
-                border: "none", borderBottom: `1px solid ${t.borderLight}`,
-                padding: "14px 0", cursor: "pointer",
-                fontFamily: "'Times New Roman', serif",
-                fontSize: "clamp(14px, 2vw, 15px)",
-                color: t.textSecondary, lineHeight: 1.6,
-                transition: "color 0.15s",
-              }}
-              onMouseEnter={(e) => e.target.style.color = t.text}
-              onMouseLeave={(e) => e.target.style.color = t.textSecondary}
-            >
-              {ex}
-            </button>
-          ))}
-        </section>
-      )}
-
-      {/* Results */}
       <div ref={resultsRef}>
         {loading && <StagedLoading />}
         {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
         {result && <Results data={result} verifications={verifications} />}
       </div>
 
-      {/* Search History modal */}
       {historyOpen && (
         <SearchHistory
           history={history}
@@ -174,13 +146,18 @@ function AppInner() {
             const entry = rerunQuery(id);
             if (!entry) return;
             setQuery(entry.query);
-            setFilters(entry.filters);
-            analyzeScenario(entry.query, entry.filters);
+            const restoredFilters = {
+              jurisdiction: entry.filters.jurisdiction || "all",
+              courtLevel: entry.filters.courtLevel || "all",
+              dateRange: entry.filters.dateRange || "all",
+              lawTypes: entry.filters.lawTypes || { ...defaultLawTypes },
+            };
+            setFilters(restoredFilters);
+            analyzeScenario(entry.query, restoredFilters);
           }}
         />
       )}
 
-      {/* Footer */}
       <footer style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px" }}>
         <div style={{ borderTop: `1px solid ${t.borderLight}`, paddingTop: 24 }}>
           <p style={{
@@ -188,7 +165,7 @@ function AppInner() {
             fontSize: 11, color: t.textFaint, letterSpacing: 1.5,
             margin: "0 0 10px 0",
           }}>
-            casedive {"\u00B7"} Criminal Code Research Tool
+            casedive {"\u00B7"} Legal Research Tool
           </p>
           <p style={{
             fontFamily: "'Helvetica Neue', sans-serif",

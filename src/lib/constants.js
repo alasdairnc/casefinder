@@ -27,8 +27,16 @@ export const dateRanges = [
   { value: "20", label: "Last 20 Years" },
 ];
 
-export const exampleScenarios = [
-  "A suspect was seen on CCTV entering a convenience store, brandishing what appeared to be a knife, and demanding the cashier hand over the contents of the register. The suspect fled on foot with approximately $400 in cash.",
-  "Police received a noise complaint and upon arrival found an individual in possession of 45 grams of cocaine individually packaged in small baggies, a digital scale, and $2,300 in cash in various denominations.",
-  "During a traffic stop for erratic driving, the officer observed the driver had bloodshot eyes, slurred speech, and smelled of alcohol. The driver failed a roadside breath test and later provided samples of 140mg and 135mg of alcohol per 100mL of blood.",
+export const lawTypeOptions = [
+  { key: "criminal_code", label: "Criminal Code" },
+  { key: "case_law", label: "Case Law" },
+  { key: "civil_law", label: "Civil Law" },
+  { key: "charter", label: "Charter Rights" },
 ];
+
+export const defaultLawTypes = {
+  criminal_code: true,
+  case_law: true,
+  civil_law: true,
+  charter: true,
+};

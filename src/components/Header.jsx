@@ -24,7 +24,7 @@ export default function Header() {
             color: t.textTertiary, fontFamily: "'Helvetica Neue', Helvetica, sans-serif",
             whiteSpace: "nowrap",
           }}>
-            Criminal Code Analysis
+            Legal Research Tool
           </span>
         </div>
 
@@ -49,8 +49,8 @@ export default function Header() {
         fontSize: 14, color: t.textSecondary, margin: "10px 0 0 0",
         letterSpacing: 0.2, lineHeight: 1.6,
       }}>
-        Describe any criminal scenario — receive likely charges, Criminal Code sections,
-        relevant case law, and legal analysis powered by AI. Educational tool only — not legal advice.
+        Describe any legal scenario — receive Criminal Code sections, case law,
+        civil law, Charter rights analysis, and more. Educational tool only — not legal advice.
       </p>
       <div style={{ borderTop: `1px solid ${t.border}`, marginTop: 22 }} />
     </header>

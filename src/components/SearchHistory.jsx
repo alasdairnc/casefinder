@@ -127,9 +127,15 @@ export default function SearchHistory({ history, onSelect, onClose, clearHistory
                     color: t.textFaint, marginTop: 3, letterSpacing: 0.5,
                   }}>
                     {formatDate(entry.timestamp)} · {formatTime(entry.timestamp)}
-                    {entry.result?.charges?.length
-                      ? ` · ${entry.result.charges.length} charge${entry.result.charges.length !== 1 ? "s" : ""}`
-                      : ""}
+                    {(() => {
+                      const count =
+                        (entry.result?.criminal_code?.length || 0) +
+                        (entry.result?.case_law?.length || 0) +
+                        (entry.result?.civil_law?.length || 0) +
+                        (entry.result?.charter?.length || 0) ||
+                        entry.result?.charges?.length || 0;
+                      return count ? ` · ${count} result${count !== 1 ? "s" : ""}` : "";
+                    })()}
                   </div>
                 </div>
                 <button

@@ -17,7 +17,7 @@ async function callAnthropic(messages, system, apiKey) {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
+      max_tokens: 2000,
       system,
       messages,
     }),
@@ -108,11 +108,20 @@ export default async function handler(req, res) {
   ]);
   const VALID_COURT_LEVELS = new Set(["all","scc","appeal","superior","provincial"]);
   const VALID_DATE_RANGES   = new Set(["all","5","10","20"]);
+  const VALID_LAW_TYPES     = new Set(["criminal_code","case_law","civil_law","charter"]);
+
+  // Validate lawTypes — only allow known keys with boolean values, default true
+  const rawLawTypes = rawFilters?.lawTypes || {};
+  const lawTypes = {};
+  for (const key of VALID_LAW_TYPES) {
+    lawTypes[key] = rawLawTypes[key] === false ? false : true;
+  }
 
   const filters = {
     jurisdiction: VALID_JURISDICTIONS.has(rawFilters?.jurisdiction) ? rawFilters.jurisdiction : "all",
     courtLevel:   VALID_COURT_LEVELS.has(rawFilters?.courtLevel)    ? rawFilters.courtLevel   : "all",
     dateRange:    VALID_DATE_RANGES.has(rawFilters?.dateRange)       ? rawFilters.dateRange    : "all",
+    lawTypes,
   };
 
   try {

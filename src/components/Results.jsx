@@ -1,11 +1,20 @@
 import { useTheme } from "../lib/ThemeContext.jsx";
 import { useTypewriter } from "../hooks/useTypewriter.js";
-import ChargeCard from "./ChargeCard.jsx";
-import CaseCard from "./CaseCard.jsx";
+import ResultCard from "./ResultCard.jsx";
+
+const SECTIONS = [
+  { key: "criminal_code", label: "Criminal Code" },
+  { key: "case_law", label: "Case Law" },
+  { key: "civil_law", label: "Civil Law" },
+  { key: "charter", label: "Charter Rights" },
+];
 
 export default function Results({ data, verifications = {} }) {
   const t = useTheme();
   const analysisText = useTypewriter(data.analysis || "", 10);
+
+  // Old-format detection: data has charges/cases but not the new grouped keys
+  const isOldFormat = data.charges && !data.criminal_code;
 
   return (
     <section style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px 60px" }}>
@@ -26,29 +35,49 @@ export default function Results({ data, verifications = {} }) {
         </p>
       </div>
 
-      {/* Charges */}
-      <div style={{ marginTop: 40 }}>
+      {/* Old format notice */}
+      {isOldFormat && (
         <div style={{
-          fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-          letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
+          marginTop: 24, padding: "14px 18px",
+          border: `1px solid ${t.border}`, background: t.bgAlt,
+          fontFamily: "'Helvetica Neue', sans-serif", fontSize: 13,
+          color: t.textSecondary, lineHeight: 1.5,
         }}>
-          Likely Charges ({data.charges?.length || 0})
+          This result uses an older format. Re-run your search to see grouped results by law type.
         </div>
-        {data.charges?.map((c, i) => <ChargeCard key={i} charge={c} />)}
-      </div>
+      )}
 
-      {/* Cases */}
-      <div style={{ marginTop: 40 }}>
-        <div style={{
-          fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-          letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
-        }}>
-          Relevant Case Law ({data.cases?.length || 0})
-        </div>
-        {data.cases?.map((c, i) => (
-          <CaseCard key={i} caseItem={c} verification={verifications[c.citation]} />
-        ))}
-      </div>
+      {/* Grouped result sections */}
+      {!isOldFormat && SECTIONS.map(({ key, label }) => {
+        const items = data[key];
+        if (!items?.length) return null;
+        return (
+          <div key={key} style={{ marginTop: 40 }}>
+            <div style={{
+              fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
+              letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              {label}
+              <span style={{
+                fontSize: 10, color: t.tagText, background: t.tagBg,
+                padding: "1px 6px", border: `1px solid ${t.border}`,
+                fontWeight: 700,
+              }}>
+                {items.length}
+              </span>
+            </div>
+            {items.map((item, i) => (
+              <ResultCard
+                key={i}
+                item={item}
+                type={key}
+                verification={verifications[item.citation]}
+              />
+            ))}
+          </div>
+        );
+      })}
 
       {/* Analysis */}
       <div style={{ marginTop: 40 }}>
@@ -110,7 +139,7 @@ export default function Results({ data, verifications = {} }) {
           fontFamily: "'Helvetica Neue', sans-serif",
           fontSize: 11, color: t.textFaint, lineHeight: 1.6, margin: 0,
         }}>
-          Disclaimer — CaseFinder is an educational research tool and does not constitute legal advice.
+          Disclaimer — CaseDive is an educational research tool and does not constitute legal advice.
           Case citations should be verified through CanLII or other official legal databases.
           Always consult a qualified legal professional for legal matters.
         </p>

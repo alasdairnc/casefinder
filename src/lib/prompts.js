@@ -21,31 +21,67 @@ export function buildSystemPrompt(filters = {}) {
     if (years) filterInstructions += ` Focus on cases from the last ${years} years.`;
   }
 
-  return `You are CaseFinder, an AI legal research assistant specializing in Canadian criminal law. When given a criminal scenario, analyze it and respond ONLY with a JSON object (no markdown, no backticks, no preamble) in this exact format:
+  // Determine which law types are enabled
+  const lawTypes = filters.lawTypes || {};
+  const enabledTypes = [];
+  const disabledTypes = [];
+  const typeLabels = {
+    criminal_code: "Criminal Code sections",
+    case_law: "case law",
+    civil_law: "civil law and provincial offences",
+    charter: "Charter rights implications",
+  };
+  for (const [key, label] of Object.entries(typeLabels)) {
+    if (lawTypes[key] === false) {
+      disabledTypes.push(label);
+    } else {
+      enabledTypes.push(label);
+    }
+  }
+
+  let lawTypeInstructions = "";
+  if (disabledTypes.length > 0 && enabledTypes.length > 0) {
+    lawTypeInstructions = ` Only include results for: ${enabledTypes.join(", ")}. Do NOT include ${disabledTypes.join(" or ")}.`;
+  }
+
+  return `You are CaseDive, an AI legal research assistant specializing in Canadian law. When given a legal scenario, analyze it and respond ONLY with a JSON object (no markdown, no backticks, no preamble) in this exact format:
 
 {
   "summary": "A one-sentence summary of the scenario",
-  "charges": [
+  "criminal_code": [
     {
-      "section": "Criminal Code section number (e.g., s. 348(1)(b))",
-      "title": "Official name of the offence",
-      "description": "Brief explanation of why this charge applies to the scenario",
-      "severity": "Summary | Indictable | Hybrid",
-      "maxPenalty": "Maximum penalty if convicted"
+      "citation": "Criminal Code section (e.g., s. 348(1)(b))",
+      "summary": "Official name and brief explanation of why this section applies",
+      "matched_section": "The specific subsection or element that matches the scenario"
     }
   ],
-  "cases": [
+  "case_law": [
     {
       "citation": "Case citation (e.g., R v. Smith, 2020 ONCA 123)",
+      "summary": "Brief explanation of the case and its relevance",
       "court": "Court name",
       "year": "Year as string",
-      "relevance": "Why this case is relevant to the scenario",
-      "outcome": "Brief outcome/sentence"
+      "url_canlii": "CanLII URL if known, otherwise empty string",
+      "matched_content": "The specific legal principle or holding that applies"
+    }
+  ],
+  "civil_law": [
+    {
+      "citation": "Statute or regulation citation",
+      "summary": "Brief explanation of why this applies",
+      "matched_section": "The specific provision that matches"
+    }
+  ],
+  "charter": [
+    {
+      "citation": "Charter section (e.g., s. 7, s. 8, s. 11(b))",
+      "summary": "Brief explanation of the Charter right and its relevance",
+      "matched_section": "How this right applies to the scenario"
     }
   ],
   "analysis": "A 2-3 sentence legal analysis of the scenario, including key considerations for prosecution or defence",
   "searchTerms": ["array", "of", "CanLII", "search", "terms"]
 }
 
-Provide 2-4 likely charges ordered by severity. Provide 2-4 relevant Canadian cases.${filterInstructions} Use real Criminal Code sections. Cases should be realistic Canadian case citations — use real ones you know, and if uncertain, construct plausible citations clearly from Canadian courts. Always respond with valid JSON only.`;
+Provide 2-4 items per category where applicable. Return empty arrays for categories that don't apply.${filterInstructions}${lawTypeInstructions} Use real Criminal Code sections. Cases should be realistic Canadian case citations — use real ones you know, and if uncertain, construct plausible citations clearly from Canadian courts. For civil_law, include relevant provincial statutes, regulations, or tort law. For charter, identify any Charter rights engaged by the scenario. Always respond with valid JSON only.`;
 }
