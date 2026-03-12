@@ -29,7 +29,7 @@ function AdUnit({ slotId, style }) {
     <ins
       className="adsbygoogle"
       style={{ display: "block", ...style }}
-      data-ad-client="pub-5931276184603899"
+      data-ad-client="ca-pub-5931276184603899"
       data-ad-slot={slotId}
       data-ad-format="auto"
       data-full-width-responsive="true"
