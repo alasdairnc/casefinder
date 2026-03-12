@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ThemeProvider, useTheme } from "./lib/ThemeContext.jsx";
 import { defaultLawTypes } from "./lib/constants.js";
 import Header from "./components/Header.jsx";
@@ -9,6 +9,33 @@ import Results from "./components/Results.jsx";
 import ErrorMessage from "./components/ErrorMessage.jsx";
 import SearchHistory from "./components/SearchHistory.jsx";
 import { useSearchHistory } from "./hooks/useSearchHistory.js";
+
+// AdSense script loader
+function useAdSense() {
+  useEffect(() => {
+    if (window.adsbygoogle) {
+      try {
+        window.adsbygoogle.push({});
+      } catch {
+        // Silently fail if ad not ready
+      }
+    }
+  }, []);
+}
+
+function AdUnit({ slotId, style }) {
+  useAdSense();
+  return (
+    <ins
+      className="adsbygoogle"
+      style={{ display: "block", ...style }}
+      data-ad-client="pub-5931276184603899"
+      data-ad-slot={slotId}
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    />
+  );
+}
 
 function AppInner() {
   const t = useTheme();
@@ -98,6 +125,15 @@ function AppInner() {
       background: t.bg, minHeight: "100vh", color: t.text,
       transition: "background 0.3s, color 0.3s",
     }}>
+      <style>{`
+        @media (max-width: 1200px) {
+          .ad-side-left, .ad-side-right { display: none !important; }
+        }
+        @media (min-width: 1201px) {
+          .ad-bottom { display: none !important; }
+        }
+      `}</style>
+
       <Header />
       <FiltersPanel
         filters={filters} setFilters={setFilters}
@@ -131,10 +167,44 @@ function AppInner() {
         </div>
       )}
 
-      <div ref={resultsRef}>
-        {loading && <StagedLoading />}
-        {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
-        {result && <Results data={result} verifications={verifications} />}
+      {/* Responsive ad layout: side ads on wide screens, bottom ad on mobile */}
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: 24,
+        maxWidth: "100%",
+        margin: "0 auto",
+        padding: "24px 12px",
+      }}>
+        <div className="ad-side-left" style={{
+          flex: "0 0 160px",
+          minHeight: 600,
+        }}>
+          <AdUnit slotId="1" style={{ minHeight: 600 }} />
+        </div>
+
+        <div style={{ flex: "1 1 auto", maxWidth: 760 }}>
+          <div ref={resultsRef}>
+            {loading && <StagedLoading />}
+            {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
+            {result && <Results data={result} verifications={verifications} />}
+          </div>
+
+          {/* Bottom ad for mobile */}
+          <div className="ad-bottom" style={{
+            margin: "32px 24px 0",
+            textAlign: "center",
+          }}>
+            <AdUnit slotId="2" style={{ maxWidth: "100%", height: "auto" }} />
+          </div>
+        </div>
+
+        <div className="ad-side-right" style={{
+          flex: "0 0 160px",
+          minHeight: 600,
+        }}>
+          <AdUnit slotId="3" style={{ minHeight: 600 }} />
+        </div>
       </div>
 
       {historyOpen && (

@@ -28,21 +28,41 @@ export default function Header() {
           </span>
         </div>
 
-        <button
-          onClick={toggleTheme}
-          style={{
-            background: "none", border: `1px solid ${t.border}`,
-            color: t.textSecondary, cursor: "pointer",
-            padding: "8px 14px", fontFamily: "'Helvetica Neue', sans-serif",
-            fontSize: 12, letterSpacing: 1, display: "flex",
-            alignItems: "center", gap: 8, transition: "all 0.2s",
-          }}
-        >
-          <span style={{ fontSize: 16 }}>{isDark ? "\u2600" : "\u263D"}</span>
-          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 2 }}>
-            {isDark ? "Light" : "Dark"}
-          </span>
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <a
+            href="https://buymeacoffee.com/alasdairnc"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              background: "none", border: `1px solid ${t.border}`,
+              color: t.textSecondary, cursor: "pointer",
+              padding: "8px 14px", fontFamily: "'Helvetica Neue', sans-serif",
+              fontSize: 12, letterSpacing: 1, display: "flex",
+              alignItems: "center", gap: 6, transition: "all 0.2s",
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ fontSize: 14 }}>☕</span>
+            <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5 }}>
+              Coffee
+            </span>
+          </a>
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: "none", border: `1px solid ${t.border}`,
+              color: t.textSecondary, cursor: "pointer",
+              padding: "8px 14px", fontFamily: "'Helvetica Neue', sans-serif",
+              fontSize: 12, letterSpacing: 1, display: "flex",
+              alignItems: "center", gap: 8, transition: "all 0.2s",
+            }}
+          >
+            <span style={{ fontSize: 16 }}>{isDark ? "\u2600" : "\u263D"}</span>
+            <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 2 }}>
+              {isDark ? "Light" : "Dark"}
+            </span>
+          </button>
+        </div>
       </div>
       <p style={{
         fontFamily: "'Helvetica Neue', Helvetica, sans-serif",
