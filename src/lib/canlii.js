@@ -4,47 +4,44 @@
 const CANLII_BASE = "https://api.canlii.org/v1";
 const CANLII_WEB = "https://www.canlii.org";
 
-// Maps Canadian court abbreviations to CanLII database IDs
-// Format: jurisdiction/court (e.g., ca/scc, on/ca, bc/sc)
-export const COURT_DB_MAP = {
-  SCC: "ca/scc",
-  CSC: "ca/scc",
-  FCA: "ca/fca",
-  FCC: "ca/fc",
-  ONCA: "on/ca",
-  ONSC: "on/sc",
-  ONCJ: "on/cj",
-  ONDC: "on/dc",
-  BCCA: "bc/ca",
-  BCSC: "bc/sc",
-  BCPC: "bc/pc",
-  ABCA: "ab/ca",
-  ABQB: "ab/qb",
-  ABPC: "ab/pc",
-  MBCA: "mb/ca",
-  MBQB: "mb/qb",
-  MBPC: "mb/pc",
-  SKCA: "sk/ca",
-  SKQB: "sk/qb",
-  SKPC: "sk/pc",
-  NSCA: "ns/ca",
-  NSSC: "ns/sc",
-  NSPC: "ns/pc",
-  NBCA: "nb/ca",
-  NBQB: "nb/qb",
-  NBPC: "nb/pc",
-  PECA: "pe/ca",
-  PEICA: "pe/ca",
-  NLCA: "nl/ca",
-  NLSC: "nl/sc",
-  NWTCA: "nt/ca",
-  NWTSC: "nt/sc",
-  NUCJ: "nu/cj",
-  NUCI: "nu/cj",
-  YKCA: "yk/ca",
-  YKSC: "yk/sc",
-  YKPC: "yk/pc",
+// Maps court abbreviations → CanLII web URL path (jurisdiction/court)
+export const COURT_WEB_MAP = {
+  SCC: "ca/scc",   CSC: "ca/scc",
+  FCA: "ca/fca",   FCC: "ca/fct",   FCT: "ca/fct",
+  ONCA: "on/onca", ONSC: "on/onsc", ONCJ: "on/oncj", ONDC: "on/ondc",
+  BCCA: "bc/bcca", BCSC: "bc/bcsc", BCPC: "bc/bcpc",
+  ABCA: "ab/abca", ABQB: "ab/abqb", ABPC: "ab/abpc",
+  MBCA: "mb/mbca", MBQB: "mb/mbqb", MBPC: "mb/mbpc",
+  SKCA: "sk/skca", SKQB: "sk/skqb", SKPC: "sk/skpc",
+  NSCA: "ns/nsca", NSSC: "ns/nssc", NSPC: "ns/nspc",
+  NBCA: "nb/nbca", NBQB: "nb/nbqb", NBPC: "nb/nbpc",
+  PECA: "pe/peca", PEICA: "pe/peca",
+  NLCA: "nl/nlca", NLSC: "nl/nlsc",
+  NWTCA: "nt/nwtca", NWTSC: "nt/nwtsc",
+  NUCJ: "nu/nucj",  NUCI: "nu/nucj",
+  YKCA: "yk/ykca",  YKSC: "yk/yksc", YKPC: "yk/ykpc",
 };
+
+// Maps court abbreviations → CanLII API database ID (flat, from /v1/caseBrowse/en/)
+export const COURT_API_MAP = {
+  SCC: "csc-scc",  CSC: "csc-scc",
+  FCA: "fca",      FCC: "fct",      FCT: "fct",
+  ONCA: "onca",    ONSC: "onsc",    ONCJ: "oncj",    ONDC: "ondc",
+  BCCA: "bcca",    BCSC: "bcsc",    BCPC: "bcpc",
+  ABCA: "abca",    ABQB: "abqb",    ABPC: "abpc",
+  MBCA: "mbca",    MBQB: "mbqb",    MBPC: "mbpc",
+  SKCA: "skca",    SKQB: "skqb",    SKPC: "skpc",
+  NSCA: "nsca",    NSSC: "nssc",    NSPC: "nspc",
+  NBCA: "nbca",    NBQB: "nbqb",    NBPC: "nbpc",
+  PECA: "peca",    PEICA: "peca",
+  NLCA: "nlca",    NLSC: "nlsc",
+  NWTCA: "nwtca",  NWTSC: "nwtsc",
+  NUCJ: "nucj",    NUCI: "nucj",
+  YKCA: "ykca",    YKSC: "yksc",    YKPC: "ykpc",
+};
+
+// Keep COURT_DB_MAP as alias for backwards compat
+export const COURT_DB_MAP = COURT_API_MAP;
 
 /**
  * Parse a Canadian case citation.
@@ -64,7 +61,9 @@ export function parseCitation(citation) {
       year,
       courtCode: upper,
       number,
-      dbId: COURT_DB_MAP[upper] || null,
+      apiDbId: COURT_API_MAP[upper] || null,
+      webDbId: COURT_WEB_MAP[upper] || null,
+      dbId: COURT_API_MAP[upper] || null, // backwards compat
     };
   }
 
@@ -73,7 +72,8 @@ export function parseCitation(citation) {
 
 /**
  * Build the CanLII internal case ID.
- * e.g. year=2021, courtCode=scc, number=37 → "2021scc37"
+ * Uses the lowercase court abbreviation, NOT the dbId path.
+ * e.g. year=2020, courtCode="ONCA", number=123 → "2020onca123"
  */
 export function buildCaseId({ year, courtCode, number }) {
   if (!year || !courtCode || !number) return null;
@@ -89,10 +89,10 @@ export function buildApiUrl(dbId, caseId, apiKey) {
 
 /**
  * Build a CanLII web URL for a case (no API key, public).
- * dbId: "ca/scc", caseId: "2021scc37" → https://www.canlii.org/en/ca/scc/doc/2021/2021scc37/index.html
+ * Format: /en/{dbId}/doc/{year}/{caseId}/{caseId}.html
  */
 export function buildCaseUrl(dbId, year, caseId) {
-  return `${CANLII_WEB}/en/${dbId}/doc/${year}/${caseId}/index.html`;
+  return `${CANLII_WEB}/en/${dbId}/doc/${year}/${caseId}/${caseId}.html`;
 }
 
 /**
@@ -116,7 +116,7 @@ export async function lookupCase(citation, apiKey) {
     return { status: "unparseable", searchUrl: buildSearchUrl(citation) };
   }
 
-  if (!parsed.dbId) {
+  if (!parsed.apiDbId) {
     return { status: "unknown_court", searchUrl: buildSearchUrl(citation) };
   }
 
@@ -125,7 +125,7 @@ export async function lookupCase(citation, apiKey) {
     return { status: "unparseable", searchUrl: buildSearchUrl(citation) };
   }
 
-  const caseUrl = buildCaseUrl(parsed.dbId, parsed.year, caseId);
+  const caseUrl = buildCaseUrl(parsed.webDbId, parsed.year, caseId);
   const searchUrl = buildSearchUrl(citation);
 
   // No API key — return unverified with a best-guess URL
@@ -134,7 +134,7 @@ export async function lookupCase(citation, apiKey) {
   }
 
   try {
-    const res = await fetch(buildApiUrl(parsed.dbId, caseId, apiKey));
+    const res = await fetch(buildApiUrl(parsed.apiDbId, caseId, apiKey));
 
     if (res.status === 404) {
       return { status: "not_found", searchUrl };

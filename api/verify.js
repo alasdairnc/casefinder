@@ -37,7 +37,12 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: `Rate limit exceeded. Try again after ${resetAt}.` });
   }
 
-  const { citations } = req.body;
+  let citations;
+  try {
+    citations = req.body?.citations;
+  } catch {
+    return res.status(400).json({ error: "Invalid JSON body" });
+  }
 
   if (!Array.isArray(citations) || citations.length === 0) {
     return res.status(400).json({ error: "citations array is required" });
@@ -73,13 +78,13 @@ export default async function handler(req, res) {
         return;
       }
 
-      if (!parsed.dbId) {
+      if (!parsed.apiDbId) {
         results[citation] = { status: "unknown_court", searchUrl: buildSearchUrl(citation) };
         return;
       }
 
       const caseId = buildCaseId({ year: parsed.year, courtCode: parsed.courtCode, number: parsed.number });
-      const caseUrl = buildCaseUrl(parsed.dbId, parsed.year, caseId);
+      const caseUrl = buildCaseUrl(parsed.webDbId, parsed.year, caseId);
       const searchUrl = buildSearchUrl(citation);
 
       if (!apiKey) {
@@ -88,7 +93,7 @@ export default async function handler(req, res) {
       }
 
       try {
-        const apiRes = await fetch(buildApiUrl(parsed.dbId, caseId, apiKey));
+        const apiRes = await fetch(buildApiUrl(parsed.apiDbId, caseId, apiKey));
 
         if (apiRes.status === 404) {
           results[citation] = { status: "not_found", searchUrl };
