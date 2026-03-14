@@ -60,13 +60,24 @@ function VerificationBadge({ verification, t }) {
   );
 }
 
-export default function ResultCard({ item, type, verification }) {
+export default function ResultCard({ item, type, verification, onCardClick }) {
   const t = useTheme();
   const matchedText = item.matched_section || item.matched_content;
   const showCanLII = type === "case_law" || type === "criminal_code";
+  const clickable = type === "case_law" && typeof onCardClick === "function";
 
   return (
-    <div style={{ borderBottom: `1px solid ${t.border}`, padding: "18px 0" }}>
+    <div
+      onClick={clickable ? () => onCardClick(item) : undefined}
+      style={{
+        borderBottom: `1px solid ${t.border}`,
+        padding: "18px 0",
+        cursor: clickable ? "pointer" : "default",
+        transition: clickable ? "opacity 0.15s" : undefined,
+      }}
+      onMouseEnter={clickable ? (e) => { e.currentTarget.style.opacity = "0.75"; } : undefined}
+      onMouseLeave={clickable ? (e) => { e.currentTarget.style.opacity = "1"; } : undefined}
+    >
       {/* Citation + court/year */}
       <div style={{
         display: "flex", justifyContent: "space-between",

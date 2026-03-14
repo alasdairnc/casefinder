@@ -1,6 +1,7 @@
 import { useTheme } from "../lib/ThemeContext.jsx";
 import { useTypewriter } from "../hooks/useTypewriter.js";
 import ResultCard from "./ResultCard.jsx";
+import CaseSummaryModal from "./CaseSummaryModal.jsx";
 import { useEffect, useState } from "react";
 
 const SECTIONS = [
@@ -10,11 +11,12 @@ const SECTIONS = [
   { key: "charter", label: "Charter Rights" },
 ];
 
-export default function Results({ data, verifications: externalVerifications = {} }) {
+export default function Results({ data, verifications: externalVerifications = {}, scenario }) {
   const t = useTheme();
   const analysisText = useTypewriter(data.analysis || "", 10);
   const [verifications, setVerifications] = useState(externalVerifications);
   const [verifyingCitations, setVerifyingCitations] = useState(false);
+  const [selectedCase, setSelectedCase] = useState(null);
 
   // Extract and verify citations on mount
   useEffect(() => {
@@ -127,6 +129,7 @@ export default function Results({ data, verifications: externalVerifications = {
                 item={item}
                 type={key}
                 verification={verifications[item.citation]}
+                onCardClick={key === "case_law" ? setSelectedCase : undefined}
               />
             ))}
           </div>
@@ -198,6 +201,16 @@ export default function Results({ data, verifications: externalVerifications = {
           Always consult a qualified legal professional for legal matters.
         </p>
       </div>
+
+      {/* Case summary modal */}
+      {selectedCase && (
+        <CaseSummaryModal
+          item={selectedCase}
+          canliiUrl={verifications[selectedCase.citation]?.url || verifications[selectedCase.citation]?.searchUrl || null}
+          scenario={scenario}
+          onClose={() => setSelectedCase(null)}
+        />
+      )}
     </section>
   );
 }

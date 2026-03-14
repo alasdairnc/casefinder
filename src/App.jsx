@@ -52,6 +52,7 @@ function AppInner() {
     lawTypes: { ...defaultLawTypes },
   });
   const [verifications, setVerifications] = useState({});
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const resultsRef = useRef(null);
   const { history, addToHistory, clearHistory, rerunQuery } = useSearchHistory();
 
@@ -97,6 +98,7 @@ function AppInner() {
       if (data.error) throw new Error(data.error);
 
       setVerifications({});
+      setSubmittedQuery(activeQuery.trim());
       setResult(data);
       addToHistory(activeQuery.trim(), activeFilters, data);
 
@@ -197,7 +199,7 @@ function AppInner() {
           <div ref={resultsRef}>
             {loading && <StagedLoading />}
             {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
-            {result && <Results data={result} verifications={verifications} />}
+            {result && <Results data={result} verifications={verifications} scenario={submittedQuery} />}
           </div>
 
           {/* Bottom ad */}

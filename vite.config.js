@@ -87,6 +87,80 @@ export default defineConfig(({ mode }) => {
             }
           });
 
+          // ── /api/case-summary ─────────────────────────────────────────
+          server.middlewares.use("/api/case-summary", async (req, res) => {
+            if (req.method === "OPTIONS") { res.writeHead(200); res.end(); return; }
+            if (req.method !== "POST") {
+              res.writeHead(405, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: "Method not allowed" }));
+              return;
+            }
+
+            const chunks = [];
+            for await (const chunk of req) chunks.push(chunk);
+            let body;
+            try { body = JSON.parse(Buffer.concat(chunks).toString()); }
+            catch { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Invalid JSON" })); return; }
+
+            const { citation, title, court, year, summary, matchedContent, scenario } = body;
+            if (!citation) {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: "citation is required" }));
+              return;
+            }
+
+            const prompt = [
+              `Citation: ${citation}`,
+              title ? `Title: ${title}` : null,
+              court ? `Court: ${court}` : null,
+              year ? `Year: ${year}` : null,
+              summary ? `Existing summary: ${summary}` : null,
+              matchedContent ? `Matched context: ${matchedContent}` : null,
+              scenario ? `User scenario: ${scenario}` : null,
+            ].filter(Boolean).join("\n");
+
+            const system = `You are a Canadian legal research assistant. Given case metadata and context, produce a concise structured summary. Return ONLY valid JSON with these exact keys: facts, held, ratio, keyQuote, significance. Keep each field to 1-3 sentences. Set keyQuote to null if you cannot cite a verbatim passage from the provided context. Never fabricate holdings, quotes, or outcomes.`;
+
+            try {
+              const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-api-key": env.ANTHROPIC_API_KEY,
+                  "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                  model: "claude-sonnet-4-20250514",
+                  max_tokens: 800,
+                  system,
+                  messages: [{ role: "user", content: prompt }],
+                }),
+              });
+
+              const data = await response.json();
+              if (!response.ok) {
+                res.writeHead(response.status, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ error: data.error?.message || `API error: ${response.status}` }));
+                return;
+              }
+
+              const text = data.content?.map((b) => b.text || "").join("") || "";
+              const clean = text.replace(/```json|```/g, "").trim();
+              try {
+                const parsed = JSON.parse(clean);
+                res.writeHead(200, { "Content-Type": "application/json" });
+                res.end(JSON.stringify(parsed));
+              } catch {
+                res.writeHead(422, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ error: "Could not parse structured summary." }));
+              }
+            } catch (err) {
+              console.error("case-summary middleware error:", err);
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: "Internal server error" }));
+            }
+          });
+
           // ── /api/verify ───────────────────────────────────────────────
           server.middlewares.use("/api/verify", async (req, res) => {
             if (req.method === "OPTIONS") { res.writeHead(200); res.end(); return; }
