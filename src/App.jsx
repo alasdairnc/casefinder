@@ -252,9 +252,18 @@ function AppInner() {
           <p style={{
             fontFamily: "'Helvetica Neue', sans-serif",
             fontSize: 11, color: t.textFaint, lineHeight: 1.6,
-            margin: 0, letterSpacing: 0.3,
+            margin: "0 0 15px 0", letterSpacing: 0.3,
           }}>
             {"\u26A0\uFE0F"} Educational Tool Only. This is not legal advice. Always consult a qualified lawyer for legal matters. Verify all citations with official sources like CanLII.
+          </p>
+          <p style={{
+            fontFamily: "'Helvetica Neue', sans-serif",
+            fontSize: 10, color: t.textFaint, lineHeight: 1.4,
+            margin: 0,
+          }}>
+            <a href="/privacy.html" style={{ color: t.textFaint, textDecoration: 'none' }}>Privacy Policy</a>
+            {" \u00B7 "}
+            <a href="/terms.html" style={{ color: t.textFaint, textDecoration: 'none' }}>Terms of Service</a>
           </p>
         </div>
       </footer>
