@@ -7,52 +7,11 @@ import {
   buildCaseUrl,
   buildSearchUrl,
 } from "../src/lib/canlii.js";
+import { checkRateLimit, getClientIp } from "./_rateLimit.js";
 
-const RATE_LIMIT_REQUESTS = 30;
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 60 seconds
 const FETCH_TIMEOUT_MS = 5000;
 
-// In-memory rate limiter for this endpoint
-const rateLimitStore = new Map();
-
-function getClientIp(req) {
-  return (
-    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ??
-    req.socket?.remoteAddress ??
-    null
-  );
-}
-
-function checkCitationRateLimit(ip) {
-  const now = Date.now();
-  const key = `cite-rl:${ip ?? "unknown"}`;
-  
-  const hits = (rateLimitStore.get(key) ?? []).filter(
-    (t) => now - t < RATE_LIMIT_WINDOW_MS
-  );
-
-  if (hits.length >= RATE_LIMIT_REQUESTS) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetAt: new Date(hits[0] + RATE_LIMIT_WINDOW_MS).toISOString(),
-    };
-  }
-
-  hits.push(now);
-  rateLimitStore.set(key, hits);
-
-  // Cleanup old entries
-  if (rateLimitStore.size > 5000) {
-    for (const [k, v] of rateLimitStore) {
-      if (v.every((t) => now - t >= RATE_LIMIT_WINDOW_MS)) {
-        rateLimitStore.delete(k);
-      }
-    }
-  }
-
-  return { allowed: true, remaining: RATE_LIMIT_REQUESTS - hits.length };
-}
+const ALLOWED_ORIGINS = ["https://casedive.ca", "https://casefinder-project.vercel.app"];
 
 async function verifyCitation(citation, apiKey) {
   const parsed = parseCitation(citation);
@@ -131,11 +90,7 @@ async function verifyCitation(citation, apiKey) {
 
 export default async function handler(req, res) {
   const origin = req.headers.origin ?? "";
-  const allowedOrigin =
-    process.env.VERCEL_URL || "https://casedive.ca";
-
-  // CORS: only allow production domain
-  if (origin === `https://${allowedOrigin}` || origin === allowedOrigin) {
+  if (ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -155,13 +110,11 @@ export default async function handler(req, res) {
   }
 
   // Rate limit check
-  const clientIp = getClientIp(req);
-  const { allowed, remaining, resetAt } = checkCitationRateLimit(clientIp);
-  
+  const { allowed, remaining, resetAt } = await checkRateLimit(getClientIp(req));
   if (!allowed) {
     res.setHeader("Retry-After", resetAt);
     return res.status(429).json({
-      error: `Rate limit exceeded (30 per minute). Try again after ${resetAt}.`,
+      error: `Rate limit exceeded. Try again after ${resetAt}.`,
       remaining,
       resetAt,
     });

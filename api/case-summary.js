@@ -61,6 +61,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "citation is required" });
   }
 
+  const MAX_LENGTHS = { title: 300, court: 100, year: 10, summary: 2000, matchedContent: 3000, scenario: 5000 };
+  const body = req.body || {};
+  for (const [field, max] of Object.entries(MAX_LENGTHS)) {
+    if (body[field] && body[field].length > max) {
+      return res.status(400).json({ error: `${field} too long` });
+    }
+  }
+
   const prompt = [
     `Citation: ${citation}`,
     title ? `Title: ${title}` : null,
