@@ -179,45 +179,47 @@ function AppInner() {
         <AdUnit slotId="7399604405" style={{ maxWidth: "100%" }} />
       </div>
 
-      {/* Responsive ad layout: side ads on wide screens, bottom ad on mobile */}
-      <div style={{
-        display: "flex",
-        justifyContent: "center",
-        gap: 24,
-        maxWidth: "100%",
-        margin: "0 auto",
-        padding: "24px 12px",
-      }}>
-        <div className="ad-side-left" style={{
-          flex: "0 0 160px",
-          minHeight: 600,
+      {/* Only show ads when there are search results */}
+      {result && (
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 24,
+          maxWidth: "100%",
+          margin: "0 auto",
+          padding: "24px 12px",
         }}>
-          <AdUnit slotId="5671735556" style={{ minHeight: 600 }} />
-        </div>
-
-        <div style={{ flex: "1 1 auto", maxWidth: 760 }}>
-          <div ref={resultsRef}>
-            {loading && <StagedLoading />}
-            {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
-            {result && <Results data={result} verifications={verifications} scenario={submittedQuery} />}
-          </div>
-
-          {/* Bottom ad */}
-          <div className="ad-bottom" style={{
-            margin: "32px 24px 0",
-            textAlign: "center",
+          <div className="ad-side-left" style={{
+            flex: "0 0 160px",
+            minHeight: 600,
           }}>
-            <AdUnit slotId="1225553652" style={{ maxWidth: "100%", height: "auto" }} />
+            <AdUnit slotId="5671735556" style={{ minHeight: 600 }} />
+          </div>
+
+          <div style={{ flex: "1 1 auto", maxWidth: 760 }}>
+            <div ref={resultsRef}>
+              {loading && <StagedLoading />}
+              {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
+              {result && <Results data={result} verifications={verifications} scenario={submittedQuery} />}
+            </div>
+
+            {/* Bottom ad */}
+            <div className="ad-bottom" style={{
+              margin: "32px 24px 0",
+              textAlign: "center",
+            }}>
+              <AdUnit slotId="1225553652" style={{ maxWidth: "100%", height: "auto" }} />
+            </div>
+          </div>
+
+          <div className="ad-side-right" style={{
+            flex: "0 0 160px",
+            minHeight: 600,
+          }}>
+            <AdUnit slotId="3173060142" style={{ minHeight: 600 }} />
           </div>
         </div>
-
-        <div className="ad-side-right" style={{
-          flex: "0 0 160px",
-          minHeight: 600,
-        }}>
-          <AdUnit slotId="3173060142" style={{ minHeight: 600 }} />
-        </div>
-      </div>
+      )}
 
       {historyOpen && (
         <SearchHistory
