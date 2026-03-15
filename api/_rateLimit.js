@@ -85,6 +85,7 @@ export async function checkRateLimit(ip, endpoint) {
  */
 export function getClientIp(req) {
   return (
+    req.headers["x-real-ip"] ??
     req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ??
     req.socket?.remoteAddress ??
     null

@@ -142,7 +142,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error("Analyze error:", err);
     if (err.status) {
-      return res.status(err.status).json({ error: err.message });
+      return res.status(err.status >= 500 ? 502 : err.status).json({ error: "Analysis service temporarily unavailable." });
     }
     return res.status(500).json({ error: "Internal server error" });
   }

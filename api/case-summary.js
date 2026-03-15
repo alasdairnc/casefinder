@@ -92,7 +92,7 @@ export default async function handler(req, res) {
     return res.status(200).json(result);
   } catch (err) {
     console.error("case-summary error:", err);
-    if (err.status) return res.status(err.status).json({ error: err.message });
+    if (err.status) return res.status(err.status >= 500 ? 502 : err.status).json({ error: "Summary service temporarily unavailable." });
     return res.status(500).json({ error: "Internal server error" });
   }
 }
