@@ -24,11 +24,13 @@ const store = new Map();
 /**
  * Check whether the given IP is within the rate limit.
  * @param {string|null} ip
+ * @param {string} [endpoint] — optional endpoint name for per-route buckets
  * @returns {{ allowed: boolean, remaining: number, resetAt?: string }}
  */
-export async function checkRateLimit(ip) {
+export async function checkRateLimit(ip, endpoint) {
   const now = Date.now();
-  const key = `rl:${ip ?? "unknown"}`;
+  const prefix = endpoint ? `rl:${endpoint}` : "rl";
+  const key = `${prefix}:${ip ?? "unknown"}`;
 
   try {
     // Try Redis if available
@@ -83,6 +85,7 @@ export async function checkRateLimit(ip) {
  */
 export function getClientIp(req) {
   return (
+    req.headers["x-real-ip"] ??
     req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ??
     req.socket?.remoteAddress ??
     null

@@ -34,7 +34,12 @@ export function useSearchHistory() {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         query,
         filters: { ...filters },
-        result,
+        resultCounts: {
+          criminal_code: result?.criminal_code?.length || 0,
+          case_law: result?.case_law?.length || 0,
+          civil_law: result?.civil_law?.length || 0,
+          charter: result?.charter?.length || 0,
+        },
         timestamp: Date.now(),
       };
       const updated = [entry, ...prev].slice(0, MAX_ENTRIES);

@@ -10,23 +10,17 @@ import ErrorMessage from "./components/ErrorMessage.jsx";
 import SearchHistory from "./components/SearchHistory.jsx";
 import { useSearchHistory } from "./hooks/useSearchHistory.js";
 
-// AdSense script loader
-function useAdSense() {
-  useEffect(() => {
-    if (window.adsbygoogle) {
-      try {
-        window.adsbygoogle.push({});
-      } catch {
-        // Silently fail if ad not ready
-      }
-    }
-  }, []);
-}
-
+// AdSense — only push once per <ins> element
 function AdUnit({ slotId, style }) {
-  useAdSense();
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current || ref.current.dataset.adLoaded) return;
+    ref.current.dataset.adLoaded = "true";
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch {}
+  }, []);
   return (
     <ins
+      ref={ref}
       className="adsbygoogle"
       style={{ display: "block", ...style }}
       data-ad-client="ca-pub-5931276184603899"
@@ -51,53 +45,9 @@ function AppInner() {
     dateRange: "all",
     lawTypes: { ...defaultLawTypes },
   });
-  const [verifications, setVerifications] = useState({});
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const resultsRef = useRef(null);
   const { history, addToHistory, clearHistory, rerunQuery } = useSearchHistory();
-
-  const verifyInBackground = async (data) => {
-    // Collect all citations from all result categories
-    const citations = [];
-
-    // New format: case_law array
-    if (data.case_law?.length) {
-      data.case_law.forEach((c) => {
-        if (c.citation) citations.push(c.citation);
-      });
-    }
-
-    // Old format fallback: cases array
-    if (data.cases?.length) {
-      data.cases.forEach((c) => {
-        if (c.citation) citations.push(c.citation);
-      });
-    }
-
-    // Criminal Code sections (for linking to Justice Laws)
-    if (data.criminal_code?.length) {
-      data.criminal_code.forEach((c) => {
-        if (c.citation) citations.push(c.citation);
-      });
-    }
-
-    if (!citations.length) return;
-
-    // Cap at 10 per the verify endpoint limit
-    const batch = citations.slice(0, 10);
-
-    try {
-      const res = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ citations: batch }),
-      });
-      if (!res.ok) return;
-      const results = await res.json();
-      setVerifications(results);
-    } catch {
-      // Silent fail — verification is non-blocking enhancement
-    }
-  };
 
   const analyzeScenario = async (overrideQuery, overrideFilters) => {
     const activeQuery = typeof overrideQuery === "string" ? overrideQuery : query;
@@ -122,11 +72,9 @@ function AppInner() {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
-      setVerifications({});
+      setSubmittedQuery(activeQuery.trim());
       setResult(data);
       addToHistory(activeQuery.trim(), activeFilters, data);
-
-      verifyInBackground(data);
 
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -199,45 +147,49 @@ function AppInner() {
         <AdUnit slotId="7399604405" style={{ maxWidth: "100%" }} />
       </div>
 
-      {/* Responsive ad layout: side ads on wide screens, bottom ad on mobile */}
-      <div style={{
-        display: "flex",
-        justifyContent: "center",
-        gap: 24,
-        maxWidth: "100%",
-        margin: "0 auto",
-        padding: "24px 12px",
-      }}>
-        <div className="ad-side-left" style={{
-          flex: "0 0 160px",
-          minHeight: 600,
-        }}>
-          <AdUnit slotId="5671735556" style={{ minHeight: 600 }} />
-        </div>
-
-        <div style={{ flex: "1 1 auto", maxWidth: 760 }}>
-          <div ref={resultsRef}>
-            {loading && <StagedLoading />}
-            {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
-            {result && <Results data={result} verifications={verifications} />}
-          </div>
-
-          {/* Bottom ad */}
-          <div className="ad-bottom" style={{
-            margin: "32px 24px 0",
-            textAlign: "center",
-          }}>
-            <AdUnit slotId="1225553652" style={{ maxWidth: "100%", height: "auto" }} />
-          </div>
-        </div>
-
-        <div className="ad-side-right" style={{
-          flex: "0 0 160px",
-          minHeight: 600,
-        }}>
-          <AdUnit slotId="3173060142" style={{ minHeight: 600 }} />
-        </div>
+      {/* Loading/error — always visible regardless of result state */}
+      <div ref={resultsRef}>
+        {loading && <StagedLoading />}
+        {error && <ErrorMessage message={error} onRetry={analyzeScenario} />}
       </div>
+
+      {/* Results with side ads */}
+      {result && (
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 24,
+          maxWidth: "100%",
+          margin: "0 auto",
+          padding: "24px 12px",
+        }}>
+          <div className="ad-side-left" style={{
+            flex: "0 0 160px",
+            minHeight: 600,
+          }}>
+            <AdUnit slotId="5671735556" style={{ minHeight: 600 }} />
+          </div>
+
+          <div style={{ flex: "1 1 auto", maxWidth: 760 }}>
+            <Results data={result} scenario={submittedQuery} />
+
+            {/* Bottom ad */}
+            <div className="ad-bottom" style={{
+              margin: "32px 24px 0",
+              textAlign: "center",
+            }}>
+              <AdUnit slotId="1225553652" style={{ maxWidth: "100%", height: "auto" }} />
+            </div>
+          </div>
+
+          <div className="ad-side-right" style={{
+            flex: "0 0 160px",
+            minHeight: 600,
+          }}>
+            <AdUnit slotId="3173060142" style={{ minHeight: 600 }} />
+          </div>
+        </div>
+      )}
 
       {historyOpen && (
         <SearchHistory
@@ -272,9 +224,20 @@ function AppInner() {
           <p style={{
             fontFamily: "'Helvetica Neue', sans-serif",
             fontSize: 11, color: t.textFaint, lineHeight: 1.6,
-            margin: 0, letterSpacing: 0.3,
+            margin: "0 0 15px 0", letterSpacing: 0.3,
           }}>
             {"\u26A0\uFE0F"} Educational Tool Only. This is not legal advice. Always consult a qualified lawyer for legal matters. Verify all citations with official sources like CanLII.
+          </p>
+          <p style={{
+            fontFamily: "'Helvetica Neue', sans-serif",
+            fontSize: 10, color: t.textFaint, lineHeight: 1.4,
+            margin: 0,
+          }}>
+            <a href="/about.html" style={{ color: t.textFaint, textDecoration: 'none' }}>About</a>
+            {" \u00B7 "}
+            <a href="/privacy.html" style={{ color: t.textFaint, textDecoration: 'none' }}>Privacy Policy</a>
+            {" \u00B7 "}
+            <a href="/terms.html" style={{ color: t.textFaint, textDecoration: 'none' }}>Terms of Service</a>
           </p>
         </div>
       </footer>

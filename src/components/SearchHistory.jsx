@@ -128,12 +128,9 @@ export default function SearchHistory({ history, onSelect, onClose, clearHistory
                   }}>
                     {formatDate(entry.timestamp)} · {formatTime(entry.timestamp)}
                     {(() => {
-                      const count =
-                        (entry.result?.criminal_code?.length || 0) +
-                        (entry.result?.case_law?.length || 0) +
-                        (entry.result?.civil_law?.length || 0) +
-                        (entry.result?.charter?.length || 0) ||
-                        entry.result?.charges?.length || 0;
+                      const rc = entry.resultCounts || {};
+                      const count = (rc.criminal_code || 0) + (rc.case_law || 0) +
+                        (rc.civil_law || 0) + (rc.charter || 0);
                       return count ? ` · ${count} result${count !== 1 ? "s" : ""}` : "";
                     })()}
                   </div>
