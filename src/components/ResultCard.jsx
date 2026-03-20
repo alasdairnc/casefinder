@@ -1,11 +1,12 @@
 import { useTheme } from "../lib/ThemeContext.jsx";
 
-function VerificationBadge({ verification, t }) {
+function VerificationBadge({ verification, t, type }) {
   if (!verification) return null;
 
   const { status, url, searchUrl } = verification;
 
   if (status === "verified") {
+    const label = type === "criminal_code" ? "Confirmed — Justice Laws" : "Verified on CanLII";
     return (
       <a
         href={url}
@@ -18,12 +19,15 @@ function VerificationBadge({ verification, t }) {
           letterSpacing: 0.5,
         }}
       >
-        {"\u2713"} Verified on CanLII {"\u2197"}
+        {"\u2713"} {label} {"\u2197"}
       </a>
     );
   }
 
   if (status === "not_found") {
+    const label = type === "criminal_code"
+      ? "Section not confirmed — check Justice Laws"
+      : "Not found — search CanLII";
     return (
       <a
         href={searchUrl}
@@ -36,7 +40,7 @@ function VerificationBadge({ verification, t }) {
           letterSpacing: 0.5,
         }}
       >
-        {"\u26A0"} Not found {"\u2014"} search CanLII {"\u2197"}
+        {"\u26A0"} {label} {"\u2197"}
       </a>
     );
   }
@@ -117,8 +121,26 @@ export default function ResultCard({ item, type, verification }) {
         </div>
       )}
 
+      {/* Ground truth enrichment for verified Criminal Code sections */}
+      {type === "criminal_code" && verification?.status === "verified" && verification.title && (
+        <div style={{
+          marginTop: 8, padding: "8px 12px",
+          background: t.bgAlt, border: `1px solid ${t.borderLight}`,
+          fontFamily: "'Courier New', monospace", fontSize: 12,
+          color: t.textSecondary, lineHeight: 1.5,
+        }}>
+          <span style={{ fontWeight: 700, color: t.text }}>{verification.title}</span>
+          {verification.severity && verification.severity !== "N/A" && (
+            <span> · {verification.severity}</span>
+          )}
+          {verification.maxPenalty && verification.maxPenalty !== "N/A" && (
+            <span> · Max: {verification.maxPenalty}</span>
+          )}
+        </div>
+      )}
+
       {/* Verification badge (case_law + criminal_code only) */}
-      {showCanLII && <VerificationBadge verification={verification} t={t} />}
+      {showCanLII && <VerificationBadge verification={verification} t={t} type={type} />}
     </div>
   );
 }

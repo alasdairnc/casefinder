@@ -83,5 +83,5 @@ export function buildSystemPrompt(filters = {}) {
   "searchTerms": ["array", "of", "CanLII", "search", "terms"]
 }
 
-Provide 2-4 items per category where applicable. Return empty arrays for categories that don't apply.${filterInstructions}${lawTypeInstructions} Use real Criminal Code sections only. Only use real, verified cases you are confident about. Never construct, invent, or hallucinate citations. For civil_law, include relevant provincial statutes, regulations, or tort law. For charter, identify any Charter rights engaged by the scenario. Always respond with valid JSON only.`;
+Provide 2-4 items per category where applicable. Return empty arrays for categories that don't apply.${filterInstructions}${lawTypeInstructions} Use real Criminal Code sections only — do not invent or approximate section numbers. For case_law, ONLY cite cases you are confident are real. If you cannot recall a real case with certainty, return fewer results rather than fabricating citations. Never construct, invent, or hallucinate case names, citation numbers, or court references. It is better to return 1 verified case than 4 plausible-sounding fake ones. For civil_law, include relevant provincial statutes, regulations, or tort law. For charter, identify any Charter rights engaged by the scenario. Always respond with valid JSON only.`;
 }

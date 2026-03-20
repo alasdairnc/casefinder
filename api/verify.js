@@ -10,6 +10,7 @@ import {
   buildCaseUrl,
   buildSearchUrl,
 } from "../src/lib/canlii.js";
+import { lookupSection, normalizeSection } from "../src/lib/criminalCodeData.js";
 
 // Matches Criminal Code section references like "s. 348(1)(b)" or "s. 7"
 const CRIMINAL_CODE_PATTERN = /^s\.\s*\d+/i;
@@ -56,13 +57,30 @@ export default async function handler(req, res) {
         return;
       }
 
-      // Criminal Code section references — link to Justice Laws site
+      // Criminal Code section references — validate against lookup table
       if (CRIMINAL_CODE_PATTERN.test(citation.trim())) {
-        results[citation] = {
-          status: "unverified",
-          url: "https://laws-lois.justice.gc.ca/eng/acts/c-46/",
-          searchUrl: buildSearchUrl(citation),
-        };
+        const entry = lookupSection(citation);
+        if (entry) {
+          results[citation] = {
+            status: "verified",
+            url: entry.url,
+            searchUrl: buildSearchUrl(citation),
+            title: entry.title,
+            severity: entry.severity,
+            maxPenalty: entry.maxPenalty,
+          };
+        } else {
+          // Section format is valid but not in our lookup — could be real, we just can't confirm
+          const sectionNum = normalizeSection(citation);
+          const url = sectionNum
+            ? `https://laws-lois.justice.gc.ca/eng/acts/c-46/section-${sectionNum}.html`
+            : "https://laws-lois.justice.gc.ca/eng/acts/c-46/";
+          results[citation] = {
+            status: "unverified",
+            url,
+            searchUrl: buildSearchUrl(citation),
+          };
+        }
         return;
       }
 
