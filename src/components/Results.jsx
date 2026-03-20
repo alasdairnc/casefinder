@@ -39,25 +39,17 @@ export default function Results({ data, verifications: externalVerifications = {
     if (citationSet.size === 0) return;
 
     setVerifyingCitations(true);
-    
-    fetch("/api/verify-citations", {
+
+    fetch("/api/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ citations: Array.from(citationSet) }),
+      body: JSON.stringify({ citations: Array.from(citationSet).slice(0, 10) }),
     })
       .then((res) => res.json())
       .then((json) => {
-        if (json.results && Array.isArray(json.results)) {
-          const verificationMap = {};
-          json.results.forEach((result) => {
-            verificationMap[result.citation] = {
-              status: result.status,
-              url: result.url,
-              searchUrl: result.searchUrl,
-              title: result.title,
-            };
-          });
-          setVerifications(verificationMap);
+        // /api/verify returns a flat map: { citation: { status, url, searchUrl, title } }
+        if (json && typeof json === "object" && !Array.isArray(json)) {
+          setVerifications(json);
         }
       })
       .catch((err) => {

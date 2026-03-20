@@ -55,21 +55,47 @@ function AppInner() {
   const resultsRef = useRef(null);
   const { history, addToHistory, clearHistory, rerunQuery } = useSearchHistory();
 
-  const verifyInBackground = async (citations) => {
-    if (!citations?.length) return;
-    const filtered = citations.filter(Boolean);
-    if (!filtered.length) return;
+  const verifyInBackground = async (data) => {
+    // Collect all citations from all result categories
+    const citations = [];
+
+    // New format: case_law array
+    if (data.case_law?.length) {
+      data.case_law.forEach((c) => {
+        if (c.citation) citations.push(c.citation);
+      });
+    }
+
+    // Old format fallback: cases array
+    if (data.cases?.length) {
+      data.cases.forEach((c) => {
+        if (c.citation) citations.push(c.citation);
+      });
+    }
+
+    // Criminal Code sections (for linking to Justice Laws)
+    if (data.criminal_code?.length) {
+      data.criminal_code.forEach((c) => {
+        if (c.citation) citations.push(c.citation);
+      });
+    }
+
+    if (!citations.length) return;
+
+    // Cap at 10 per the verify endpoint limit
+    const batch = citations.slice(0, 10);
+
     try {
       const res = await fetch("/api/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ citations: filtered.slice(0, 10) }),
+        body: JSON.stringify({ citations: batch }),
       });
       if (!res.ok) return;
-      const data = await res.json();
-      setVerifications(data);
+      const results = await res.json();
+      setVerifications(results);
     } catch {
-      // Silent fail — verification is non-blocking
+      // Silent fail — verification is non-blocking enhancement
     }
   };
 
@@ -100,11 +126,7 @@ function AppInner() {
       setResult(data);
       addToHistory(activeQuery.trim(), activeFilters, data);
 
-      const citationsToVerify = [
-        ...(data.case_law || []).map(c => c.citation),
-        ...(data.criminal_code || []).map(c => c.citation),
-      ].filter(Boolean);
-      verifyInBackground(citationsToVerify);
+      verifyInBackground(data);
 
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
