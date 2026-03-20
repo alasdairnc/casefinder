@@ -97,7 +97,7 @@ export default async function handler(req, res) {
       }
 
       const caseId = buildCaseId({ year: parsed.year, courtCode: parsed.courtCode, number: parsed.number });
-      const caseUrl = buildCaseUrl(parsed.dbId, parsed.year, caseId);
+      const caseUrl = buildCaseUrl(parsed.webDbId, parsed.year, caseId);
       const searchUrl = buildSearchUrl(citation);
 
       if (!apiKey) {
