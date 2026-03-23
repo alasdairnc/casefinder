@@ -32,25 +32,6 @@ const CHARTER_PATTERN = /^(canadian\s+)?charter(\s+of\s+rights\s+and\s+freedoms)
 // Matches civil law statute citations with a statute name prefix
 const CIVIL_LAW_PATTERN = /\b(CDSA|YCJA|CHRA|CEA|CCRA|controlled drugs|youth criminal justice|canadian human rights|canada evidence|corrections and conditional release|criminal code)\b/i;
 
-// Fallback: search CanLII by party name + year when direct case ID lookup returns 404.
-// Handles pre-2000 cases that predate the neutral citation system.
-// Returns the first matching case object, or null if not found / API error.
-async function searchCanLII(dbId, parties, year, apiKey) {
-  const query = encodeURIComponent(`${parties} ${year}`);
-  const url = `https://api.canlii.org/v1/cases?db=${dbId}&keywords=${query}`;
-  const apiRes = await fetch(url, {
-    headers: { Authorization: `apikey ${apiKey}` },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!apiRes.ok) return null;
-  const ct = apiRes.headers.get("content-type") || "";
-  if (!ct.includes("application/json")) return null;
-  const data = await apiRes.json();
-  const cases = data?.cases;
-  if (!Array.isArray(cases) || cases.length === 0) return null;
-  // Prefer a case whose ID starts with the expected year (most relevant match)
-  return cases.find((c) => String(c.caseId || "").startsWith(year)) || cases[0] || null;
-}
 
 export default async function handler(req, res) {
   const requestId = Math.random().toString(36).slice(2, 10);
@@ -216,22 +197,8 @@ export default async function handler(req, res) {
         logExternalApiCall(requestId, "verify", "canlii", apiRes.status, apiDurationMs);
 
         if (apiRes.status === 404) {
-          // Respect CanLII 2 req/sec limit before the fallback call
-          await new Promise(r => setTimeout(r, 500));
-          try {
-            const fallbackStartMs = Date.now();
-            const match = await searchCanLII(parsed.dbId, parsed.parties, parsed.year, apiKey);
-            logExternalApiCall(requestId, "verify", "canlii-search", match ? 200 : 404, Date.now() - fallbackStartMs);
-            if (match) {
-              const actualCaseId = match.caseId || caseId;
-              const verifiedUrl = buildCaseUrl(parsed.webDbId, parsed.year, actualCaseId);
-              results[citation] = { status: "verified", url: verifiedUrl, searchUrl, title: match.title || citation };
-            } else {
-              results[citation] = { status: "not_found", searchUrl };
-            }
-          } catch {
-            results[citation] = { status: "not_found", searchUrl };
-          }
+          // Pre-2000 cases use legacy CanLII IDs, not neutral citations — mark unverified with link
+          results[citation] = { status: "unverified", url: caseUrl, searchUrl };
           return;
         }
         if (!apiRes.ok) {

@@ -50,6 +50,26 @@ function VerificationBadge({ verification, t, type }) {
     );
   }
 
+  if (status === "unverified") {
+    const safeUrl = (isValidUrl(url) && url) || (isValidUrl(searchUrl) && searchUrl);
+    if (!safeUrl) return null;
+    return (
+      <a
+        href={safeUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11,
+          color: t.textTertiary, textDecoration: "none", marginTop: 8,
+          letterSpacing: 0.5,
+        }}
+      >
+        {"\u2192"} Pre-2000 cases aren{"'"}t always indexed — verify on CanLII {"\u2197"}
+      </a>
+    );
+  }
+
   const href = (isValidUrl(url) && url) || (isValidUrl(searchUrl) && searchUrl);
   if (!href) return null;
   return (
