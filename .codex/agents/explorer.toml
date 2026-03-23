@@ -1,0 +1,17 @@
+[agent]
+name = "explorer"
+title = "Explore"
+description = "Fast codebase search and Q&A. Finds files, understands structure, answers architecture questions."
+mode = "read-only"
+speed = "fast"
+
+[capabilities]
+search_files = true
+read_code = true
+trace_imports = true
+answer_questions = true
+
+[restrictions]
+write_code = false
+modify_files = false
+run_commands = false

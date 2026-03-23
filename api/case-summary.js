@@ -7,7 +7,7 @@ function sanitizeUserInput(input) {
   return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>]*)?>/g, "");
 }
 
-const ALLOWED_ORIGINS = ["https://casedive.ca", "https://casefinder-project.vercel.app"];
+const ALLOWED_ORIGINS = ["https://casedive.ca", "https://www.casedive.ca", "https://casefinder-project.vercel.app"];
 
 async function callAnthropic(prompt, apiKey) {
   const system = `You are a Canadian legal research assistant. Given case metadata and context, produce a concise structured summary of the case. Return ONLY valid JSON with these exact keys: facts, held, ratio, keyQuote, significance. Keep each field to 1-3 sentences. For keyQuote, use a verbatim or near-verbatim passage if one appears in the provided context — otherwise omit it by setting it to null. Never fabricate holdings, quotes, or outcomes. If you are uncertain about a field, say so briefly rather than guessing.

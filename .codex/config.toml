@@ -1,0 +1,22 @@
+[codex]
+version = "1.0"
+profile = "full"
+repo = "casefinder"
+
+[project]
+name = "CaseFinder"
+description = "AI-powered Canadian criminal law research tool"
+website = "casedive.ca"
+
+[agents]
+enable_explorer = true
+enable_reviewer = true
+enable_docs_researcher = true
+
+[api]
+key_location = "server-side"
+endpoints = ["analyze", "verify", "export-pdf", "case-summary"]
+
+[rate_limiting]
+enabled = true
+backend = "upstash-redis"

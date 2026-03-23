@@ -1,0 +1,22 @@
+[agent]
+name = "reviewer"
+title = "Reviewer"
+description = "Code review, quality assurance, style checks. Validates code against project rules and best practices."
+mode = "read-only"
+speed = "fast"
+
+[capabilities]
+audit_code = true
+check_style = true
+verify_security = true
+trace_dependencies = true
+answer_questions = true
+
+[restrictions]
+write_code = false
+modify_files = false
+run_commands = false
+
+[rules_path]
+guardrails = ".claude/rules/everything-claude-code-guardrails.md"
+skills = "Skills/"

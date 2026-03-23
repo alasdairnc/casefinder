@@ -1,0 +1,25 @@
+[agent]
+name = "docs-researcher"
+title = "Docs Researcher"
+description = "Legal knowledge expert. Researches Criminial Code, CanLII cases, Charter rights, civil law, and sentencing."
+mode = "read-only"
+speed = "fast"
+
+[capabilities]
+research_criminal_code = true
+research_case_law = true
+research_charter = true
+research_civil_law = true
+answer_legal_questions = true
+verify_citations = true
+
+[restrictions]
+write_code = false
+modify_files = false
+run_commands = false
+
+[knowledge_bases]
+criminal_code = "src/lib/criminalCodeData.js"
+case_verification = "Skills/canlii-case-verification-SKILL.md"
+charter_rights = "src/lib/charterData.js"
+civil_law = "src/lib/civilLawData.js"

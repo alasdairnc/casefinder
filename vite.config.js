@@ -36,7 +36,9 @@ function createApiMiddleware(handler) {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  // Load only VITE_* prefixed variables for frontend safety
+  // API keys use process.env directly in dev middleware (Node.js can access all env vars)
+  const env = loadEnv(mode, process.cwd(), "VITE_");
 
   return {
     resolve: {
@@ -66,7 +68,7 @@ export default defineConfig(({ mode }) => {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "x-api-key": env.ANTHROPIC_API_KEY,
+                  "x-api-key": process.env.ANTHROPIC_API_KEY,
                   "anthropic-version": "2023-06-01",
                 },
                 body: JSON.stringify({
@@ -96,7 +98,7 @@ export default defineConfig(({ mode }) => {
                 res.end(JSON.stringify(parsed));
               } catch {
                 res.writeHead(500, { "Content-Type": "application/json" });
-                res.end(JSON.stringify({ error: "Failed to parse AI response", raw: clean }));
+                res.end(JSON.stringify({ error: "Failed to parse AI response (invalid JSON format)" }));
               }
             } catch (err) {
               console.error("Analyze middleware error:", err);
@@ -144,7 +146,7 @@ export default defineConfig(({ mode }) => {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "x-api-key": env.ANTHROPIC_API_KEY,
+                  "x-api-key": process.env.ANTHROPIC_API_KEY,
                   "anthropic-version": "2023-06-01",
                 },
                 body: JSON.stringify({
