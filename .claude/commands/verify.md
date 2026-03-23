@@ -1,6 +1,13 @@
 ---
 name: verify
 description: Run full verification loop — build, security scan, and E2E tests
+allowed_tools: ["Bash", "Read", "Grep", "Glob"]
+version: "1.0.0"
+rollback: "revert the last change set if build, scan, or tests expose a regression"
+observation_hooks:
+  - verify: "git diff --stat"
+feedback_hooks:
+  - on_failure: "fix the failing build, scan finding, or test before considering the change ready"
 ---
 
 # /verify — Verification Loop

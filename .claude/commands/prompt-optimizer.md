@@ -1,6 +1,13 @@
 ---
 name: prompt-optimizer
 description: Analyze a draft prompt, identify gaps, and output an optimized ready-to-use version. Advisory only — does not execute the task.
+allowed_tools: ["Read", "Write", "Grep", "Glob"]
+version: "1.0.0"
+rollback: "discard the optimized prompt draft and keep the original task wording"
+observation_hooks:
+  - verify: "test -f CLAUDE.md && echo CLAUDE.md-present || echo CLAUDE.md-missing"
+feedback_hooks:
+  - on_failure: "check whether the prompt omitted acceptance criteria, scope boundaries, or relevant repo context"
 ---
 
 # /prompt-optimizer

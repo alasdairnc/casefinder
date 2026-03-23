@@ -46,11 +46,11 @@ test.describe("PDF Export", () => {
   });
 
   test("clicking Export PDF fires request to /api/export-pdf", async ({ page }) => {
-    // Mock the PDF endpoint to return a minimal PDF-like response
     let pdfRequested = false;
+    let pdfPayload;
     await page.route("/api/export-pdf", async (route) => {
       pdfRequested = true;
-      // Return a minimal valid response (not a real PDF, just enough to not throw)
+      pdfPayload = route.request().postDataJSON();
       await route.fulfill({
         status: 200,
         contentType: "application/pdf",
@@ -64,6 +64,27 @@ test.describe("PDF Export", () => {
     // Wait briefly for the request to fire
     await page.waitForTimeout(500);
     expect(pdfRequested).toBe(true);
+    expect(pdfPayload).toEqual({
+      summary: "A person entered a residential property at night without permission and stole jewelry.",
+      criminal_code: [
+        {
+          citation: "s. 348(1)(b)",
+          title: "Breaking and Entering",
+          summary: "Breaking and entering a place with intent to commit an indictable offence.",
+        },
+      ],
+      case_law: [
+        {
+          citation: "R v Dorfer, 2014 BCCA 449",
+          title: "R v Dorfer",
+          description: "Sentencing principles for residential break and enter.",
+        },
+      ],
+      civil_law: [],
+      charter: [],
+      analysis: "This scenario involves a classic residential break and enter with theft.",
+      verifications: MOCK_VERIFY_RESPONSE,
+    });
   });
 
   test("no error message shown after successful PDF export", async ({ page }) => {
@@ -81,5 +102,20 @@ test.describe("PDF Export", () => {
 
     // No error message should be visible
     await expect(page.locator("text=/pdf error|export failed/i")).not.toBeVisible();
+  });
+
+  test("shows export failed state when PDF export request errors", async ({ page }) => {
+    await page.route("/api/export-pdf", async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Export failed" }),
+      });
+    });
+
+    await runSearch(page);
+    await page.locator('[data-testid="export-pdf-btn"]').click();
+
+    await expect(page.locator('[data-testid="export-pdf-btn"]')).toHaveText("Export failed");
   });
 });

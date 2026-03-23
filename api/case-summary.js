@@ -12,10 +12,38 @@ import {
 // Strip XML-like tags from user input to prevent delimiter escape
 function sanitizeUserInput(input) {
   if (typeof input !== "string") return input;
-  return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>]*)?>/g, "");
+  return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>\s][^>]*)?>/g, "");
 }
 
 const ALLOWED_ORIGINS = ["https://casedive.ca", "https://www.casedive.ca", "https://casefinder-project.vercel.app"];
+
+function normalizeSummaryResult(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+
+  const getStringOrNull = (value) => {
+    if (value == null) return null;
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed || null;
+  };
+
+  const facts = getStringOrNull(raw.facts);
+  const held = getStringOrNull(raw.held);
+  const ratio = getStringOrNull(raw.ratio);
+  const significance = getStringOrNull(raw.significance);
+
+  if (!facts || !held || !ratio || !significance) {
+    return null;
+  }
+
+  return {
+    facts,
+    held,
+    ratio,
+    keyQuote: getStringOrNull(raw.keyQuote),
+    significance,
+  };
+}
 
 async function callAnthropic(prompt, apiKey) {
   const system = `You are a Canadian legal research assistant. Given case metadata and context, produce a concise structured summary of the case. Return ONLY valid JSON with these exact keys: facts, held, ratio, keyQuote, significance. Keep each field to 1-3 sentences. For keyQuote, use a verbatim or near-verbatim passage if one appears in the provided context — otherwise omit it by setting it to null. Never fabricate holdings, quotes, or outcomes. If you are uncertain about a field, say so briefly rather than guessing.
@@ -124,8 +152,14 @@ export default async function handler(req, res) {
     .join("\n");
 
   try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      logValidationError(requestId, "case-summary", "ANTHROPIC_API_KEY is not configured", "environment");
+      return res.status(503).json({ error: "Summary service temporarily unavailable." });
+    }
+
     const anthropicStartMs = Date.now();
-    const raw = await callAnthropic(prompt, process.env.ANTHROPIC_API_KEY);
+    const raw = await callAnthropic(prompt, apiKey);
     const anthropicDurationMs = Date.now() - anthropicStartMs;
     logExternalApiCall(requestId, "case-summary", "anthropic", 200, anthropicDurationMs);
     
@@ -136,8 +170,15 @@ export default async function handler(req, res) {
       logValidationError(requestId, "case-summary", "Could not parse structured summary", "ai_output");
       return res.status(422).json({ error: "Could not parse structured summary." });
     }
+
+    const normalized = normalizeSummaryResult(result);
+    if (!normalized) {
+      logValidationError(requestId, "case-summary", "Structured summary did not match expected schema", "ai_output");
+      return res.status(422).json({ error: "Structured summary was incomplete." });
+    }
+
     logSuccess(requestId, "case-summary", 200, Date.now() - startMs, rlResult);
-    return res.status(200).json(result);
+    return res.status(200).json(normalized);
   } catch (err) {
     const statusCode = err.status ? (err.status >= 500 ? 502 : err.status) : 500;
     logError(requestId, "case-summary", err, statusCode, Date.now() - startMs);

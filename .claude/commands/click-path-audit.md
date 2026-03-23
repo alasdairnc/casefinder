@@ -1,6 +1,13 @@
 ---
 name: click-path-audit
 description: Trace every button/interactive element through full state change sequence to find bugs where functions cancel each other out or leave UI in wrong state
+allowed_tools: ["Bash", "Read", "Write", "Grep", "Glob"]
+version: "1.0.0"
+rollback: "remove click-path findings notes and revert any follow-up debug edits"
+observation_hooks:
+  - verify: "rg -n \"onClick|onSubmit|onChange|useEffect|set[A-Z]\" src/components src/hooks src/lib"
+feedback_hooks:
+  - on_failure: "retrace the handler order and check for later state resets or effect interference"
 ---
 
 # /click-path-audit
