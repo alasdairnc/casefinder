@@ -11,9 +11,18 @@ import {
   buildSearchUrl,
 } from "../src/lib/canlii.js";
 import { lookupSection, normalizeSection } from "../src/lib/criminalCodeData.js";
+import { lookupCharterSection } from "../src/lib/charterData.js";
+import { lookupCivilLawSection } from "../src/lib/civilLawData.js";
 
-// Matches Criminal Code section references like "s. 348(1)(b)" or "s. 7"
+// Matches bare Criminal Code section references like "s. 348(1)(b)" or "s. 7"
+// (no statute name prefix — those are handled by civil law lookup)
 const CRIMINAL_CODE_PATTERN = /^s\.\s*\d+/i;
+
+// Matches Charter citations: "s. 7", "s. 11(b)", "Charter s. 24(2)", "section 8"
+const CHARTER_PATTERN = /^(canadian\s+)?charter(\s+of\s+rights\s+and\s+freedoms)?,?\s*s\.\s*\d+|^s\.\s*\d+\s*(\(\w+\))?$/i;
+
+// Matches civil law statute citations with a statute name prefix
+const CIVIL_LAW_PATTERN = /\b(CDSA|YCJA|CHRA|CEA|CCRA|controlled drugs|youth criminal justice|canadian human rights|canada evidence|corrections and conditional release|criminal code)\b/i;
 
 export default async function handler(req, res) {
   const origin = req.headers.origin ?? "";
@@ -73,7 +82,48 @@ export default async function handler(req, res) {
         return;
       }
 
-      // Criminal Code section references — validate against lookup table
+      // Civil law statute citations (CDSA, YCJA, CHRA, etc.) — validate against local DB
+      if (CIVIL_LAW_PATTERN.test(citation.trim())) {
+        const found = lookupCivilLawSection(citation);
+        if (found) {
+          results[citation] = {
+            status: "verified",
+            url: found.entry.url,
+            searchUrl: buildSearchUrl(citation),
+            title: found.entry.title,
+            statute: found.entry.statute,
+          };
+        } else {
+          results[citation] = {
+            status: "unverified",
+            searchUrl: buildSearchUrl(citation),
+          };
+        }
+        return;
+      }
+
+      // Charter citations with explicit "Charter" prefix — validate against Charter DB
+      if (/charter/i.test(citation.trim())) {
+        const entry = lookupCharterSection(citation);
+        if (entry) {
+          results[citation] = {
+            status: "verified",
+            url: entry.url,
+            searchUrl: buildSearchUrl(citation),
+            title: entry.title,
+            part: entry.part,
+          };
+        } else {
+          results[citation] = {
+            status: "unverified",
+            url: "https://laws-lois.justice.gc.ca/eng/const/page-15.html",
+            searchUrl: buildSearchUrl(citation),
+          };
+        }
+        return;
+      }
+
+      // Bare Criminal Code section references — validate against lookup table
       if (CRIMINAL_CODE_PATTERN.test(citation.trim())) {
         const entry = lookupSection(citation);
         if (entry) {

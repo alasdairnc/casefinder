@@ -44,6 +44,8 @@ casefinder/
 │   │   ├── ThemeContext.jsx     # Theme provider + useTheme hook
 │   │   ├── canlii.js           # Citation parser, URL builder, ~35 courts
 │   │   ├── constants.js        # Filter options, default law types
+│   │   ├── charterData.js      # 35 Charter sections + subsections with relevance mapping
+│   │   ├── civilLawData.js     # CDSA, YCJA, CHRA, CC sentencing, CEA, CCRA
 │   │   ├── criminalCodeData.js # 490 sections, 46 enriched with definitions/defences
 │   │   ├── prompts.js          # System prompt builder for Claude
 │   │   ├── themes.js           # Light/dark theme objects
@@ -204,8 +206,8 @@ Read the relevant skill file BEFORE starting any task in these categories. Skill
 - [x] Distilled rules from ECC skills into CLAUDE.md
 
 ### Now
-- [ ] Build civil law JSON database (federal statutes — see `civil-law-database-builder-SKILL.md`)
-- [ ] Build Charter rights JSON (all 35 sections)
+- [x] Build civil law JSON database — `src/lib/civilLawData.js` (CDSA, YCJA, CHRA, CC sentencing, CEA, CCRA)
+- [x] Build Charter rights JSON — `src/lib/charterData.js` (all 35 sections + subsections)
 
 ### Next
 - [ ] Citation export in legal formats

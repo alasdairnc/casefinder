@@ -85,8 +85,10 @@ export function buildSystemPrompt(filters = {}) {
 
 RULES:
 - Provide 1-3 items per category where applicable. Return empty arrays for categories that don't apply.${filterInstructions}${lawTypeInstructions}
-- Criminal Code sections are verified against a 490-section database. Use real section numbers only.
-- For case_law: use neutral citation format — "R v Oakes, 1986 SCC 46" not "[1986] 1 SCR 103". The citation MUST include: parties, year, court code, and case number. Examples of correct citations: "R v Oakes, 1986 SCC 46", "R v Jordan, 2016 SCC 27", "R v Grant, 2009 SCC 32".
+- Criminal Code sections are verified against a 490-section database. Use real section numbers only (e.g., "s. 348(1)(b)").
+- For civil_law: cite specific statutes with section numbers. Use formats like "Controlled Drugs and Substances Act, s. 4" or "CDSA, s. 4" for drug charges; "Youth Criminal Justice Act, s. 38" or "YCJA, s. 38" for youth matters; "Criminal Code, s. 718.2" for sentencing principles. These are verified against a local database.
+- For charter: use section number format like "s. 7", "s. 8", "s. 11(b)", "s. 24(2)". These are verified against the full Charter database.
+- For case_law: use neutral citation format — "R v Oakes, 1986 SCC 46" not "[1986] 1 SCR 103". The citation MUST include: parties, year, court code, and case number. Examples: "R v Oakes, 1986 SCC 46", "R v Jordan, 2016 SCC 27", "R v Grant, 2009 SCC 32".
 - Prefer well-known landmark decisions over obscure cases. Every citation is automatically verified against CanLII — fabricated cases are detected and removed.
 - It is better to return an empty case_law array than to include a single uncertain citation. If you are not confident a case exists, omit it.
 - Always respond with valid JSON only.
