@@ -97,8 +97,64 @@ export default function Results({ data, scenario }) {
 
       {/* Grouped result sections */}
       {!isOldFormat && SECTIONS.map(({ key, label }) => {
-        const items = data[key];
-        if (!items?.length) return null;
+        const rawItems = data[key];
+        if (!rawItems?.length) return null;
+
+        // For case_law, filter out hallucinated/unverifiable citations once verification completes
+        let items = rawItems;
+        let verificationBanner = null;
+        if (key === "case_law" && Object.keys(verifications).length > 0) {
+          items = rawItems.filter((item) => {
+            const v = verifications[item.citation];
+            if (!v) return true; // not yet verified — keep
+            return v.status === "verified" || v.status === "unverified";
+          });
+          const verified = rawItems.filter((item) => verifications[item.citation]?.status === "verified").length;
+          const removed = rawItems.length - items.length;
+          if (removed > 0) {
+            verificationBanner = (
+              <div style={{
+                fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
+                color: t.accent, marginBottom: 10, lineHeight: 1.5,
+              }}>
+                {verified} of {rawItems.length} citation{rawItems.length !== 1 ? "s" : ""} verified — {removed} unconfirmed removed
+              </div>
+            );
+          } else if (verified === rawItems.length && verified > 0) {
+            verificationBanner = (
+              <div style={{
+                fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
+                color: t.accentGreen, marginBottom: 10, lineHeight: 1.5,
+              }}>
+                {verified} of {verified} citation{verified !== 1 ? "s" : ""} verified on CanLII
+              </div>
+            );
+          }
+        }
+
+        if (!items.length) {
+          // All case_law items were filtered out
+          if (key === "case_law" && rawItems.length > 0) {
+            return (
+              <div key={key} style={{ marginTop: 40 }}>
+                <div style={{
+                  fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
+                  letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
+                }}>
+                  {label}
+                </div>
+                <div style={{
+                  fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
+                  color: t.textTertiary, lineHeight: 1.5,
+                }}>
+                  No case law citations could be verified
+                </div>
+              </div>
+            );
+          }
+          return null;
+        }
+
         return (
           <div key={key} style={{ marginTop: 40 }}>
             <div style={{
@@ -115,6 +171,7 @@ export default function Results({ data, scenario }) {
                 {items.length}
               </span>
             </div>
+            {verificationBanner}
             {items.map((item, i) => (
               <ResultCard
                 key={i}
