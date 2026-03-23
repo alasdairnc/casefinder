@@ -10,6 +10,27 @@ const TEXT = "#2c2825";
 const TEXT_SECONDARY = "#6b6258";
 const BORDER = "#d8d0c4";
 
+// Strip control characters and PDF structure keywords that could corrupt the document.
+// Preserves printable ASCII, \n, \t. Does NOT strip Unicode.
+function sanitizePdfText(str) {
+  if (typeof str !== "string") return "";
+  return str
+    .replace(/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/g, "") // control chars (keep \n \t)
+    .replace(/%%EOF/gi, "")                               // PDF end-of-file marker
+    .slice(0, 20_000);                                    // hard cap per field
+}
+
+// Strip HTML tags and sanitize a string field for PDF insertion.
+function cleanField(str) {
+  if (typeof str !== "string") return "";
+  return sanitizePdfText(str.replace(/<\/?[^>]+>/g, ""));
+}
+
+const MAX_SUMMARY_LEN   = 5_000;
+const MAX_ANALYSIS_LEN  = 10_000;
+const MAX_ARRAY_ITEMS   = 20;
+const MAX_CASE_LAW_ITEMS = 10;
+
 const SECTIONS = [
   { key: "criminal_code", label: "Criminal Code" },
   { key: "case_law", label: "Case Law" },
@@ -41,6 +62,7 @@ export default async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Content-Security-Policy", "default-src 'none'");
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -65,11 +87,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Request body is required" });
   }
 
-  const { summary, criminal_code, case_law, civil_law, charter, analysis, verifications } = body;
+  let { summary, criminal_code, case_law, civil_law, charter, analysis, verifications } = body;
 
   if (!summary && !analysis && !criminal_code && !case_law && !civil_law && !charter) {
     return res.status(400).json({ error: "Results data is required" });
   }
+
+  // Sanitize and cap all text fields before PDF insertion
+  summary  = cleanField(summary).slice(0, MAX_SUMMARY_LEN);
+  analysis = cleanField(analysis).slice(0, MAX_ANALYSIS_LEN);
+  if (Array.isArray(criminal_code)) criminal_code = criminal_code.slice(0, MAX_ARRAY_ITEMS);
+  if (Array.isArray(case_law))      case_law      = case_law.slice(0, MAX_CASE_LAW_ITEMS);
+  if (Array.isArray(civil_law))     civil_law      = civil_law.slice(0, MAX_ARRAY_ITEMS);
+  if (Array.isArray(charter))       charter        = charter.slice(0, MAX_ARRAY_ITEMS);
 
   const verifs = verifications && typeof verifications === "object" ? verifications : {};
   const dateStr = new Date().toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
@@ -154,8 +184,8 @@ export default async function handler(req, res) {
         doc.addPage();
       }
 
-      const citation = item.citation || item.section || "";
-      const summary_text = item.summary || item.description || "";
+      const citation = sanitizePdfText(item.citation || item.section || "");
+      const summary_text = sanitizePdfText(item.summary || item.description || "");
       const isVerified = key === "case_law" && verifs[citation]?.status === "verified";
 
       // Citation line
