@@ -84,10 +84,11 @@ export async function checkRateLimit(ip, endpoint) {
  * Extract the real client IP from Vercel's request headers.
  */
 export function getClientIp(req) {
-  return (
-    req.headers["x-real-ip"] ??
-    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ??
-    req.socket?.remoteAddress ??
-    null
-  );
+  // Vercel sets x-forwarded-for reliably; x-real-ip is not standard on Vercel
+  const forwarded = req.headers["x-forwarded-for"]?.split(",")[0]?.trim();
+  if (forwarded) return forwarded;
+  const remote = req.socket?.remoteAddress;
+  if (remote) return remote;
+  // No identifiable IP — return a fixed key so all anonymous requests share one strict bucket
+  return "unknown";
 }
