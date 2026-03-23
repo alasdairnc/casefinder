@@ -3,6 +3,13 @@
 
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
 import PDFDocument from "pdfkit";
+import {
+  logRequestStart,
+  logRateLimitCheck,
+  logValidationError,
+  logSuccess,
+  logError,
+} from "./_logging.js";
 
 const ACCENT = "#d4a040";
 const BG = "#FAF7F2";
@@ -50,6 +57,9 @@ function drawDivider(doc, margin) {
 }
 
 export default async function handler(req, res) {
+  const requestId = Math.random().toString(36).slice(2, 10);
+  const startMs = Date.now();
+  logRequestStart(req, "export-pdf", requestId);
   const origin = req.headers.origin ?? "";
   const allowed = ["https://casedive.ca", "https://www.casedive.ca", "https://casefinder-project.vercel.app"];
   if (allowed.includes(origin)) {
@@ -69,13 +79,18 @@ export default async function handler(req, res) {
 
   const ct = req.headers["content-type"] || "";
   if (!ct.includes("application/json")) {
+    logValidationError(requestId, "export-pdf", "Invalid Content-Type", "content-type");
     return res.status(415).json({ error: "Content-Type must be application/json" });
   }
 
   const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-  if (contentLength > 200_000) return res.status(413).json({ error: "Request body too large" });
+  if (contentLength > 200_000) {
+    logValidationError(requestId, "export-pdf", "Request body too large", "content-length");
+    return res.status(413).json({ error: "Request body too large" });
+  }
 
   const rlResult = await checkRateLimit(getClientIp(req), "export-pdf");
+  logRateLimitCheck(requestId, "export-pdf", rlResult, getClientIp(req));
   const rlHeaders = rateLimitHeaders(rlResult);
   Object.entries(rlHeaders).forEach(([k, v]) => res.setHeader(k, v));
   if (!rlResult.allowed) {
@@ -84,12 +99,14 @@ export default async function handler(req, res) {
 
   const body = req.body;
   if (!body || typeof body !== "object") {
+    logValidationError(requestId, "export-pdf", "Request body is required", "body");
     return res.status(400).json({ error: "Request body is required" });
   }
 
   let { summary, criminal_code, case_law, civil_law, charter, analysis, verifications } = body;
 
   if (!summary && !analysis && !criminal_code && !case_law && !civil_law && !charter) {
+    logValidationError(requestId, "export-pdf", "Results data is required", "data");
     return res.status(400).json({ error: "Results data is required" });
   }
 
@@ -269,5 +286,7 @@ export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", 'attachment; filename="casedive-analysis.pdf"');
   res.setHeader("Content-Length", pdfBuffer.length);
+  
+  logSuccess(requestId, "export-pdf", 200, Date.now() - startMs, rlResult, { pdfSize: pdfBuffer.length });
   return res.status(200).send(pdfBuffer);
 }

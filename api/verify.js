@@ -13,6 +13,14 @@ import {
 import { lookupSection, normalizeSection } from "../src/lib/criminalCodeData.js";
 import { lookupCharterSection } from "../src/lib/charterData.js";
 import { lookupCivilLawSection } from "../src/lib/civilLawData.js";
+import {
+  logRequestStart,
+  logRateLimitCheck,
+  logValidationError,
+  logExternalApiCall,
+  logSuccess,
+  logError,
+} from "./_logging.js";
 
 // Matches bare Criminal Code section references like "s. 348(1)(b)" or "s. 7"
 // (no statute name prefix — those are handled by civil law lookup)
@@ -25,6 +33,9 @@ const CHARTER_PATTERN = /^(canadian\s+)?charter(\s+of\s+rights\s+and\s+freedoms)
 const CIVIL_LAW_PATTERN = /\b(CDSA|YCJA|CHRA|CEA|CCRA|controlled drugs|youth criminal justice|canadian human rights|canada evidence|corrections and conditional release|criminal code)\b/i;
 
 export default async function handler(req, res) {
+  const requestId = Math.random().toString(36).slice(2, 10);
+  const startMs = Date.now();
+  logRequestStart(req, "verify", requestId);
   const origin = req.headers.origin ?? "";
   const allowed = ["https://casedive.ca", "https://www.casedive.ca", "https://casefinder-project.vercel.app"];
   if (allowed.includes(origin)) {
@@ -44,13 +55,18 @@ export default async function handler(req, res) {
 
   const ct = req.headers["content-type"] || "";
   if (!ct.includes("application/json")) {
+    logValidationError(requestId, "verify", "Invalid Content-Type", "content-type");
     return res.status(415).json({ error: "Content-Type must be application/json" });
   }
 
   const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-  if (contentLength > 50_000) return res.status(413).json({ error: "Request body too large" });
+  if (contentLength > 50_000) {
+    logValidationError(requestId, "verify", "Request body too large", "content-length");
+    return res.status(413).json({ error: "Request body too large" });
+  }
 
   const rlResult = await checkRateLimit(getClientIp(req));
+  logRateLimitCheck(requestId, "verify", rlResult, getClientIp(req));
   const rlHeaders = rateLimitHeaders(rlResult);
   Object.entries(rlHeaders).forEach(([k, v]) => res.setHeader(k, v));
   if (!rlResult.allowed) {
@@ -60,9 +76,11 @@ export default async function handler(req, res) {
   const { citations } = req.body;
 
   if (!Array.isArray(citations) || citations.length === 0) {
+    logValidationError(requestId, "verify", "citations array is required", "citations");
     return res.status(400).json({ error: "citations array is required" });
   }
   if (citations.length > 10) {
+    logValidationError(requestId, "verify", "Too many citations", "citations");
     return res.status(400).json({ error: "Maximum 10 citations per request." });
   }
 
@@ -172,7 +190,10 @@ export default async function handler(req, res) {
       }
 
       try {
+        const apiStartMs = Date.now();
         const apiRes = await fetch(buildApiUrl(parsed.dbId, caseId, apiKey));
+        const apiDurationMs = Date.now() - apiStartMs;
+        logExternalApiCall(requestId, "verify", "canlii", apiRes.status, apiDurationMs);
 
         if (apiRes.status === 404) {
           results[citation] = { status: "not_found", searchUrl };
@@ -195,11 +216,13 @@ export default async function handler(req, res) {
           searchUrl,
           title: data.title || citation,
         };
-      } catch {
+      } catch (err) {
+        logError(requestId, "verify", err, 500, 0, { citationIndex: citations.indexOf(rawCitation) });
         results[citation] = { status: "error", searchUrl };
       }
     })
   );
 
+  logSuccess(requestId, "verify", 200, Date.now() - startMs, rlResult, { citationsProcessed: citations.length });
   return res.status(200).json(results);
 }
