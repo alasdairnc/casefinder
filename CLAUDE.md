@@ -148,7 +148,13 @@ Local: `.env.local` (gitignored). Production: set in Vercel dashboard.
 
 ## Skills System
 
-Read the relevant skill file BEFORE starting any task in these categories. Skills are in `Skills/` (custom) and `Skills/ecc/` (community).
+Read the relevant skill file BEFORE starting any non-trivial task. Skills are in `Skills/` (custom) and `Skills/ecc/` (community).
+
+Default routing order:
+1. Match the task to a CaseFinder custom skill if one exists.
+2. Layer 1-2 ECC skills for the engineering concern (API, security, UI, testing, deployment).
+3. Run the matching command after the change (`/verify`, `/security-scan`).
+4. If multiple skills apply, custom skills win on domain rules and ECC skills fill in engineering patterns.
 
 ### Custom CaseFinder Skills (always read first)
 
@@ -159,25 +165,63 @@ Read the relevant skill file BEFORE starting any task in these categories. Skill
 | Updating Claude system prompt | `Skills/canlii-prompt-engineering-SKILL.md` | Any work on `src/lib/prompts.js`. Has citation format requirements (neutral citation only: YYYY COURT #), example outputs, evaluation criteria, iteration workflow. |
 | Building civil law / Charter databases | `Skills/civil-law-database-builder-SKILL.md` | Any work on civil law JSON, Charter data, or federal statute references. Has federal statutes checklist, JSON template, provincial structure, relevance mapping. |
 
-### ECC Skills (read when relevant)
+### Primary ECC Skills
 
-| Task | Skill | Path |
-|------|-------|------|
-| Building/modifying API endpoints | `api-design` | `Skills/ecc/api-design/SKILL.md` |
-| React component work | `frontend-patterns` | `Skills/ecc/frontend-patterns/SKILL.md` |
-| Claude API calls or SDK usage | `claude-api` | `Skills/ecc/claude-api/SKILL.md` |
-| Security hardening, input validation | `security-review` | `Skills/ecc/security-review/SKILL.md` |
-| E2E testing with Playwright | `e2e-testing` | `Skills/ecc/e2e-testing/SKILL.md` |
-| Deployment, CI/CD, Vercel | `deployment-patterns` | `Skills/ecc/deployment-patterns/SKILL.md` |
-| Post-feature verification | `verification-loop` | `Skills/ecc/verification-loop/SKILL.md` |
-| Prompt optimization | `prompt-optimizer` | `Skills/ecc/prompt-optimizer/SKILL.md` |
+| Skill | Use it for | Path |
+|------|------------|------|
+| `api-design` | REST response shapes, status codes, validation errors, rate-limit contracts | `Skills/ecc/api-design/SKILL.md` |
+| `backend-patterns` | Caching, middleware, logging, retry flow, server-side structure in `api/` | `Skills/ecc/backend-patterns/SKILL.md` |
+| `frontend-patterns` | React component work, state flow, rendering, accessibility, responsive behavior | `Skills/ecc/frontend-patterns/SKILL.md` |
+| `claude-api` | Anthropic request shape, model choice, streaming, retries, SDK/API usage | `Skills/ecc/claude-api/SKILL.md` |
+| `security-review` | Input validation, secrets, CORS, third-party API calls, endpoint hardening | `Skills/ecc/security-review/SKILL.md` |
+| `e2e-testing` | Playwright tests, flows, fixtures, flaky test cleanup | `Skills/ecc/e2e-testing/SKILL.md` |
+| `deployment-patterns` | Vercel release flow, env setup, rollout checks, production readiness | `Skills/ecc/deployment-patterns/SKILL.md` |
+| `verification-loop` | Final build/test/security pass after meaningful code changes | `Skills/ecc/verification-loop/SKILL.md` |
+
+### Situational ECC Skills
+
+| Skill | Use it for | Path |
+|------|------------|------|
+| `search-first` | Researching dependencies or existing solutions before building custom code | `Skills/ecc/search-first/SKILL.md` |
+| `documentation-lookup` | Current library docs for React, Vite, Playwright, Vercel, Anthropic, Upstash, etc. | `Skills/ecc/documentation-lookup/SKILL.md` |
+| `click-path-audit` | Buttons, modals, toggles, or multi-step UI flows that behave inconsistently | `Skills/ecc/click-path-audit/SKILL.md` |
+| `ai-regression-testing` | Regression coverage after AI-edited API routes, JSON contracts, or backend logic | `Skills/ecc/ai-regression-testing/SKILL.md` |
+| `cost-aware-llm-pipeline` | Model routing, budget control, retry policy, prompt caching, latency/cost tradeoffs | `Skills/ecc/cost-aware-llm-pipeline/SKILL.md` |
+| `security-scan` | Scanning `.claude/` skills, commands, settings, and hooks for config risk | `Skills/ecc/security-scan/SKILL.md` |
+| `codebase-onboarding` | New contributors, fresh agent sessions, repo walkthroughs, CLAUDE.md refreshes | `Skills/ecc/codebase-onboarding/SKILL.md` |
+| `prompt-optimizer` | Rewriting prompts when the user wants prompt help, not direct implementation | `Skills/ecc/prompt-optimizer/SKILL.md` |
+| `skill-stocktake` | Auditing the quality and overlap of installed Claude skills/commands | `Skills/ecc/skill-stocktake/SKILL.md` |
+
+### Task-to-Skill Routing
+
+| Task or files | Read first | Layer next | Finish with |
+|---------------|------------|------------|-------------|
+| `api/analyze.js`, `api/case-summary.js`, `api/export-pdf.js` | `security-review` | `claude-api`, `api-design`, `backend-patterns`; add `cost-aware-llm-pipeline` when changing model/cost/cache/retry logic | `/verify` |
+| `api/verify.js`, `src/lib/canlii.js` | `canlii-case-verification` | `api-design`, `security-review`, `backend-patterns` | `/verify` |
+| `src/lib/prompts.js` or prompt quality/citation formatting work | `canlii-prompt-engineering` | `claude-api`; use `prompt-optimizer` only when the user wants help rewriting the prompt itself | `/verify` if code changed |
+| `criminalCodeData.js` or Criminal Code enrichment | `criminal-code-builder` | `search-first` only if adding new ingestion/scraping tooling | `/verify` if app behavior changed |
+| `src/lib/civilLawData.js`, `src/lib/charterData.js` | `civil-law-database-builder` | `search-first` only if changing sourcing/build workflow | `/verify` if app behavior changed |
+| `src/components/*`, `src/App.jsx`, `src/index.css` | `frontend-patterns` | `click-path-audit` for state bugs, `e2e-testing` for user flows | `/verify` |
+| New dependency, SDK, or external integration | `search-first` | `documentation-lookup`, `security-review` | `/verify` |
+| `.claude/commands/*`, `.claude/skills/*`, `CLAUDE.md`, agent config | `security-scan` | `skill-stocktake` for broad skill audits, `codebase-onboarding` when refreshing repo guidance | `/security-scan` |
+| Vercel config, deploy flow, env changes | `deployment-patterns` | `security-review` | `/verify` |
+| First session in the repo or handoff to a new agent | `codebase-onboarding` | Then route to the relevant custom/ECC skill above | none |
 
 ### Skill Usage Rules
 
 1. **Read before coding.** Open the skill file, scan for the section matching your task, then proceed.
 2. **Custom skills override ECC skills.** If `criminal-code-builder` and `api-design` both apply, follow `criminal-code-builder` for domain-specific patterns and `api-design` for general REST conventions.
-3. **Validation checklists are mandatory.** Every custom skill has one. Run through it before committing.
-4. **Don't skip the test cases.** `canlii-case-verification` has real SCC citations for testing — use them.
+3. **Keep the active stack small.** Default to one custom skill plus one or two ECC skills unless the task truly spans multiple domains.
+4. **Use `security-review` for app code and `security-scan` for `.claude/` config.** They are not interchangeable.
+5. **Use `prompt-optimizer` only for prompt rewriting.** If the user wants the code changed directly, implement the change instead.
+6. **Validation checklists are mandatory.** Every custom skill has one. Run through it before committing.
+7. **Don't skip the test cases.** `canlii-case-verification` has real SCC citations for testing — use them.
+
+### Preferred Commands
+
+- `/verify` after API, UI, prompt, data, or deployment changes.
+- `/security-scan` after changing `.claude/` files or before pushing agent config.
+- `/prompt-optimizer` only when the task is "improve this prompt" rather than "make the change."
 
 ---
 
