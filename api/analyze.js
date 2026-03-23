@@ -4,6 +4,16 @@
 import { createHash } from "crypto";
 import { buildSystemPrompt } from "../src/lib/prompts.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders, redis } from "./_rateLimit.js";
+import {
+  logRequestStart,
+  logRateLimitCheck,
+  logValidationError,
+  logCacheHit,
+  logCacheMiss,
+  logExternalApiCall,
+  logSuccess,
+  logError,
+} from "./_logging.js";
 
 // Strip XML-like tags from user input to prevent delimiter escape.
 // Uses [^>\s]* instead of [^>]* to avoid catastrophic backtracking (ReDoS).
@@ -85,6 +95,7 @@ async function analyzeWithRetry(scenario, filters, apiKey) {
 export default async function handler(req, res) {
   const requestId = Math.random().toString(36).slice(2, 10);
   const startMs = Date.now();
+  logRequestStart(req, "analyze", requestId);
   const origin = req.headers.origin ?? "";
   const allowed = ["https://casedive.ca", "https://www.casedive.ca", "https://casefinder-project.vercel.app"];
   if (allowed.includes(origin)) {
@@ -104,13 +115,18 @@ export default async function handler(req, res) {
 
   const ct = req.headers["content-type"] || "";
   if (!ct.includes("application/json")) {
+    logValidationError(requestId, "analyze", "Invalid Content-Type", "content-type");
     return res.status(415).json({ error: "Content-Type must be application/json" });
   }
 
   const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-  if (contentLength > 50_000) return res.status(413).json({ error: "Request body too large" });
+  if (contentLength > 50_000) {
+    logValidationError(requestId, "analyze", "Request body too large", "content-length");
+    return res.status(413).json({ error: "Request body too large" });
+  }
 
   const rlResult = await checkRateLimit(getClientIp(req), "analyze");
+  logRateLimitCheck(requestId, "analyze", rlResult, getClientIp(req));
   const rlHeaders = rateLimitHeaders(rlResult);
   Object.entries(rlHeaders).forEach(([k, v]) => res.setHeader(k, v));
   if (!rlResult.allowed) {
@@ -124,9 +140,11 @@ export default async function handler(req, res) {
   const { scenario, filters: rawFilters } = req.body;
 
   if (!scenario || typeof scenario !== "string" || !scenario.trim()) {
+    logValidationError(requestId, "analyze", "Scenario is required", "scenario");
     return res.status(400).json({ error: "Scenario is required" });
   }
   if (scenario.length > 5000) {
+    logValidationError(requestId, "analyze", "Scenario too long", "scenario");
     return res.status(400).json({ error: "Scenario must be 5,000 characters or fewer." });
   }
 
@@ -158,18 +176,28 @@ export default async function handler(req, res) {
     // Check cache first
     if (redis) {
       try {
-        const cached = await redis.get(cacheKey(scenario, filters));
-        if (cached) return res.status(200).json(typeof cached === "string" ? JSON.parse(cached) : cached);
+        const cacheKeyStr = cacheKey(scenario, filters);
+        const cached = await redis.get(cacheKeyStr);
+        if (cached) {
+          logCacheHit(requestId, "analyze", cacheKeyStr);
+          logSuccess(requestId, "analyze", 200, Date.now() - startMs, rlResult, { cacheUsed: true });
+          return res.status(200).json(typeof cached === "string" ? JSON.parse(cached) : cached);
+        }
+        logCacheMiss(requestId, "analyze");
       } catch { /* cache miss — proceed normally */ }
     }
 
+    const anthropicStartMs = Date.now();
     const { result, raw, retryRaw } = await analyzeWithRetry(
       scenario,
       filters,
       process.env.ANTHROPIC_API_KEY
     );
+    const anthropicDurationMs = Date.now() - anthropicStartMs;
+    logExternalApiCall(requestId, "analyze", "anthropic", 200, anthropicDurationMs, { retried: !!retryRaw });
 
     if (!result) {
+      logValidationError(requestId, "analyze", "AI returned unstructured response", "ai_output");
       return res.status(422).json({
         error:
           "The AI returned an unstructured response for this scenario. Try adding more detail — specify the location, what happened, and any relevant context.",
@@ -181,14 +209,13 @@ export default async function handler(req, res) {
       redis.setex(cacheKey(scenario, filters), CACHE_TTL_S, JSON.stringify(result)).catch(() => {});
     }
 
+    logSuccess(requestId, "analyze", 200, Date.now() - startMs, rlResult, { cached: true });
     return res.status(200).json(result);
   } catch (err) {
-    console.error(JSON.stringify({
-      requestId, event: "analyze_error", durationMs: Date.now() - startMs,
-      status: err.status, message: err.message,
-    }));
+    const statusCode = err.status ? (err.status >= 500 ? 502 : err.status) : 500;
+    logError(requestId, "analyze", err, statusCode, Date.now() - startMs);
     if (err.status) {
-      return res.status(err.status >= 500 ? 502 : err.status).json({ error: "Analysis service temporarily unavailable." });
+      return res.status(statusCode).json({ error: "Analysis service temporarily unavailable." });
     }
     return res.status(500).json({ error: "Internal server error" });
   }
