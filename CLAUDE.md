@@ -27,6 +27,7 @@ casefinder/
 │   ├── components/
 │   │   ├── BookmarksPanel.jsx   # Bottom-sheet saved citations panel
 │   │   ├── CaseSummaryModal.jsx # Modal for detailed case view
+│   │   ├── CriminalCodeExplorer.jsx # Bottom-sheet Criminal Code browser with search/filters
 │   │   ├── ErrorMessage.jsx
 │   │   ├── FiltersPanel.jsx
 │   │   ├── Header.jsx           # Top bar with theme toggle, bookmarks, coffee link
@@ -39,6 +40,7 @@ casefinder/
 │   ├── hooks/
 │   │   ├── useBookmarks.js      # localStorage bookmarks, 30-day TTL, max 50
 │   │   ├── useSearchHistory.js  # localStorage history, 7-day TTL
+│   │   ├── useCriminalCodeSearch.js # Search + filter hook for Criminal Code explorer
 │   │   └── useTypewriter.js     # Character-by-character text animation
 │   ├── lib/
 │   │   ├── ThemeContext.jsx     # Theme provider + useTheme hook
@@ -46,7 +48,7 @@ casefinder/
 │   │   ├── constants.js        # Filter options, default law types
 │   │   ├── charterData.js      # 35 Charter sections + subsections with relevance mapping
 │   │   ├── civilLawData.js     # CDSA, YCJA, CHRA, CC sentencing, CEA, CCRA
-│   │   ├── criminalCodeData.js # 490 sections, 46 enriched with definitions/defences
+│   │   ├── criminalCodeData.js # 1516 sections from Justice Laws XML, 46 enriched with definitions/defences
 │   │   ├── prompts.js          # System prompt builder for Claude
 │   │   ├── themes.js           # Light/dark theme objects
 │   │   └── validateUrl.js      # URL validation utility
@@ -248,21 +250,17 @@ Default routing order:
 - [x] Rate limit headers (`X-RateLimit-*`, `Retry-After`) on all endpoints
 - [x] Structured JSON logging on analyze.js
 - [x] Distilled rules from ECC skills into CLAUDE.md
-
-### Now
 - [x] Build civil law JSON database — `src/lib/civilLawData.js` (CDSA, YCJA, CHRA, CC sentencing, CEA, CCRA)
 - [x] Build Charter rights JSON — `src/lib/charterData.js` (all 35 sections + subsections)
+- [x] Citation export in legal formats (PDF, plain text, clipboard)
+- [x] Vercel Analytics
+- [x] SEO + Open Graph meta improvements
+- [x] Embedded case viewer modal (CaseSummaryModal — Claude-generated summaries for case law cards)
+- [x] Search within Criminal Code — full Criminal Code database (1516 sections from Justice Laws XML) + CriminalCodeExplorer bottom-sheet with search, severity/Part filters
 
 ### Next
-- [ ] Citation export in legal formats
-- [ ] Vercel Analytics
-- [ ] SEO + Open Graph meta improvements
-
-### Later
 - [ ] Provincial court expansion (ONCA, BCCA, FCA)
 - [ ] Provincial statutes in civil law database
-- [ ] Embedded case viewer modal
-- [ ] Search within Criminal Code
 - [ ] B2B outreach to law schools / legal aid
 
 ---

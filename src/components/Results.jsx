@@ -295,7 +295,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
           items = rawItems.filter((item) => {
             const v = verifications[item.citation];
             if (!v) return true; // not yet verified — keep
-            return v.status !== "unparseable"; // only remove citations we couldn't parse at all
+            return v.status !== "unparseable" && v.status !== "not_found"; // remove unverifiable citations
           });
           const verified = rawItems.filter((item) => verifications[item.citation]?.status === "verified").length;
           const removed = rawItems.length - items.length;

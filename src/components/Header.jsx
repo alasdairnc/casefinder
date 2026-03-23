@@ -1,6 +1,6 @@
 import { useTheme, useThemeActions } from "../lib/ThemeContext.jsx";
 
-export default function Header({ bookmarkCount = 0, onOpenBookmarks }) {
+export default function Header({ bookmarkCount = 0, onOpenBookmarks, onOpenCodeExplorer }) {
   const t = useTheme();
   const { isDark, toggleTheme } = useThemeActions();
 
@@ -59,6 +59,24 @@ export default function Header({ bookmarkCount = 0, onOpenBookmarks }) {
                   {bookmarkCount > 9 ? "9+" : bookmarkCount}
                 </span>
               )}
+            </button>
+          )}
+          {onOpenCodeExplorer && (
+            <button
+              onClick={onOpenCodeExplorer}
+              aria-label="Criminal Code Explorer"
+              style={{
+                background: "none", border: `1px solid ${t.border}`,
+                color: t.textSecondary, cursor: "pointer",
+                padding: "8px 14px", fontFamily: "'Helvetica Neue', sans-serif",
+                fontSize: 12, letterSpacing: 1, display: "flex",
+                alignItems: "center", gap: 6, transition: "all 0.2s",
+              }}
+            >
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 14, fontWeight: 700 }}>§</span>
+              <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 2 }}>
+                Code
+              </span>
             </button>
           )}
           <a
