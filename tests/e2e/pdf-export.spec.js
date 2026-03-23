@@ -65,6 +65,7 @@ test.describe("PDF Export", () => {
     await page.waitForTimeout(500);
     expect(pdfRequested).toBe(true);
     expect(pdfPayload).toEqual({
+      scenario: "A person broke into a house at night and stole jewelry",
       summary: "A person entered a residential property at night without permission and stole jewelry.",
       criminal_code: [
         {

@@ -9,6 +9,7 @@ import Results from "./components/Results.jsx";
 import ErrorMessage from "./components/ErrorMessage.jsx";
 import SearchHistory from "./components/SearchHistory.jsx";
 import BookmarksPanel from "./components/BookmarksPanel.jsx";
+import CriminalCodeExplorer from "./components/CriminalCodeExplorer.jsx";
 import { useSearchHistory } from "./hooks/useSearchHistory.js";
 import { useBookmarks } from "./hooks/useBookmarks.js";
 
@@ -42,6 +43,7 @@ function AppInner() {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const [codeExplorerOpen, setCodeExplorerOpen] = useState(false);
   const [filters, setFilters] = useState({
     jurisdiction: "all",
     courtLevel: "all",
@@ -114,7 +116,7 @@ function AppInner() {
         }
       `}</style>
 
-      <Header bookmarkCount={bookmarks.length} onOpenBookmarks={() => setBookmarksOpen(true)} />
+      <Header bookmarkCount={bookmarks.length} onOpenBookmarks={() => setBookmarksOpen(true)} onOpenCodeExplorer={() => setCodeExplorerOpen(true)} />
       <FiltersPanel
         filters={filters} setFilters={setFilters}
         filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen}
@@ -214,6 +216,10 @@ function AppInner() {
           clearBookmarks={clearBookmarks}
           onClose={() => setBookmarksOpen(false)}
         />
+      )}
+
+      {codeExplorerOpen && (
+        <CriminalCodeExplorer onClose={() => setCodeExplorerOpen(false)} />
       )}
 
       {historyOpen && (
