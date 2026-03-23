@@ -2,6 +2,12 @@
 name: database-migration
 description: Workflow command scaffold for database-migration in everything-claude-code.
 allowed_tools: ["Bash", "Read", "Write", "Grep", "Glob"]
+version: "1.0.0"
+rollback: "delete the migration file and revert schema changes"
+observation_hooks:
+  - verify: "ls migrations/ | tail -1"
+feedback_hooks:
+  - on_failure: "check migration file syntax and schema consistency"
 ---
 
 # /database-migration

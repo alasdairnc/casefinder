@@ -1,6 +1,12 @@
 // /api/case-summary.js — Generate structured case summary via Claude
 import { checkRateLimit, getClientIp } from "./_rateLimit.js";
 
+// Strip XML-like tags from user input to prevent delimiter escape
+function sanitizeUserInput(input) {
+  if (typeof input !== "string") return input;
+  return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>]*)?>/g, "");
+}
+
 const ALLOWED_ORIGINS = ["https://casedive.ca", "https://casefinder-project.vercel.app"];
 
 async function callAnthropic(prompt, apiKey) {
@@ -51,13 +57,17 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  const ct = req.headers["content-type"] || "";
+  if (!ct.includes("application/json")) {
+    return res.status(415).json({ error: "Content-Type must be application/json" });
+  }
+
   const contentLength = parseInt(req.headers["content-length"] || "0", 10);
   if (contentLength > 50_000) return res.status(413).json({ error: "Request body too large" });
 
   const { allowed: rateLimitAllowed, resetAt } = await checkRateLimit(getClientIp(req), "case-summary");
   if (!rateLimitAllowed) {
-    res.setHeader("Retry-After", resetAt);
-    return res.status(429).json({ error: `Rate limit exceeded. Try again after ${resetAt}.` });
+    return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
   }
 
   const { citation, title, court, year, summary, matchedContent, scenario } = req.body || {};
@@ -69,6 +79,9 @@ export default async function handler(req, res) {
   const MAX_LENGTHS = { title: 300, court: 100, year: 10, summary: 2000, matchedContent: 3000, scenario: 5000 };
   const body = req.body || {};
   for (const [field, max] of Object.entries(MAX_LENGTHS)) {
+    if (body[field] !== undefined && typeof body[field] !== "string") {
+      return res.status(400).json({ error: `${field} must be a string` });
+    }
     if (body[field] && body[field].length > max) {
       return res.status(400).json({ error: `${field} too long` });
     }
@@ -76,13 +89,13 @@ export default async function handler(req, res) {
 
   const prompt = [
     `<user_input>`,
-    `Citation: ${citation}`,
-    title ? `Title: ${title}` : null,
-    court ? `Court: ${court}` : null,
-    year ? `Year: ${year}` : null,
-    summary ? `Existing summary: ${summary}` : null,
-    matchedContent ? `Matched context: ${matchedContent}` : null,
-    scenario ? `User scenario: ${scenario}` : null,
+    `Citation: ${sanitizeUserInput(citation)}`,
+    title ? `Title: ${sanitizeUserInput(title)}` : null,
+    court ? `Court: ${sanitizeUserInput(court)}` : null,
+    year ? `Year: ${sanitizeUserInput(year)}` : null,
+    summary ? `Existing summary: ${sanitizeUserInput(summary)}` : null,
+    matchedContent ? `Matched context: ${sanitizeUserInput(matchedContent)}` : null,
+    scenario ? `User scenario: ${sanitizeUserInput(scenario)}` : null,
     `</user_input>`,
   ]
     .filter(Boolean)

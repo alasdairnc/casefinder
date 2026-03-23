@@ -71,9 +71,18 @@ export async function checkRateLimit(ip, endpoint) {
   store.set(key, hits);
 
   // Prune old entries to avoid unbounded memory growth
-  if (store.size > 10_000) {
+  if (store.size > 1_000) {
+    // Remove expired entries first
     for (const [k, v] of store) {
       if (v.every((t) => now - t >= WINDOW_MS)) store.delete(k);
+    }
+    // If still over limit, evict oldest entries (LRU)
+    if (store.size > 1_000) {
+      const excess = store.size - 1_000;
+      const keys = store.keys();
+      for (let i = 0; i < excess; i++) {
+        store.delete(keys.next().value);
+      }
     }
   }
 

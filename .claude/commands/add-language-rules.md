@@ -2,6 +2,12 @@
 name: add-language-rules
 description: Workflow command scaffold for add-language-rules in everything-claude-code.
 allowed_tools: ["Bash", "Read", "Write", "Grep", "Glob"]
+version: "1.0.0"
+rollback: "delete rules/{language}/ directory to revert"
+observation_hooks:
+  - verify: "ls rules/{language}/*.md | wc -l"
+feedback_hooks:
+  - on_failure: "review missing rule files under rules/{language}/"
 ---
 
 # /add-language-rules

@@ -32,13 +32,17 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  const ct = req.headers["content-type"] || "";
+  if (!ct.includes("application/json")) {
+    return res.status(415).json({ error: "Content-Type must be application/json" });
+  }
+
   const contentLength = parseInt(req.headers["content-length"] || "0", 10);
   if (contentLength > 50_000) return res.status(413).json({ error: "Request body too large" });
 
   const { allowed: rateLimitAllowed, resetAt } = await checkRateLimit(getClientIp(req));
   if (!rateLimitAllowed) {
-    res.setHeader("Retry-After", resetAt);
-    return res.status(429).json({ error: `Rate limit exceeded. Try again after ${resetAt}.` });
+    return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
   }
 
   const { citations } = req.body;
@@ -54,9 +58,15 @@ export default async function handler(req, res) {
   const results = {};
 
   await Promise.all(
-    citations.map(async (citation) => {
-      if (!citation || typeof citation !== "string") {
-        results[citation] = { status: "unparseable", searchUrl: buildSearchUrl(citation || "") };
+    citations.map(async (rawCitation) => {
+      if (!rawCitation || typeof rawCitation !== "string") {
+        results[rawCitation] = { status: "unparseable", searchUrl: buildSearchUrl(rawCitation || "") };
+        return;
+      }
+      // Sanitize: enforce length limit and strip non-printable characters
+      const citation = rawCitation.slice(0, 500).replace(/[\x00-\x1F\x7F]/g, "").trim();
+      if (!citation) {
+        results[rawCitation] = { status: "unparseable", searchUrl: buildSearchUrl("") };
         return;
       }
 

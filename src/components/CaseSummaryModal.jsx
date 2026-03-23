@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "../lib/ThemeContext.jsx";
+import { isValidUrl } from "../lib/validateUrl.js";
 
 function Skeleton({ width = "100%", height = 14, style = {} }) {
   const t = useTheme();
@@ -128,7 +129,7 @@ export default function CaseSummaryModal({ item, canliiUrl, scenario, onClose })
     return () => { cancelled = true; };
   }, [item.citation]);
 
-  const viewUrl = canliiUrl || null;
+  const viewUrl = isValidUrl(canliiUrl) ? canliiUrl : null;
 
   // Mobile: full-width bottom sheet; desktop: centered card
   const [isMobile, setIsMobile] = useState(() =>

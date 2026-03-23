@@ -2,6 +2,12 @@
 name: feature-development
 description: Workflow command scaffold for feature-development in everything-claude-code.
 allowed_tools: ["Bash", "Read", "Write", "Grep", "Glob"]
+version: "1.0.0"
+rollback: "revert feature files and remove associated tests"
+observation_hooks:
+  - verify: "npm test -- --passWithNoTests"
+feedback_hooks:
+  - on_failure: "check test output and implementation for regressions"
 ---
 
 # /feature-development

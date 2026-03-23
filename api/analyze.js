@@ -5,6 +5,11 @@ import { createHash } from "crypto";
 import { buildSystemPrompt } from "../src/lib/prompts.js";
 import { checkRateLimit, getClientIp, redis } from "./_rateLimit.js";
 
+// Strip XML-like tags from user input to prevent delimiter escape
+function sanitizeUserInput(input) {
+  return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>]*)?>/g, "");
+}
+
 const CACHE_TTL_S = 60 * 60 * 24; // 24 hours
 
 function cacheKey(scenario, filters) {
@@ -46,7 +51,8 @@ async function callAnthropic(messages, system, apiKey) {
 
 async function analyzeWithRetry(scenario, filters, apiKey) {
   const system = buildSystemPrompt(filters || {});
-  const messages = [{ role: "user", content: scenario }];
+  const sanitized = sanitizeUserInput(scenario);
+  const messages = [{ role: "user", content: `<user_input>\n${sanitized}\n</user_input>` }];
 
   // First attempt
   const raw = await callAnthropic(messages, system, apiKey);
@@ -92,13 +98,17 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  const ct = req.headers["content-type"] || "";
+  if (!ct.includes("application/json")) {
+    return res.status(415).json({ error: "Content-Type must be application/json" });
+  }
+
   const contentLength = parseInt(req.headers["content-length"] || "0", 10);
   if (contentLength > 50_000) return res.status(413).json({ error: "Request body too large" });
 
   const { allowed: rateLimitAllowed, remaining, resetAt } = await checkRateLimit(getClientIp(req), "analyze");
   if (!rateLimitAllowed) {
-    res.setHeader("Retry-After", resetAt);
-    return res.status(429).json({ error: `Rate limit exceeded. Try again after ${resetAt}.` });
+    return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
   }
 
   const { scenario, filters: rawFilters } = req.body;

@@ -1,4 +1,5 @@
 import { useTheme } from "../lib/ThemeContext.jsx";
+import { isValidUrl } from "../lib/validateUrl.js";
 
 function VerificationBadge({ verification, t, type }) {
   if (!verification) return null;
@@ -6,10 +7,12 @@ function VerificationBadge({ verification, t, type }) {
   const { status, url, searchUrl } = verification;
 
   if (status === "verified") {
+    const safeUrl = isValidUrl(url) ? url : null;
+    if (!safeUrl) return null;
     const label = type === "criminal_code" ? "Confirmed — Justice Laws" : "Verified on CanLII";
     return (
       <a
-        href={url}
+        href={safeUrl}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -25,12 +28,14 @@ function VerificationBadge({ verification, t, type }) {
   }
 
   if (status === "not_found") {
+    const safeSearchUrl = isValidUrl(searchUrl) ? searchUrl : null;
+    if (!safeSearchUrl) return null;
     const label = type === "criminal_code"
       ? "Section not confirmed — check Justice Laws"
       : "Not found — search CanLII";
     return (
       <a
-        href={searchUrl}
+        href={safeSearchUrl}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -45,7 +50,7 @@ function VerificationBadge({ verification, t, type }) {
     );
   }
 
-  const href = url || searchUrl;
+  const href = (isValidUrl(url) && url) || (isValidUrl(searchUrl) && searchUrl);
   if (!href) return null;
   return (
     <a

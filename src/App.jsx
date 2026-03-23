@@ -83,7 +83,7 @@ function AppInner() {
       setError(
         err.message?.includes("parse")
           ? "The AI response couldn't be parsed. Try rephrasing your scenario with more detail."
-          : `Something went wrong: ${err.message}`
+          : "Something went wrong. Please try again."
       );
     } finally {
       setLoading(false);
