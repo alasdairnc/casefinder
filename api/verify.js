@@ -37,8 +37,11 @@ const CIVIL_LAW_PATTERN = /\b(CDSA|YCJA|CHRA|CEA|CCRA|controlled drugs|youth cri
 // Returns the first matching case object, or null if not found / API error.
 async function searchCanLII(dbId, parties, year, apiKey) {
   const query = encodeURIComponent(`${parties} ${year}`);
-  const url = `https://api.canlii.org/v1/caseBrowse/en/${dbId}/?keyword=${query}&resultCount=5&api_key=${encodeURIComponent(apiKey)}`;
-  const apiRes = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  const url = `https://api.canlii.org/v1/cases?db=${dbId}&keywords=${query}`;
+  const apiRes = await fetch(url, {
+    headers: { Authorization: `apikey ${apiKey}` },
+    signal: AbortSignal.timeout(8000),
+  });
   if (!apiRes.ok) return null;
   const ct = apiRes.headers.get("content-type") || "";
   if (!ct.includes("application/json")) return null;
@@ -46,7 +49,7 @@ async function searchCanLII(dbId, parties, year, apiKey) {
   const cases = data?.cases;
   if (!Array.isArray(cases) || cases.length === 0) return null;
   // Prefer a case whose ID starts with the expected year (most relevant match)
-  return cases.find((c) => String(c.caseId || "").startsWith(year)) || null;
+  return cases.find((c) => String(c.caseId || "").startsWith(year)) || cases[0] || null;
 }
 
 export default async function handler(req, res) {
