@@ -206,7 +206,7 @@ export default defineConfig(({ mode }) => {
             const { parseCitation, buildCaseId, buildApiUrl, buildCaseUrl, buildSearchUrl } =
               await import("./src/lib/canlii.js");
 
-            const apiKey = env.CANLII_API_KEY || "";
+            const apiKey = process.env.CANLII_API_KEY || "";
             const results = [];
 
             await Promise.all(
