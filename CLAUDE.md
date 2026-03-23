@@ -21,32 +21,34 @@ casefinder/
 ├── api/
 │   ├── _rateLimit.js           # Sliding-window rate limiter (Upstash Redis)
 │   ├── analyze.js              # POST /api/analyze — Claude API call
-│   └── verify.js               # POST /api/verify — CanLII citation check
+│   ├── verify.js               # POST /api/verify — CanLII citation check
+│   └── export-pdf.js           # POST /api/export-pdf — branded PDF generation
 ├── src/
 │   ├── components/
-│   │   ├── Header.jsx
-│   │   ├── FiltersPanel.jsx
-│   │   ├── SearchArea.jsx
-│   │   ├── StagedLoading.jsx
-│   │   ├── Results.jsx
-│   │   ├── ChargeCard.jsx
-│   │   ├── CaseCard.jsx
-│   │   ├── RelatedCharges.jsx
-│   │   ├── SentencingPanel.jsx
-│   │   ├── SearchHistory.jsx
+│   │   ├── BookmarksPanel.jsx   # Bottom-sheet saved citations panel
+│   │   ├── CaseSummaryModal.jsx # Modal for detailed case view
 │   │   ├── ErrorMessage.jsx
-│   │   └── Select.jsx
+│   │   ├── FiltersPanel.jsx
+│   │   ├── Header.jsx           # Top bar with theme toggle, bookmarks, coffee link
+│   │   ├── ResultCard.jsx       # Individual citation card with verification badge
+│   │   ├── Results.jsx          # Main results container with PDF export
+│   │   ├── SearchArea.jsx       # Scenario textarea + submit
+│   │   ├── SearchHistory.jsx    # History bottom-sheet
+│   │   ├── Select.jsx
+│   │   └── StagedLoading.jsx    # Multi-stage loading animation
 │   ├── hooks/
-│   │   └── useSearchHistory.js # localStorage history, 7-day TTL
+│   │   ├── useBookmarks.js      # localStorage bookmarks, 30-day TTL, max 50
+│   │   ├── useSearchHistory.js  # localStorage history, 7-day TTL
+│   │   └── useTypewriter.js     # Character-by-character text animation
 │   ├── lib/
-│   │   ├── themes.js           # Light/dark theme objects
-│   │   ├── constants.js        # Filter options, example scenarios
+│   │   ├── ThemeContext.jsx     # Theme provider + useTheme hook
+│   │   ├── canlii.js           # Citation parser, URL builder, ~35 courts
+│   │   ├── constants.js        # Filter options, default law types
+│   │   ├── criminalCodeData.js # 490 sections, 46 enriched with definitions/defences
 │   │   ├── prompts.js          # System prompt builder for Claude
-│   │   ├── canlii.js           # Citation parser, URL builder, court DB map (~35 courts)
-│   │   ├── chargeRelations.js  # Related charges data
-│   │   └── sentencingData.js   # Sentencing ranges data
+│   │   ├── themes.js           # Light/dark theme objects
+│   │   └── validateUrl.js      # URL validation utility
 │   ├── App.jsx
-│   ├── ThemeContext.jsx
 │   ├── main.jsx
 │   └── index.css
 ├── Skills/                     # Custom + ECC skill files
@@ -56,9 +58,6 @@ casefinder/
 │   ├── civil-law-database-builder-SKILL.md
 │   └── ecc/                    # Extended Claude Code community skills
 ├── tests/                      # Playwright E2E tests
-├── MIGRATION_GUIDE.md
-├── Master Instructions/
-│   └── CASEFINDER UPGRADE PLAN.md
 └── CLAUDE.md                   # This file
 ```
 
