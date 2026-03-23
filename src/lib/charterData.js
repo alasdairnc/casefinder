@@ -81,7 +81,7 @@ export const CHARTER_SECTIONS = new Map([
   ["6", {
     title: "Mobility of citizens",
     part: "Mobility Rights",
-    summary: "Every citizen of Canada has the right to enter, remain in and leave Canada. Every citizen of Canada and every person who has the status of a permanent resident of Canada has the right to move to and take up residence in any province.",
+    summary: "(1) Every citizen of Canada has the right to enter, remain in and leave Canada. (2) Every citizen of Canada and every person who has the status of a permanent resident of Canada has the right (a) to move to and take up residence in any province; and (b) to pursue the gaining of a livelihood in any province.",
     relevance: "Travel restrictions, deportation, extradition, mobility conditions",
     url: CHARTER_BASE,
   }],
@@ -111,7 +111,7 @@ export const CHARTER_SECTIONS = new Map([
   ["10", {
     title: "Arrest or detention",
     part: "Legal Rights",
-    summary: "Everyone has the right on arrest or detention (a) to be informed promptly of the reasons therefor; (b) to retain and instruct counsel without delay and to be informed of that right; and (c) to have the validity of the detention determined by way of habeas corpus.",
+    summary: "Everyone has the right on arrest or detention (a) to be informed promptly of the reasons therefor; (b) to retain and instruct counsel without delay and to be informed of that right; and (c) to have the validity of the detention determined by way of habeas corpus and to be released if the detention is not lawful.",
     relevance: "Right to counsel, right to be informed of charges, habeas corpus, caution",
     url: CHARTER_BASE,
   }],
@@ -132,7 +132,7 @@ export const CHARTER_SECTIONS = new Map([
   ["11", {
     title: "Proceedings in criminal and penal matters",
     part: "Legal Rights",
-    summary: "Any person charged with an offence has the right to be informed without unreasonable delay of the specific offence; to be tried within a reasonable time; not to be compelled to be a witness in proceedings against that person; to be presumed innocent until proven guilty; not to be denied reasonable bail; to trial by jury; not to be found guilty of any act not an offence at the time; not to be tried or punished again for an offence; and to benefit of the lesser punishment.",
+    summary: "Any person charged with an offence has the right (a) to be informed without unreasonable delay of the specific offence; (b) to be tried within a reasonable time; (c) not to be compelled to be a witness in proceedings against that person in respect of the offence; (d) to be presumed innocent until proven guilty according to law in a fair and public hearing by an independent and impartial tribunal; (e) not to be denied reasonable bail without just cause; (f) except in the case of an offence under military law tried before a military tribunal, to the benefit of trial by jury where the maximum punishment for the offence is imprisonment for five years or a more severe punishment; (g) not to be found guilty on account of any act or omission unless, at the time of the act or omission, it constituted an offence under Canadian or international law or was criminal according to the general principles of law recognized by the community of nations; (h) if finally acquitted of the offence, not to be tried for it again and, if finally found guilty and punished for the offence, not to be tried or punished for it again; and (i) if found guilty of the offence and if the punishment for the offence has been varied between the time of commission and the time of sentencing, to the benefit of the lesser punishment.",
     relevance: "Fair trial rights, presumption of innocence, right to jury trial, double jeopardy",
     url: CHARTER_BASE,
   }],
@@ -181,7 +181,7 @@ export const CHARTER_SECTIONS = new Map([
   ["11(g)", {
     title: "Right against retroactive offences",
     part: "Legal Rights",
-    summary: "Any person charged with an offence has the right not to be found guilty on account of any act or omission unless, at the time of the act or omission, it constituted an offence under Canadian or international law.",
+    summary: "Any person charged with an offence has the right not to be found guilty on account of any act or omission unless, at the time of the act or omission, it constituted an offence under Canadian or international law or was criminal according to the general principles of law recognized by the community of nations.",
     relevance: "Retroactive offences, ex post facto laws, new offences",
     url: CHARTER_BASE,
   }],
@@ -209,7 +209,7 @@ export const CHARTER_SECTIONS = new Map([
   ["13", {
     title: "Self-incrimination",
     part: "Legal Rights",
-    summary: "A witness who testifies in any proceedings has the right not to have any incriminating testimony so given used to incriminate that witness in any other proceedings, except in a prosecution for perjury or for the giving of contradictory evidence.",
+    summary: "A witness who testifies in any proceedings has the right not to have any incriminating evidence so given used to incriminate that witness in any other proceedings, except in a prosecution for perjury or for the giving of contradictory evidence.",
     relevance: "Use immunity, compelled testimony, incriminating evidence, witness protection",
     url: CHARTER_BASE,
   }],
@@ -293,6 +293,13 @@ export const CHARTER_SECTIONS = new Map([
   }],
 
   // ── General ───────────────────────────────────────────────────────────────────
+  ["10(c)", {
+    title: "Habeas corpus",
+    part: "Legal Rights",
+    summary: "Everyone has the right on arrest or detention to have the validity of the detention determined by way of habeas corpus and to be released if the detention is not lawful.",
+    relevance: "Habeas corpus, unlawful detention, judicial review of detention",
+    url: CHARTER_BASE,
+  }],
   ["25", {
     title: "Aboriginal rights and freedoms not affected by Charter",
     part: "General",
@@ -307,11 +314,32 @@ export const CHARTER_SECTIONS = new Map([
     relevance: "Multicultural interpretation, cultural context in sentencing",
     url: CHARTER_BASE,
   }],
+  ["26", {
+    title: "Other rights and freedoms not affected by Charter",
+    part: "General",
+    summary: "The guarantee in this Charter of certain rights and freedoms shall not be construed as denying the existence of any other rights or freedoms that exist in Canada.",
+    relevance: "Residual rights, common law rights, provincial rights not listed in Charter",
+    url: CHARTER_BASE,
+  }],
   ["28", {
     title: "Rights guaranteed equally to both sexes",
     part: "General",
     summary: "Notwithstanding anything in this Charter, the rights and freedoms referred to in it are guaranteed equally to male and female persons.",
     relevance: "Gender equality, sex discrimination, sentencing equality",
+    url: CHARTER_BASE,
+  }],
+  ["29", {
+    title: "Rights respecting certain schools preserved",
+    part: "General",
+    summary: "Nothing in this Charter abrogates or derogates from any rights or privileges guaranteed by or under the Constitution of Canada in respect of denominational, separate or dissentient schools.",
+    relevance: "Denominational school rights, religious education, s. 93 rights",
+    url: CHARTER_BASE,
+  }],
+  ["31", {
+    title: "Legislative powers not extended",
+    part: "General",
+    summary: "Nothing in this Charter extends the legislative powers of any body or authority.",
+    relevance: "Division of powers, constitutional interpretation, legislative scope",
     url: CHARTER_BASE,
   }],
 
@@ -328,6 +356,13 @@ export const CHARTER_SECTIONS = new Map([
     part: "Application of Charter",
     summary: "Parliament or the legislature of a province may expressly declare in an Act of Parliament or of the legislature, as the case may be, that the Act or a provision thereof shall operate notwithstanding a provision included in section 2 or sections 7 to 15 of this Charter.",
     relevance: "Notwithstanding clause, legislative override, s. 33 declaration",
+    url: CHARTER_BASE,
+  }],
+  ["34", {
+    title: "Citation",
+    part: "Citation",
+    summary: "This Part may be cited as the Canadian Charter of Rights and Freedoms.",
+    relevance: "Official title, citation",
     url: CHARTER_BASE,
   }],
 ]);
