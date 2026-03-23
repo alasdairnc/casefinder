@@ -5,9 +5,10 @@ import { createHash } from "crypto";
 import { buildSystemPrompt } from "../src/lib/prompts.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders, redis } from "./_rateLimit.js";
 
-// Strip XML-like tags from user input to prevent delimiter escape
+// Strip XML-like tags from user input to prevent delimiter escape.
+// Uses [^>\s]* instead of [^>]* to avoid catastrophic backtracking (ReDoS).
 function sanitizeUserInput(input) {
-  return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>]*)?>/g, "");
+  return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>\s][^>]*)?>/g, "");
 }
 
 const CACHE_TTL_S = 60 * 60 * 24; // 24 hours

@@ -133,6 +133,11 @@ export default async function handler(req, res) {
           return;
         }
 
+        const ct = apiRes.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) {
+          results[citation] = { status: "error", searchUrl };
+          return;
+        }
         const data = await apiRes.json();
         results[citation] = {
           status: "verified",
