@@ -24,7 +24,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
   const pdfErrorTimer = useRef(null);
   const caseLawMeta = data?.meta?.case_law;
   const showCaseLawEmptyState =
-    caseLawMeta?.source === "retrieval" &&
+    (caseLawMeta?.source === "retrieval" || caseLawMeta?.source === "hybrid") &&
     caseLawMeta?.reason !== "filter_disabled" &&
     (!Array.isArray(data.case_law) || data.case_law.length === 0);
 
