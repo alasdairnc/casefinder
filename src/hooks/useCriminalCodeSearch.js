@@ -1,8 +1,23 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { CRIMINAL_CODE_SECTIONS } from "../lib/criminalCodeData.js";
 
-const MAX_RESULTS = 50;
-const DEBOUNCE_MS = 150;
+const MAX_RESULTS = 100;
+const DEBOUNCE_MS = 100;
+
+/**
+ * Natural sort for section numbers (e.g., "2", "2.1", "10", "100")
+ */
+function compareSections(a, b) {
+  const partsA = a.split(".").map(Number);
+  const partsB = b.split(".").map(Number);
+
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const valA = partsA[i] || 0;
+    const valB = partsB[i] || 0;
+    if (valA !== valB) return valA - valB;
+  }
+  return a.localeCompare(b);
+}
 
 export function useCriminalCodeSearch() {
   const [query, setQuery] = useState("");
@@ -14,10 +29,12 @@ export function useCriminalCodeSearch() {
 
   // Convert Map to array once
   const allSections = useMemo(() => {
-    return Array.from(CRIMINAL_CODE_SECTIONS.entries()).map(([num, entry]) => ({
-      num,
-      ...entry,
-    }));
+    return Array.from(CRIMINAL_CODE_SECTIONS.entries())
+      .map(([num, entry]) => ({
+        num,
+        ...entry,
+      }))
+      .sort((a, b) => compareSections(a.num, b.num));
   }, []);
 
   // Total section count
@@ -30,19 +47,25 @@ export function useCriminalCodeSearch() {
       const filtered = [];
       let total = 0;
 
+      // Pre-filter by severity and part if they are not "all"
+      const needsSeverityFilter = severityFilter !== "all";
+      const needsPartFilter = partFilter !== "all";
+      const sevFilterLower = severityFilter.toLowerCase();
+
       for (const section of allSections) {
         // Severity filter
-        if (severityFilter !== "all") {
+        if (needsSeverityFilter) {
           const sev = (section.severity || "").toLowerCase();
-          if (!sev.includes(severityFilter.toLowerCase())) continue;
+          if (!sev.includes(sevFilterLower)) continue;
         }
 
         // Part filter
-        if (partFilter !== "all") {
+        if (needsPartFilter) {
           if (!section.partOf || !section.partOf.includes(partFilter)) continue;
         }
 
         // Text search
+        let score = 0;
         if (q) {
           const numMatch = section.num.startsWith(q);
           const titleMatch = (section.title || "").toLowerCase().includes(q);
@@ -50,20 +73,20 @@ export function useCriminalCodeSearch() {
           const tagMatch = (section.topicsTagged || []).some((t) =>
             t.toLowerCase().includes(q)
           );
+
           if (!numMatch && !titleMatch && !defMatch && !tagMatch) continue;
+
+          // Score for sorting: exact number > starts with number > title starts > title includes > definition/tags
+          if (section.num === q) score = 1000;
+          else if (numMatch) score = 800;
+          else if ((section.title || "").toLowerCase().startsWith(q)) score = 600;
+          else if (titleMatch) score = 400;
+          else if (defMatch) score = 200;
+          else score = 100;
         }
 
         total++;
-        if (filtered.length < MAX_RESULTS) {
-          // Score for sorting: section number match > title > definition > tag
-          let score = 0;
-          if (q) {
-            if (section.num === q) score = 100;
-            else if (section.num.startsWith(q)) score = 80;
-            else if ((section.title || "").toLowerCase().startsWith(q)) score = 60;
-            else if ((section.title || "").toLowerCase().includes(q)) score = 40;
-            else score = 20;
-          }
+        if (filtered.length < MAX_RESULTS || q) {
           filtered.push({ ...section, _score: score });
         }
       }
@@ -72,11 +95,11 @@ export function useCriminalCodeSearch() {
       if (q) {
         filtered.sort((a, b) => {
           if (b._score !== a._score) return b._score - a._score;
-          return parseFloat(a.num) - parseFloat(b.num);
+          return compareSections(a.num, b.num);
         });
       }
 
-      setResults(filtered);
+      setResults(q ? filtered.slice(0, MAX_RESULTS) : filtered.slice(0, MAX_RESULTS));
       setTotalMatches(total);
     }, DEBOUNCE_MS);
 

@@ -1644,13 +1644,16 @@ export const CRIMINAL_CODE_PARTS = [
 ];
 
 /**
- * Normalize a citation string like "s. 348(1)(b)" to its base section number "348".
- * Handles decimal sections like "s. 320.14(1)(a)" → "320.14".
- * Returns null if the string does not look like a Criminal Code section.
+ * Normalize a citation string like "s. 348(1)(b)" or "Criminal Code s. 348"
+ * to its base section number "348". Handles decimals like "320.14".
+ * Returns null if no section number is found.
  */
 export function normalizeSection(citation) {
   if (!citation || typeof citation !== "string") return null;
-  const match = citation.match(/(?:^s\.\s*|^section\s+|^)(\d+(?:\.\d+)?)/i);
+  
+  // Clean up the string and look for the first number following s., section, or just a standalone number
+  // Pattern: (statute prefix)? (s.|section)? (number)
+  const match = citation.match(/(?:(?:criminal\s+code|CC|s\.|section)\s*|^)(\d+(?:\.\d+)?)/i);
   return match ? match[1] : null;
 }
 

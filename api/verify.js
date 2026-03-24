@@ -22,15 +22,17 @@ import {
   logError,
 } from "./_logging.js";
 
-// Matches bare Criminal Code section references like "s. 348(1)(b)" or "s. 7"
-// (no statute name prefix — those are handled by civil law lookup)
-const CRIMINAL_CODE_PATTERN = /^s\.\s*\d+/i;
+// Matches bare Criminal Code section references like "s. 348(1)(b)", "section 7", "348"
+const CRIMINAL_CODE_PATTERN = /^(s\.\s*|section\s+)?\d+/i;
 
 // Matches Charter citations: "s. 7", "s. 11(b)", "Charter s. 24(2)", "section 8"
 const CHARTER_PATTERN = /^(canadian\s+)?charter(\s+of\s+rights\s+and\s+freedoms)?,?\s*s\.\s*\d+|^s\.\s*\d+\s*(\(\w+\))?$/i;
 
 // Matches civil law statute citations with a statute name prefix
-const CIVIL_LAW_PATTERN = /\b(CDSA|YCJA|CHRA|CEA|CCRA|HTA|MVA|controlled drugs|youth criminal justice|canadian human rights|canada evidence|corrections and conditional release|highway traffic|motor vehicle|criminal code)\b/i;
+const CIVIL_LAW_PATTERN = /\b(CDSA|YCJA|CHRA|CEA|CCRA|HTA|MVA|controlled drugs|youth criminal justice|canadian human rights|canada evidence|corrections and conditional release|highway traffic|motor vehicle)\b/i;
+
+// Explicit Criminal Code check
+const EXPLICIT_CC_PATTERN = /\b(criminal\s+code|CC)\b/i;
 
 
 export default async function handler(req, res) {
@@ -101,8 +103,37 @@ export default async function handler(req, res) {
         return;
       }
 
-      // Civil law statute citations (CDSA, YCJA, CHRA, etc.) — validate against local DB
-      if (CIVIL_LAW_PATTERN.test(citation.trim())) {
+      // 1. Check for explicit Criminal Code references (e.g., "Criminal Code s. 348")
+      if (EXPLICIT_CC_PATTERN.test(citation)) {
+        const entry = lookupSection(citation);
+        if (entry) {
+          results[citation] = {
+            status: "verified",
+            url: entry.url,
+            searchUrl: buildSearchUrl(citation),
+            title: entry.title,
+            severity: entry.severity,
+            maxPenalty: entry.maxPenalty,
+          };
+          return;
+        }
+        // If not in main CC, check sentencing subset in civil law
+        const foundCivil = lookupCivilLawSection(citation);
+        if (foundCivil) {
+          results[citation] = {
+            status: "verified",
+            url: foundCivil.entry.url,
+            searchUrl: buildSearchUrl(citation),
+            title: foundCivil.entry.title,
+            statute: foundCivil.entry.statute,
+            jurisdiction: foundCivil.entry.jurisdiction,
+          };
+          return;
+        }
+      }
+
+      // 2. Civil law statute citations (CDSA, YCJA, CHRA, etc.)
+      if (CIVIL_LAW_PATTERN.test(citation)) {
         const found = lookupCivilLawSection(citation);
         if (found) {
           results[citation] = {
@@ -122,8 +153,8 @@ export default async function handler(req, res) {
         return;
       }
 
-      // Charter citations with explicit "Charter" prefix — validate against Charter DB
-      if (/charter/i.test(citation.trim())) {
+      // 3. Charter citations with explicit "Charter" prefix — validate against Charter DB
+      if (/charter/i.test(citation)) {
         const entry = lookupCharterSection(citation);
         if (entry) {
           results[citation] = {
@@ -143,8 +174,27 @@ export default async function handler(req, res) {
         return;
       }
 
-      // Bare Criminal Code section references — validate against lookup table
-      if (CRIMINAL_CODE_PATTERN.test(citation.trim())) {
+      // 4. Bare section references (could be CC or Charter)
+      if (CRIMINAL_CODE_PATTERN.test(citation)) {
+        const sectionNum = normalizeSection(citation);
+        const num = parseFloat(sectionNum);
+        
+        // Prioritize Charter for bare references in the 1-35 range (except if explicitly specified as CC earlier)
+        if (num >= 1 && num <= 35) {
+          const charterEntry = lookupCharterSection(citation);
+          if (charterEntry) {
+            results[citation] = {
+              status: "verified",
+              url: charterEntry.url,
+              searchUrl: buildSearchUrl(citation),
+              title: charterEntry.title,
+              part: charterEntry.part,
+            };
+            return;
+          }
+        }
+
+        // Otherwise check Criminal Code
         const entry = lookupSection(citation);
         if (entry) {
           results[citation] = {
@@ -156,16 +206,26 @@ export default async function handler(req, res) {
             maxPenalty: entry.maxPenalty,
           };
         } else {
-          // Section format is valid but not in our lookup — could be real, we just can't confirm
-          const sectionNum = normalizeSection(citation);
-          const url = sectionNum
-            ? `https://laws-lois.justice.gc.ca/eng/acts/c-46/section-${sectionNum}.html`
-            : "https://laws-lois.justice.gc.ca/eng/acts/c-46/";
-          results[citation] = {
-            status: "unverified",
-            url,
-            searchUrl: buildSearchUrl(citation),
-          };
+          // Final check for Charter (in case it wasn't caught by the 1-35 check)
+          const charterEntry = lookupCharterSection(citation);
+          if (charterEntry) {
+            results[citation] = {
+              status: "verified",
+              url: charterEntry.url,
+              searchUrl: buildSearchUrl(citation),
+              title: charterEntry.title,
+            };
+          } else {
+            // Unverified section — format is valid but not in our lookup
+            const url = sectionNum
+              ? `https://laws-lois.justice.gc.ca/eng/acts/c-46/section-${sectionNum}.html`
+              : "https://laws-lois.justice.gc.ca/eng/acts/c-46/";
+            results[citation] = {
+              status: "unverified",
+              url,
+              searchUrl: buildSearchUrl(citation),
+            };
+          }
         }
         return;
       }
