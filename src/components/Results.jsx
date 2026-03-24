@@ -203,11 +203,17 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
         let verificationBanner = null;
         if (key === "case_law" && Object.keys(verifications).length > 0) {
           items = rawItems.filter((item) => {
+            if (item.verificationStatus === "verified") return true;
             const v = verifications[item.citation];
             if (!v) return true; // not yet verified — keep
+            if (v.status === "not_found" || v.status === "unparseable" || v.status === "unknown_court" || v.status === "error")
+              return false;
             return v.status === "verified" || v.status === "unverified";
           });
-          const verified = rawItems.filter((item) => verifications[item.citation]?.status === "verified").length;
+          const verified = rawItems.filter(
+            (item) =>
+              item.verificationStatus === "verified" || verifications[item.citation]?.status === "verified"
+          ).length;
           const removed = rawItems.length - items.length;
           if (removed > 0) {
             verificationBanner = (

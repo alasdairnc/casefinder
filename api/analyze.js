@@ -26,7 +26,9 @@ function sanitizeUserInput(input) {
 const CACHE_TTL_S = 60 * 60 * 24; // 24 hours
 
 function cacheKey(scenario, filters) {
-  return "cache:analyze:" + createHash("sha256").update(scenario + JSON.stringify(filters)).digest("hex");
+  return (
+    "cache:analyze:v3:" + createHash("sha256").update(scenario + JSON.stringify(filters)).digest("hex")
+  );
 }
 
 function ensureMetaContainer(result) {
@@ -103,7 +105,11 @@ function scoreRetrievedCase(scenarioTokens, item) {
     if (/\bdetention\b|\barrest\b/.test(haystack)) score += 2;
     if (/\bsearch\b|\bseizure\b/.test(haystack)) score += 2;
     if (/\bbreath\b|\bblood\b|\bimpaired\b/.test(haystack)) score += 3;
+    if (/\bgrant\b/.test(haystack)) score += 6;
   }
+
+  const bloodScenario = scenarioTokens.has("blood");
+  if (bloodScenario && /\bblood\b/.test(haystack)) score += 2;
 
   if (/\bSCC\b/i.test(item?.citation || "")) score += 1.5;
   if (/\bONCA\b/i.test(item?.citation || "")) score += 1;
@@ -340,12 +346,19 @@ export default async function handler(req, res) {
         }
 
         result.case_law = selectTopRetrievedCases(scenario, retrievedCases, 3);
-        
+
         const reason = retrievalMeta.reason || (result.case_law.length > 0 ? "verified_results" : "no_verified");
         meta.case_law = {
           source: "retrieval_ranked",
           verifiedCount: result.case_law.length,
           reason,
+          retrieval: {
+            fallbackSearchUsed: Boolean(retrievalMeta.fallbackSearchUsed),
+            searchCalls: retrievalMeta.searchCalls ?? 0,
+            verificationCalls: retrievalMeta.verificationCalls ?? 0,
+            candidateCount: retrievalMeta.candidateCount ?? 0,
+            termsTried: retrievalMeta.termsTried ?? 0,
+          },
         };
         await logRetrievalMetrics({
           requestId,

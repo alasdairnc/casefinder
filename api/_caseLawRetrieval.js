@@ -12,7 +12,9 @@ const MAX_SEARCH_CALLS_PHASE1 = 4;
 const MAX_SEARCH_CALLS_TOTAL = 10;
 const MAX_FALLBACK_TERMS = 5;
 const MAX_DATABASES_FALLBACK = 8;
-const MAX_CANDIDATES = 6;
+const MAX_CANDIDATES = 8;
+/** Run this many unique (term × SCC) searches before widening to other databases. */
+const SCC_FIRST_SEARCH_SLOTS = 2;
 const MAX_VERIFICATION_CALLS = 6;
 const MAX_VERIFICATION_CALLS_PHASE1 = Math.ceil(MAX_VERIFICATION_CALLS / 2);
 const MAX_VERIFICATION_CALLS_FALLBACK = Math.floor(MAX_VERIFICATION_CALLS / 2);
@@ -57,6 +59,46 @@ const ADJACENT_JURISDICTION_DB_IDS = {
 
 const NATIONAL_SPREAD_DB_IDS = ["csc-scc", "fca", "fct", "onca", "bcca", "abca", "qcca", "mbca"];
 
+/** Lower rank = verify / display earlier (deterministic ordering). */
+const DATABASE_VERIFY_RANK = (() => {
+  const order = [
+    "csc-scc",
+    "fca",
+    "fct",
+    "onca",
+    "bcca",
+    "abca",
+    "qcca",
+    "mbca",
+    "skca",
+    "nsca",
+    "nbca",
+    "nlca",
+    "peca",
+    "onsc",
+    "bcsc",
+    "abqb",
+    "qccs",
+    "mbqb",
+    "skqb",
+    "nssc",
+    "nbqb",
+    "nlsc",
+    "oncj",
+    "bcpc",
+    "abpc",
+    "qccq",
+    "mbpc",
+    "skpc",
+    "nspc",
+    "nbpc",
+    "nlpc",
+  ];
+  const map = new Map();
+  order.forEach((id, i) => map.set(id, i));
+  return map;
+})();
+
 const DB_TO_COURT_CODE = (() => {
   const map = new Map();
   for (const [code, dbId] of Object.entries(COURT_API_MAP)) {
@@ -100,8 +142,49 @@ function dedupeStrings(values) {
   return deduped;
 }
 
+/**
+ * High-signal CanLII keyword phrases from common Canadian criminal patterns (no fabricated citations).
+ */
+function curatedTermsFromScenario(scenario) {
+  const s = sanitizeTerm(scenario || "").toLowerCase();
+  if (!s) return [];
+
+  const out = [];
+  const push = (...xs) => {
+    for (const x of xs) {
+      const v = sanitizeTerm(x);
+      if (v) out.push(v);
+    }
+  };
+
+  const ride = /\bride\b|\broadside\b|\bcheck\s*point\b|\bcheckpoint\b/.test(s);
+  const alcohol =
+    /\balcohol\b|\bbreath\b|\bbreathalyzer\b|\bimpaired\b|\bintoxicat\b|\bdrunk\b|\bdwi\b|\bover\s*80\b/.test(s) ||
+    /\b80\b/.test(s);
+  const refusal = /\brefus\w*\b|\brefused\b/.test(s);
+  const blood = /\bblood\b/.test(s);
+  const searchSeizure = /\bsearch\b/.test(s) && /\bseiz\w*\b/.test(s);
+
+  if (ride && alcohol) {
+    push("R v Grant reasonable suspicion", "motor vehicle stop Charter", "checkstop Charter section 9");
+  }
+  if (refusal && (alcohol || /\bbreath\b/.test(s))) {
+    push("refusal breath sample Criminal Code", "reasonable grounds breath demand");
+  }
+  if (blood) {
+    push("blood sample Charter section 8", "seizure blood sample warrantless");
+  }
+  if (/\bcharter\b/.test(s) && (searchSeizure || /\bsearch\b/.test(s))) {
+    push("Charter section 8 search seizure");
+  }
+
+  return dedupeStrings(out);
+}
+
 function extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode = [] }) {
   const terms = [];
+  const curated = curatedTermsFromScenario(scenario);
+  for (const c of curated) terms.push(c);
 
   // 1. Primary: Use explicit CanLII search terms from AI suggestions
   if (Array.isArray(aiSuggestions)) {
@@ -140,7 +223,7 @@ function extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode = [] 
     if (fallback) terms.push(fallback);
   }
 
-  return dedupeStrings(terms).slice(0, MAX_TERMS + 1);
+  return dedupeStrings(terms).slice(0, MAX_TERMS + 1 + Math.min(2, curated.length));
 }
 
 function pickDatabaseTargets(filters = {}) {
@@ -238,24 +321,58 @@ function buildFallbackSearchTerms({ scenario = "", terms = [], criminalCode = []
   return dedupeStrings(out).slice(0, MAX_FALLBACK_TERMS);
 }
 
-async function gatherSearchCandidates(terms, dbTargets, apiKey, maxCalls) {
+async function gatherSearchCandidates(terms, dbTargets, apiKey, maxCalls, sccFirstSlots = 0) {
   const rawCandidates = [];
   let searchCalls = 0;
+  const tried = new Set();
+
+  const tryPair = async (term, dbId) => {
+    if (searchCalls >= maxCalls || rawCandidates.length >= MAX_CANDIDATES * 3) return;
+    const key = `${term}|${dbId}`;
+    if (tried.has(key)) return;
+    tried.add(key);
+    searchCalls += 1;
+    const found = await searchCandidatesForTerm(term, dbId, apiKey);
+    rawCandidates.push(...found);
+  };
+
+  if (sccFirstSlots > 0 && dbTargets.includes("csc-scc")) {
+    let sccUsed = 0;
+    for (const term of terms) {
+      if (searchCalls >= maxCalls || sccUsed >= sccFirstSlots || rawCandidates.length >= MAX_CANDIDATES * 3) break;
+      await tryPair(term, "csc-scc");
+      sccUsed += 1;
+    }
+  }
 
   for (const term of terms) {
     for (const dbId of dbTargets) {
-      if (searchCalls >= maxCalls) break;
-      searchCalls += 1;
-
-      const found = await searchCandidatesForTerm(term, dbId, apiKey);
-      rawCandidates.push(...found);
-
-      if (rawCandidates.length >= MAX_CANDIDATES * 3) break;
+      if (searchCalls >= maxCalls || rawCandidates.length >= MAX_CANDIDATES * 3) break;
+      await tryPair(term, dbId);
     }
     if (searchCalls >= maxCalls || rawCandidates.length >= MAX_CANDIDATES * 3) break;
   }
 
   return { rawCandidates, searchCalls };
+}
+
+function candidateDatabaseRank(candidate) {
+  const parsed = parseCitation(candidate?.citation || "");
+  const db = parsed?.apiDbId || "";
+  if (DATABASE_VERIFY_RANK.has(db)) return DATABASE_VERIFY_RANK.get(db);
+  return 500;
+}
+
+function sortCandidatesForStableVerification(candidates) {
+  return [...candidates].sort((a, b) => {
+    const rankA = candidateDatabaseRank(a);
+    const rankB = candidateDatabaseRank(b);
+    if (rankA !== rankB) return rankA - rankB;
+    const yearA = Number(a?.year) || 0;
+    const yearB = Number(b?.year) || 0;
+    if (yearB !== yearA) return yearB - yearA;
+    return String(a?.citation || "").localeCompare(String(b?.citation || ""));
+  });
 }
 
 function buildSearchUrls(term, dbId, apiKey) {
@@ -437,6 +554,8 @@ export async function retrieveVerifiedCaseLaw({
         searchCalls: 0,
         candidateCount: 0,
         verificationCalls: 0,
+        verifiedCount: 0,
+        fallbackSearchUsed: false,
       },
     };
   }
@@ -461,11 +580,17 @@ export async function retrieveVerifiedCaseLaw({
   let rawCandidates = [];
   let searchCalls = 0;
 
-  const phase1 = await gatherSearchCandidates(terms, dbTargets, apiKey, MAX_SEARCH_CALLS_PHASE1);
+  const phase1 = await gatherSearchCandidates(
+    terms,
+    dbTargets,
+    apiKey,
+    MAX_SEARCH_CALLS_PHASE1,
+    dbTargets.includes("csc-scc") ? SCC_FIRST_SEARCH_SLOTS : 0
+  );
   rawCandidates = phase1.rawCandidates;
   searchCalls = phase1.searchCalls;
 
-  let uniqueCandidates = dedupeCandidates(rawCandidates).slice(0, MAX_CANDIDATES);
+  let uniqueCandidates = sortCandidatesForStableVerification(dedupeCandidates(rawCandidates)).slice(0, MAX_CANDIDATES);
 
   const citationLookupTried = new Set();
   let verificationCallsTotal = 0;
@@ -499,13 +624,19 @@ export async function retrieveVerifiedCaseLaw({
     const remaining = MAX_SEARCH_CALLS_TOTAL - searchCalls;
 
     if (remaining > 0 && fbTerms.length > 0 && fbDbs.length > 0) {
-      const phase2 = await gatherSearchCandidates(fbTerms, fbDbs, apiKey, remaining);
+      const phase2 = await gatherSearchCandidates(
+        fbTerms,
+        fbDbs,
+        apiKey,
+        remaining,
+        fbDbs.includes("csc-scc") ? SCC_FIRST_SEARCH_SLOTS : 0
+      );
       searchCalls += phase2.searchCalls;
       // Prioritize newly discovered fallback candidates before phase-1 candidates.
       // Otherwise, slice(0, MAX_CANDIDATES) can starve fallback results.
       rawCandidates = [...phase2.rawCandidates, ...rawCandidates];
       fallbackSearchUsed = true;
-      uniqueCandidates = dedupeCandidates(rawCandidates).slice(0, MAX_CANDIDATES);
+      uniqueCandidates = sortCandidatesForStableVerification(dedupeCandidates(rawCandidates)).slice(0, MAX_CANDIDATES);
       cases = await verifyCandidates(uniqueCandidates, MAX_VERIFICATION_CALLS_FALLBACK);
     }
   }
@@ -520,6 +651,7 @@ export async function retrieveVerifiedCaseLaw({
       verificationCalls: verificationCallsTotal,
       verifiedCount: cases.length,
       fallbackSearchUsed,
+      reason: cases.length > 0 ? "verified_results" : "no_verified",
     },
   };
 }
