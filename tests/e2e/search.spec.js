@@ -252,7 +252,6 @@ test.describe("Search flow", () => {
       year: "2014",
       summary: "Sentencing principles for residential break and enter.",
       matchedContent: "Residential break and enter sentencing principles tied to the user scenario.",
-      scenario: "A person broke into a house at night and stole jewelry",
     });
   });
 
