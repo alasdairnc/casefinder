@@ -117,14 +117,14 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
   }
 
-  const { citation, title, court, year, summary, matchedContent, scenario } = req.body || {};
+  const { citation, title, court, year, summary, matchedContent } = req.body || {};
 
   if (!citation || typeof citation !== "string") {
     logValidationError(requestId, "case-summary", "citation is required", "citation");
     return res.status(400).json({ error: "citation is required" });
   }
 
-  const MAX_LENGTHS = { title: 300, court: 100, year: 10, summary: 2000, matchedContent: 3000, scenario: 5000 };
+  const MAX_LENGTHS = { title: 300, court: 100, year: 10, summary: 2000, matchedContent: 3000 };
   const body = req.body || {};
   for (const [field, max] of Object.entries(MAX_LENGTHS)) {
     if (body[field] !== undefined && typeof body[field] !== "string") {
@@ -145,7 +145,6 @@ export default async function handler(req, res) {
     year ? `Year: ${sanitizeUserInput(year)}` : null,
     summary ? `Existing summary: ${sanitizeUserInput(summary)}` : null,
     matchedContent ? `Matched context: ${sanitizeUserInput(matchedContent)}` : null,
-    scenario ? `User scenario: ${sanitizeUserInput(scenario)}` : null,
     `</user_input>`,
   ]
     .filter(Boolean)

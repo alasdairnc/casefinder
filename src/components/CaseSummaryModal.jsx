@@ -80,7 +80,7 @@ function LoadingSkeleton({ t }) {
   );
 }
 
-export default function CaseSummaryModal({ item, canliiUrl, scenario, onClose }) {
+export default function CaseSummaryModal({ item, canliiUrl, onClose }) {
   const t = useTheme();
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);
@@ -110,7 +110,6 @@ export default function CaseSummaryModal({ item, canliiUrl, scenario, onClose })
         year: item.year,
         summary: item.summary,
         matchedContent: item.matched_section || item.matched_content,
-        scenario,
       }),
     })
       .then((res) => res.json())
