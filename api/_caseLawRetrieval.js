@@ -299,6 +299,7 @@ function toCaseLawItem(candidate, verification) {
     year,
     url_canlii: verification?.url || candidate.url || "",
     matched_content: `Retrieved from CanLII search for "${candidate.matchedTerm}"`,
+    verificationStatus: "verified",
   };
 }
 
