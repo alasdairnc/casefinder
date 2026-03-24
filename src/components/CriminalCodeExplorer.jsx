@@ -336,20 +336,22 @@ function SectionRow({ section, isExpanded, onToggle, t }) {
                 {section.partOf}
               </span>
             )}
-            <a
-              href={section.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontFamily: "'Helvetica Neue', sans-serif",
-                fontSize: 11,
-                color: t.accentGreen,
-                textDecoration: "none",
-                fontWeight: 500,
-              }}
-            >
-              Full Text on Justice Laws ↗
-            </a>
+            {section.url && (
+              <a
+                href={section.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: "'Helvetica Neue', sans-serif",
+                  fontSize: 11,
+                  color: t.accentGreen,
+                  textDecoration: "none",
+                  fontWeight: 500,
+                }}
+              >
+                Full Text on Justice Laws ↗
+              </a>
+            )}
           </div>
         </div>
       )}

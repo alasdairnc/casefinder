@@ -6,7 +6,6 @@ import SuggestionLink from "./SuggestionLink.jsx";
 import { useEffect, useState, useRef, useCallback } from "react";
 
 const PDF_ERROR_RESET_MS = 4000;
-import { useBookmarks } from "../hooks/useBookmarks.js";
 
 const SECTIONS = [
   { key: "criminal_code", label: "Criminal Code" },
@@ -148,6 +147,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
             padding: "8px 16px",
             cursor: pdfState === "loading" ? "default" : "pointer",
             opacity: pdfState === "loading" ? 0.6 : 1,
+            pointerEvents: pdfState === "loading" ? "none" : "auto",
             transition: "all 0.15s",
           }}
           onMouseEnter={(e) => { if (pdfState !== "loading") e.currentTarget.style.color = t.accent; }}

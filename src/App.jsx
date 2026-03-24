@@ -92,10 +92,11 @@ function AppInner() {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
     } catch (err) {
+      const isInternalParse = err.message?.includes("parse") && !err.message.includes("Rate");
       setError(
-        err.message?.includes("parse")
+        isInternalParse
           ? "The AI response couldn't be parsed. Try rephrasing your scenario with more detail."
-          : "Something went wrong. Please try again."
+          : (err.message || "Something went wrong. Please try again.")
       );
     } finally {
       setLoading(false);
