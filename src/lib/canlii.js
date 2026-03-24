@@ -93,14 +93,15 @@ export function parseCitation(citation) {
   }
 
   // 3. SCR citation: "Parties, [YYYY] N SCR NNN"
-  const scr = trimmed.match(/^(?:(.+?),\s*)?\[(\d{4})\]\s+\d+\s+SCR\s+\d+$/i);
+  // More robust: allow optional dots (S.C.R.), optional volume, flexible spacing
+  const scr = trimmed.match(/^(?:(.+?),\s*)?\[(\d{4})\]\s*(?:\d+)?\s*S\.?C\.?R\.?\s*\d+$/i);
   if (scr) {
     const [, parties, year] = scr;
     return {
       parties: parties ? parties.trim() : null,
       year,
       courtCode: "SCC",
-      number: null, // SCR doesn't map directly to CanLII number without lookup
+      number: null,
       apiDbId: "csc-scc",
       webDbId: "ca/scc",
       isLegacy: true,
