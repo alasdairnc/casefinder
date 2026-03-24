@@ -2,6 +2,26 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:mcpcat.io)"
+    ],
+    "deny": [
+      "Bash(command:/rm -rf .+/)",
+      "Bash(command:/chmod .+/)",
+      "Bash(command:/chown .+/)",
+      "Bash(command:/sudo .+/)",
+      "Bash(command:/ssh .+/)",
+      "Bash(command:/chmod 777 .+/)",
+      "Bash(command:/> \/dev\//)",
+      "Bash(command:/.*> \/dev\/.*/)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      "verify",
+      "security-scan"
+    ],
+    "Stop": [
+      "verify",
+      "security-scan"
     ]
   }
 }

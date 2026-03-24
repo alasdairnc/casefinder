@@ -10,6 +10,9 @@ export const jurisdictions = [
   { value: "New Brunswick", label: "New Brunswick" },
   { value: "Newfoundland and Labrador", label: "Newfoundland & Lab." },
   { value: "Prince Edward Island", label: "PEI" },
+  { value: "Yukon", label: "Yukon" },
+  { value: "Northwest Territories", label: "NWT" },
+  { value: "Nunavut", label: "Nunavut" },
 ];
 
 export const courtLevels = [

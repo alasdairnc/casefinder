@@ -20,6 +20,7 @@ export const COURT_WEB_MAP = {
   NWTCA: "nt/nwtca", NWTSC: "nt/nwtsc",
   NUCJ: "nu/nucj",  NUCI: "nu/nucj",
   YKCA: "yk/ykca",  YKSC: "yk/yksc", YKPC: "yk/ykpc",
+  TCC: "ca/tcc",    CMAC: "ca/cmac",
 };
 
 // Maps court abbreviations → CanLII API database ID (flat, from /v1/caseBrowse/en/)
@@ -38,6 +39,7 @@ export const COURT_API_MAP = {
   NWTCA: "nwtca",  NWTSC: "nwtsc",
   NUCJ: "nucj",    NUCI: "nucj",
   YKCA: "ykca",    YKSC: "yksc",    YKPC: "ykpc",
+  TCC: "tcc",      CMAC: "cmac",
 };
 
 // Keep COURT_DB_MAP as alias for backwards compat

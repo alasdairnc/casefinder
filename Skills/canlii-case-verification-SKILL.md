@@ -58,26 +58,57 @@ description: Verify cases against CanLII API, handle rate limiting, manage cachi
    Authorization: apikey YOUR_CANLII_API_KEY
    ```
 
-### Court Database IDs (For Future Expansion)
+### Court Database IDs
 
 ```
-Supreme Court of Canada (SCC):
-  dbId = "csc-scc"
-  example: 1988scc30, 1999scc3, 2012scc60
+Federal Courts:
+  Supreme Court of Canada (SCC): csc-scc
+  Federal Court of Appeal (FCA): fca
+  Federal Court (FCC/FCT): fct
+  Tax Court of Canada (TCC): tcc
+  Court Martial Appeal Court (CMAC): cmac
 
-Federal Court of Appeal (FCA):
-  dbId = "fca-caf"
-  example: 2020fca123
+Ontario:
+  Court of Appeal (ONCA): onca
+  Superior Court (ONSC): onsc
+  Ontario Court of Justice (ONCJ): oncj
+  Divisional Court (ONDC): ondc
 
-Ontario Court of Appeal (ONCA):
-  dbId = "onca"
-  example: 2020onca234
+British Columbia:
+  Court of Appeal (BCCA): bcca
+  Supreme Court (BCSC): bcsc
+  Provincial Court (BCPC): bcpc
 
-British Columbia Court of Appeal (BCCA):
-  dbId = "bcca"
-  example: 2020bcca345
+Alberta:
+  Court of Appeal (ABCA): abca
+  Court of King's Bench (ABQB/ABKB): abqb
+  Provincial Court (ABPC): abpc
 
-[Add other provincial courts as needed]
+Quebec:
+  Cour d'appel (QCCA): qcca
+  Cour supérieure (QCCS): qccs
+  Cour du Québec (QCCQ): qccq
+
+Manitoba:
+  Court of Appeal (MBCA): mbca
+  Court of King's Bench (MBQB): mbqb
+  Provincial Court (MBPC): mbpc
+
+Saskatchewan:
+  Court of Appeal (SKCA): skca
+  Court of King's Bench (SKQB): skqb
+  Provincial Court (SKPC): skpc
+
+Atlantic Provinces:
+  Nova Scotia (NSCA, NSSC, NSPC): nsca, nssc, nspc
+  New Brunswick (NBCA, NBQB, NBPC): nbca, nbqb, nbpc
+  PEI (PECA, PEISC): peca, peisc
+  Newfoundland (NLCA, NLSC, NLPC): nlca, nlsc, nlpc
+
+Territories:
+  Yukon (YKCA, YKSC, YKPC): ykca, yksc, ykpc
+  NWT (NWTCA, NWTSC): nwtca, nwtsc
+  Nunavut (NUCJ): nucj
 ```
 
 ---
@@ -279,21 +310,33 @@ async function verifyCase(citation) {
 ```
 
 ---
+## Test Cases (Wide Variety)
 
-## Test Cases (Real SCC Citations)
+Use these to test your implementation across different jurisdictions and levels:
 
-Use these to test your implementation:
-
-### ✅ Cases That Should Verify Successfully
-
+### ✅ Supreme Court of Canada (SCC)
 1. **R v. Morgentaler, 1988 SCC 30** (Abortion/Charter)
-2. **R v. Ewanchuk, 1999 SCC 3** (Sexual assault/consent)
-3. **R v. Jilani, 2012 SCC 60** (Self-defence)
-4. **R v. Beatty, 1994 SCC 74** (Dangerous operation)
-5. **R v. St-Cloud, 2021 SCC 27** (Impaired driving)
-6. **R v. Khill, 2021 SCC 39** (Police shooting)
-7. **R v. Latimer, 2001 SCC 1** (Necessity)
-8. **R v. Turgeon, 1990 SCC 1** (Theft)
+2. **R v. Jordan, 2016 SCC 27** (Trial delay)
+3. **R v. Grant, 2009 SCC 32** (Section 24(2) Charter)
+
+### ✅ Ontario (ONCA/ONSC/ONCJ)
+1. **R v. Sullivan, 2022 SCC 19** (Originated in ON, striking down s. 33.1)
+2. **R v. Sharma, 2022 SCC 39** (Sentencing, ON)
+3. **R v. McColman, 2023 SCC 9** (Random breath testing, ON)
+
+### ✅ British Columbia (BCCA/BCSC)
+1. **R v. Ndhlovu, 2022 SCC 38** (SOIRA, BC)
+2. **R v. Samaniego, 2022 SCC 9** (Trial fairness, BC)
+
+### ✅ Alberta (ABCA/ABQB)
+1. **R v. Hills, 2023 SCC 2** (Mandatory minimums, AB)
+2. **R v. Canfield, 2020 ABCA 383** (Cell phone search at border)
+
+### ✅ Other Provinces & Territories
+1. **R v. Comeau, 2018 SCC 15** (Interprovincial trade, NB)
+2. **R v. Tessier, 2022 SCC 35** (Voluntary statements, NL)
+3. **R v. C.P., 2021 SCC 19** (Youth sentencing, SK)
+4. **R v. J.F., 2022 SCC 17** (Trial delay, QC)
 
 ### ❌ Cases That Should NOT Verify (Use to Test Error Handling)
 
@@ -301,6 +344,7 @@ Use these to test your implementation:
 2. **R v. MadeUp, 1950 SCC 1** (Doesn't exist)
 3. **Invalid Citation Format** (Malformed)
 4. **R. v. Morgentaler, [1988] 1 S.C.R. 30** (Different format, might not match)
+
 
 ### How to Test
 
