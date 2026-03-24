@@ -2,6 +2,7 @@ import { useTheme } from "../lib/ThemeContext.jsx";
 import { useTypewriter } from "../hooks/useTypewriter.js";
 import ResultCard from "./ResultCard.jsx";
 import CaseSummaryModal from "./CaseSummaryModal.jsx";
+import SuggestionLink from "./SuggestionLink.jsx";
 import { useEffect, useState, useRef, useCallback } from "react";
 
 const PDF_ERROR_RESET_MS = 4000;
@@ -82,6 +83,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          scenario,
           summary: data.summary,
           criminal_code: data.criminal_code,
           case_law: data.case_law,
@@ -320,40 +322,21 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
           borderLeft: `2px solid ${t.accent}`, paddingLeft: 24,
         }}>
           {analysisText}
-          <span style={{
-            display: "inline-block", width: 2, height: 18,
-            background: t.text, marginLeft: 2,
-            animation: "cfBlink 1s step-end infinite", verticalAlign: "text-bottom",
-          }} />
         </div>
       </div>
 
-      {/* CanLII */}
-      {data.searchTerms?.length > 0 && (
+      {/* Suggested Links */}
+      {data.suggestions?.length > 0 && (
         <div style={{ marginTop: 40 }}>
           <div style={{
             fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
             letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 12,
           }}>
-            Suggested CanLII Searches
+            Suggested Links
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {data.searchTerms.map((term, i) => (
-              <a
-                key={i}
-                href={`https://www.canlii.org/en/#search/text=${encodeURIComponent(term)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
-                  color: t.tagText, background: t.tagBg,
-                  padding: "6px 14px", textDecoration: "none",
-                  border: `1px solid ${t.border}`, cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-              >
-                {term} {"\u2197"}
-              </a>
+            {data.suggestions.map((suggestion, i) => (
+              <SuggestionLink key={i} suggestion={suggestion} />
             ))}
           </div>
         </div>
