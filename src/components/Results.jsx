@@ -7,6 +7,16 @@ import { useEffect, useState, useRef, useCallback } from "react";
 
 const PDF_ERROR_RESET_MS = 4000;
 
+/** Sources where an empty `case_law` array should still show the Case Law section (must stay in sync with `api/analyze.js`). */
+const CASE_LAW_EMPTY_SOURCES = new Set([
+  "retrieval",
+  "hybrid",
+  "hybrid_reranked",
+  "retrieval_ranked",
+  "retrieval_error",
+  "ai_fallback",
+]);
+
 const SECTIONS = [
   { key: "criminal_code", label: "Criminal Code" },
   { key: "case_law", label: "Case Law" },
@@ -24,9 +34,18 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
   const pdfErrorTimer = useRef(null);
   const caseLawMeta = data?.meta?.case_law;
   const showCaseLawEmptyState =
-    (caseLawMeta?.source === "retrieval" || caseLawMeta?.source === "hybrid") &&
+    CASE_LAW_EMPTY_SOURCES.has(caseLawMeta?.source) &&
     caseLawMeta?.reason !== "filter_disabled" &&
     (!Array.isArray(data.case_law) || data.case_law.length === 0);
+
+  const caseLawEmptyMessage =
+    caseLawMeta?.reason === "retrieval_error"
+      ? "Case law could not be retrieved right now. Try again in a moment."
+      : caseLawMeta?.reason === "missing_api_key"
+        ? "Case law retrieval is unavailable (CanLII not configured)."
+        : caseLawMeta?.reason === "no_terms_or_databases"
+          ? "No search terms could be formed for case law. Try rephrasing with more legal detail."
+          : "No verified case law was found for this scenario.";
 
   // Extract and verify citations on mount
   useEffect(() => {
@@ -324,7 +343,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
             fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
             color: t.textTertiary, lineHeight: 1.5,
           }}>
-            No verified case law found for this scenario.
+            {caseLawEmptyMessage}
           </div>
         </div>
       )}
