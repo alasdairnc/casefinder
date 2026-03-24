@@ -92,8 +92,9 @@ export default async function handler(req, res) {
   const apiKey = process.env.CANLII_API_KEY || "";
   const results = {};
 
-  await Promise.all(
-    citations.map(async (rawCitation) => {
+  // Process in batches of 3 to avoid hammering the CanLII API with 10 simultaneous requests.
+  const CONCURRENCY = 3;
+  const processCitation = async (rawCitation) => {
       if (!rawCitation || typeof rawCitation !== "string") {
         results[rawCitation] = { status: "unparseable", searchUrl: buildSearchUrl(rawCitation || "") };
         return;
@@ -303,8 +304,11 @@ export default async function handler(req, res) {
         logError(requestId, "verify", err, 500, 0, { citationIndex: citations.indexOf(rawCitation) });
         results[citation] = { status: "error", searchUrl };
       }
-    })
-  );
+  };
+
+  for (let i = 0; i < citations.length; i += CONCURRENCY) {
+    await Promise.all(citations.slice(i, i + CONCURRENCY).map(processCitation));
+  }
 
   logSuccess(requestId, "verify", 200, Date.now() - startMs, rlResult, { citationsProcessed: citations.length });
   return res.status(200).json(results);
