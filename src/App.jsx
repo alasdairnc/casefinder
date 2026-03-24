@@ -13,6 +13,96 @@ import CriminalCodeExplorer from "./components/CriminalCodeExplorer.jsx";
 import { useSearchHistory } from "./hooks/useSearchHistory.js";
 import { useBookmarks } from "./hooks/useBookmarks.js";
 
+const EXAMPLE_SCENARIOS = [
+  "A driver was pulled over at a RIDE checkpoint, failed the roadside breath test, and refused to provide a breathalyzer sample. Police arrested the driver and obtained a blood sample.",
+  "A person was found inside an occupied house at 2 a.m. with stolen electronics. The homeowner was home during the break-in and called 911.",
+  "An individual was stopped by police and found with 50 grams of cocaine packaged in individual baggies alongside a scale and $3,000 cash. Police conducted a warrantless search of the vehicle.",
+  "Two people got into a fight outside a bar. One person punched the other repeatedly, causing a broken nose and cheekbone fracture that required surgery.",
+  "A 17-year-old was apprehended shoplifting $800 in clothing from a retail store. It is a first offence with no prior record.",
+  "An accused allegedly defrauded an elderly victim of $90,000 through a fake investment scheme, collecting payments over 18 months before the victim discovered the fraud.",
+];
+
+const COVERAGE_AREAS = [
+  { label: "Criminal Code", desc: "Offence sections, penalties, and defences from the Criminal Code of Canada" },
+  { label: "Case Law", desc: "Verified Supreme Court and appellate decisions cross-referenced with CanLII" },
+  { label: "Charter Rights", desc: "Constitutional rights under the Canadian Charter of Rights and Freedoms" },
+  { label: "Civil Law", desc: "Provincial offences and federal statutes including CDSA, YCJA, and HTA" },
+];
+
+function LandingContent({ setQuery, t }) {
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px 0" }}>
+      <p style={{
+        fontFamily: "'Times New Roman', serif",
+        fontSize: "clamp(15px, 2.3vw, 17px)",
+        color: t.textSecondary, lineHeight: 1.8, margin: "0 0 40px 0",
+      }}>
+        CaseDive is a Canadian criminal law research tool. Describe a legal scenario and receive relevant
+        Criminal Code sections, verified case law citations, Charter rights implications, and a brief
+        legal analysis — drawn from CanLII and the Justice Laws database.
+      </p>
+
+      <div style={{ marginBottom: 40 }}>
+        <div style={{
+          fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
+          letterSpacing: 3.5, textTransform: "uppercase",
+          color: t.textTertiary, marginBottom: 16,
+        }}>
+          Coverage
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+          {COVERAGE_AREAS.map(({ label, desc }) => (
+            <div key={label} style={{ border: `1px solid ${t.borderLight}`, padding: "14px 16px" }}>
+              <div style={{
+                fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11,
+                fontWeight: 700, color: t.text, marginBottom: 6, letterSpacing: 0.5,
+              }}>
+                {label}
+              </div>
+              <div style={{
+                fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
+                color: t.textTertiary, lineHeight: 1.5,
+              }}>
+                {desc}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div style={{
+          fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
+          letterSpacing: 3.5, textTransform: "uppercase",
+          color: t.textTertiary, marginBottom: 12,
+        }}>
+          Example Scenarios
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {EXAMPLE_SCENARIOS.map((ex, i) => (
+            <button
+              key={i}
+              onClick={() => setQuery(ex)}
+              style={{
+                background: "none", border: `1px solid ${t.borderLight}`,
+                padding: "12px 16px", cursor: "pointer", textAlign: "left",
+                fontFamily: "'Times New Roman', serif",
+                fontSize: "clamp(13px, 2vw, 14px)",
+                color: t.textSecondary, lineHeight: 1.55,
+                transition: "border-color 0.15s, color 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.text; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.borderLight; e.currentTarget.style.color = t.textSecondary; }}
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // AdSense — only push once per <ins> element
 function AdUnit({ slotId, style }) {
   const ref = useRef(null);
@@ -159,6 +249,9 @@ function AppInner() {
       }}>
         <AdUnit slotId="7399604405" style={{ maxWidth: "100%" }} />
       </div>
+
+      {/* Landing content — visible only on empty state */}
+      {!result && !loading && !error && <LandingContent setQuery={setQuery} t={t} />}
 
       {/* Loading/error — always visible regardless of result state */}
       <div ref={resultsRef}>
