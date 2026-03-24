@@ -11,6 +11,50 @@ const MIN_SAMPLE_SIZE = 10;
 
 const memoryAlertState = new Map();
 
+const WEBHOOK_TIMEOUT_MS = 8000;
+
+function getAlertWebhookUrl() {
+  const url = process.env.RETRIEVAL_ALERT_WEBHOOK_URL || "";
+  return typeof url === "string" && url.startsWith("http") ? url.trim() : "";
+}
+
+function buildWebhookBody(alert) {
+  const line = [
+    "[CaseDive] Retrieval threshold breach",
+    alert.message,
+    `Alert: ${alert.id} | metric=${alert.metric} | window=${alert.window}`,
+    `value=${alert.value} | threshold=${alert.threshold} | at=${alert.evaluatedAt}`,
+  ].join("\n");
+  return {
+    text: line,
+    content: line,
+    alert,
+    source: "casedive-retrieval",
+  };
+}
+
+async function postAlertToWebhook(alert, webhookUrl) {
+  if (!webhookUrl) return { ok: false, skipped: true };
+
+  const body = JSON.stringify(buildWebhookBody(alert));
+  const signal =
+    typeof AbortSignal !== "undefined" && AbortSignal.timeout
+      ? AbortSignal.timeout(WEBHOOK_TIMEOUT_MS)
+      : undefined;
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      ...(signal ? { signal } : {}),
+    });
+    return { ok: res.ok, status: res.status };
+  } catch {
+    return { ok: false, skipped: false };
+  }
+}
+
 export const RETRIEVAL_ALERT_THRESHOLDS = {
   errorRate1h: 0.05,
   noVerifiedRate1h: 0.45,
@@ -163,6 +207,7 @@ export async function emitRetrievalAlerts({ requestId = "unknown", endpoint = "u
     return { alerts, emitted: [] };
   }
 
+  const webhookUrl = getAlertWebhookUrl();
   const emitted = [];
   for (const alert of alerts) {
     // eslint-disable-next-line no-await-in-loop
@@ -178,6 +223,19 @@ export async function emitRetrievalAlerts({ requestId = "unknown", endpoint = "u
         ...alert,
       })
     );
+    // eslint-disable-next-line no-await-in-loop
+    const webhookResult = await postAlertToWebhook(alert, webhookUrl);
+    if (webhookUrl && webhookResult && !webhookResult.ok && !webhookResult.skipped) {
+      console.log(
+        createLog({
+          requestId,
+          endpoint,
+          event: "retrieval_alert_webhook_failed",
+          alertId: alert.id,
+          webhookStatus: webhookResult.status ?? null,
+        })
+      );
+    }
   }
 
   return { alerts, emitted };

@@ -18,11 +18,11 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 - Completed (Phase C-A): structured retrieval metrics logging added for analyze/retrieve-caselaw (reason, call counts, verification yield, latency).
 - Completed (Phase C-B): rolling retrieval health aggregates (5m/1h) added with Redis + in-memory fallback.
 - Completed (Phase C-C): threshold alert evaluation + deduped alert logs + internal retrieval health endpoint.
+- Completed: optional `RETRIEVAL_ALERT_WEBHOOK_URL` POST for deduped threshold alerts; case-law fallback search + expanded DB targets when primary pass verifies nothing; internal dashboard at `/internal/retrieval-health`.
 - In progress: Data quality refinement (exact-text/statute precision for expanded civil law entries), docs sync, and targeted test coverage for edge citation formats.
 - Next priorities:
-  - Add dashboard/visualization for retrieval health trendlines over time
-  - Add alert routing (Slack/email webhook) for sustained threshold breaches
-  - Continue case-law retrieval quality tuning (query shaping, fallback DB strategy, and empty-state UX)
+  - Optional: retrieval health trendlines over time (dashboard shows 5m/1h snapshots today)
+  - Continue case-law retrieval quality tuning (query shaping and empty-state UX)
 
 ## Tech Stack
 - Frontend: React 18 + Vite, inline styles with ThemeContext (no CSS framework by design)
@@ -128,6 +128,7 @@ CANLII_API_KEY=...                     # Optional; verification degrades gracefu
 UPSTASH_REDIS_REST_URL=...             # Optional; enables shared limiter/cache
 UPSTASH_REDIS_REST_TOKEN=...           # Required if UPSTASH_REDIS_REST_URL is set
 RETRIEVAL_HEALTH_TOKEN=...             # Optional; protects GET /api/retrieval-health when set
+RETRIEVAL_ALERT_WEBHOOK_URL=...        # Optional; Slack/generic webhook for deduped retrieval threshold alerts
 ```
 
 ## Design System

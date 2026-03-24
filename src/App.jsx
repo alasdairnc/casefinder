@@ -10,6 +10,7 @@ import ErrorMessage from "./components/ErrorMessage.jsx";
 import SearchHistory from "./components/SearchHistory.jsx";
 import BookmarksPanel from "./components/BookmarksPanel.jsx";
 import CriminalCodeExplorer from "./components/CriminalCodeExplorer.jsx";
+import RetrievalHealthDashboard from "./components/RetrievalHealthDashboard.jsx";
 import { useSearchHistory } from "./hooks/useSearchHistory.js";
 import { useBookmarks } from "./hooks/useBookmarks.js";
 
@@ -129,6 +130,16 @@ function AdUnit({ slotId, style }) {
 
 function AppInner() {
   const t = useTheme();
+  const [pathname, setPathname] = useState(() =>
+    typeof window !== "undefined" ? window.location.pathname : "/"
+  );
+
+  useEffect(() => {
+    const onPop = () => setPathname(window.location.pathname);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -147,6 +158,17 @@ function AppInner() {
   const resultsRef = useRef(null);
   const { history, addToHistory, clearHistory, rerunQuery } = useSearchHistory();
   const { bookmarks, addBookmark, removeBookmark, isBookmarked, clearBookmarks } = useBookmarks();
+
+  if (pathname === "/internal/retrieval-health") {
+    return (
+      <RetrievalHealthDashboard
+        onNavigateHome={() => {
+          window.history.pushState({}, "", "/");
+          setPathname("/");
+        }}
+      />
+    );
+  }
 
   const analyzeScenario = async (overrideQuery, overrideFilters) => {
     const activeQuery = typeof overrideQuery === "string" ? overrideQuery : query;

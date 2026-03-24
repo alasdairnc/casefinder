@@ -8,7 +8,10 @@ const CANLII_API_BASE = "https://api.canlii.org/v1";
 const SEARCH_TIMEOUT_MS = 1800;
 const MAX_TERMS = 2;
 const MAX_DATABASES = 3;
-const MAX_SEARCH_CALLS = 4;
+const MAX_SEARCH_CALLS_PHASE1 = 4;
+const MAX_SEARCH_CALLS_TOTAL = 10;
+const MAX_FALLBACK_TERMS = 5;
+const MAX_DATABASES_FALLBACK = 8;
 const MAX_CANDIDATES = 6;
 const MAX_VERIFICATION_CALLS = 6;
 
@@ -33,6 +36,24 @@ const COURT_LEVEL_DB_IDS = {
   superior: ["onsc", "bcsc", "abqb", "qccs", "mbqb", "skqb", "nssc", "nbqb", "nlsc"],
   provincial: ["oncj", "bcpc", "abpc", "qccq", "mbpc", "skpc", "nspc", "nbpc", "nlpc"],
 };
+
+const FEDERAL_DATABASE_IDS = ["csc-scc", "fca", "fct"];
+
+/** When a province-specific search under-fetches, add appellate courts from other major jurisdictions. */
+const ADJACENT_JURISDICTION_DB_IDS = {
+  Ontario: ["bcca", "abca", "qcca"],
+  "British Columbia": ["onca", "abca", "qcca"],
+  Alberta: ["onca", "bcca", "qcca"],
+  Quebec: ["onca", "bcca", "abca"],
+  Manitoba: ["onca", "bcca", "skca"],
+  Saskatchewan: ["onca", "bcca", "abca"],
+  "Nova Scotia": ["onca", "nbca", "nlca"],
+  "New Brunswick": ["onca", "nsca", "nlca"],
+  "Newfoundland and Labrador": ["onca", "nsca", "nbca"],
+  "Prince Edward Island": ["onca", "nsca", "nbca"],
+};
+
+const NATIONAL_SPREAD_DB_IDS = ["csc-scc", "fca", "fct", "onca", "bcca", "abca", "qcca", "mbca"];
 
 const DB_TO_COURT_CODE = (() => {
   const map = new Map();
@@ -140,6 +161,99 @@ function pickDatabaseTargets(filters = {}) {
   }
 
   return dedupeStrings(ids).slice(0, MAX_DATABASES + 1);
+}
+
+/**
+ * Broaden database targets with federal courts and (when applicable) adjacent appellate courts.
+ * Used only when the primary search pass yields no verified cases.
+ */
+export function expandDatabaseTargetsForFallback(filters = {}, primaryDbIds = []) {
+  const { jurisdiction = "all" } = filters || {};
+  const primary = Array.isArray(primaryDbIds) ? primaryDbIds : [];
+
+  const extra =
+    jurisdiction === "all"
+      ? [...FEDERAL_DATABASE_IDS, ...NATIONAL_SPREAD_DB_IDS]
+      : [
+          ...FEDERAL_DATABASE_IDS,
+          ...(ADJACENT_JURISDICTION_DB_IDS[jurisdiction] || []),
+        ];
+
+  return dedupeStrings([...primary, ...extra]).slice(0, MAX_DATABASES_FALLBACK);
+}
+
+const FALLBACK_STOPWORDS = new Set([
+  "this",
+  "that",
+  "with",
+  "from",
+  "into",
+  "their",
+  "there",
+  "where",
+  "which",
+  "would",
+  "could",
+  "should",
+  "being",
+  "after",
+  "before",
+]);
+
+function buildFallbackSearchTerms({ scenario = "", terms = [], criminalCode = [] }) {
+  const out = [];
+
+  for (const term of terms) {
+    const parts = sanitizeTerm(term)
+      .split(/\s+/)
+      .filter(Boolean);
+    if (parts.length >= 4) {
+      out.push(parts.slice(0, 2).join(" "));
+      out.push(parts.slice(0, 3).join(" "));
+    } else if (parts.length === 3) {
+      out.push(parts.slice(0, 2).join(" "));
+      out.push(parts[0]);
+    } else if (parts.length === 2) {
+      out.push(parts[0]);
+    }
+  }
+
+  const scenWords = sanitizeTerm(scenario || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 4 && !FALLBACK_STOPWORDS.has(w));
+  out.push(...scenWords.slice(0, 4));
+
+  if (Array.isArray(criminalCode)) {
+    for (const item of criminalCode) {
+      if (!item?.citation) continue;
+      const sectionMatch = item.citation.match(/s\.\s*([\d.]+)/);
+      if (sectionMatch) out.push(sectionMatch[1]);
+    }
+  }
+
+  return dedupeStrings(out).slice(0, MAX_FALLBACK_TERMS);
+}
+
+async function gatherSearchCandidates(terms, dbTargets, apiKey, maxCalls) {
+  const rawCandidates = [];
+  let searchCalls = 0;
+
+  for (const term of terms) {
+    for (const dbId of dbTargets) {
+      if (searchCalls >= maxCalls) break;
+      searchCalls += 1;
+
+      const found = await searchCandidatesForTerm(term, dbId, apiKey);
+      rawCandidates.push(...found);
+
+      if (rawCandidates.length >= MAX_CANDIDATES * 3) break;
+    }
+    if (searchCalls >= maxCalls || rawCandidates.length >= MAX_CANDIDATES * 3) break;
+  }
+
+  return { rawCandidates, searchCalls };
 }
 
 function buildSearchUrls(term, dbId, apiKey) {
@@ -337,39 +451,57 @@ export async function retrieveVerifiedCaseLaw({
         searchCalls: 0,
         candidateCount: 0,
         verificationCalls: 0,
+        fallbackSearchUsed: false,
       },
     };
   }
 
-  const rawCandidates = [];
+  let rawCandidates = [];
   let searchCalls = 0;
 
-  for (const term of terms) {
-    for (const dbId of dbTargets) {
-      if (searchCalls >= MAX_SEARCH_CALLS) break;
-      searchCalls += 1;
+  const phase1 = await gatherSearchCandidates(terms, dbTargets, apiKey, MAX_SEARCH_CALLS_PHASE1);
+  rawCandidates = phase1.rawCandidates;
+  searchCalls = phase1.searchCalls;
 
-      const found = await searchCandidatesForTerm(term, dbId, apiKey);
-      rawCandidates.push(...found);
+  let uniqueCandidates = dedupeCandidates(rawCandidates).slice(0, MAX_CANDIDATES);
 
-      if (rawCandidates.length >= MAX_CANDIDATES * 3) break;
-    }
-    if (searchCalls >= MAX_SEARCH_CALLS || rawCandidates.length >= MAX_CANDIDATES * 3) break;
-  }
-
-  const uniqueCandidates = dedupeCandidates(rawCandidates).slice(0, MAX_CANDIDATES);
-  const cases = [];
+  const citationLookupTried = new Set();
   let verificationCalls = 0;
 
-  for (const candidate of uniqueCandidates) {
-    if (verificationCalls >= MAX_VERIFICATION_CALLS) break;
-    verificationCalls += 1;
+  async function verifyCandidates(candidates) {
+    const out = [];
+    for (const candidate of candidates) {
+      if (out.length >= maxResults) break;
+      const key = candidate.citation.toLowerCase();
+      if (citationLookupTried.has(key)) continue;
+      citationLookupTried.add(key);
+      if (verificationCalls >= MAX_VERIFICATION_CALLS) break;
+      verificationCalls += 1;
 
-    const verification = await lookupCase(candidate.citation, apiKey);
-    if (verification.status !== "verified") continue;
+      const verification = await lookupCase(candidate.citation, apiKey);
+      if (verification.status !== "verified") continue;
 
-    cases.push(toCaseLawItem(candidate, verification));
-    if (cases.length >= maxResults) break;
+      out.push(toCaseLawItem(candidate, verification));
+    }
+    return out;
+  }
+
+  let cases = await verifyCandidates(uniqueCandidates);
+  let fallbackSearchUsed = false;
+
+  if (cases.length === 0 && searchCalls < MAX_SEARCH_CALLS_TOTAL) {
+    const fbTerms = buildFallbackSearchTerms({ scenario, terms, criminalCode });
+    const fbDbs = expandDatabaseTargetsForFallback(filters, dbTargets);
+    const remaining = MAX_SEARCH_CALLS_TOTAL - searchCalls;
+
+    if (remaining > 0 && fbTerms.length > 0 && fbDbs.length > 0) {
+      const phase2 = await gatherSearchCandidates(fbTerms, fbDbs, apiKey, remaining);
+      searchCalls += phase2.searchCalls;
+      rawCandidates.push(...phase2.rawCandidates);
+      fallbackSearchUsed = true;
+      uniqueCandidates = dedupeCandidates(rawCandidates).slice(0, MAX_CANDIDATES);
+      cases = await verifyCandidates(uniqueCandidates);
+    }
   }
 
   return {
@@ -381,6 +513,7 @@ export async function retrieveVerifiedCaseLaw({
       candidateCount: uniqueCandidates.length,
       verificationCalls,
       verifiedCount: cases.length,
+      fallbackSearchUsed,
     },
   };
 }
