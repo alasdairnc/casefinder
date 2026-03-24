@@ -12,10 +12,10 @@ export const COURT_WEB_MAP = {
   BCCA: "bc/bcca", BCSC: "bc/bcsc", BCPC: "bc/bcpc",
   ABCA: "ab/abca", ABKB: "ab/abkb", ABQB: "ab/abqb", ABPC: "ab/abpc",
   QCCA: "qc/qcca", QCCS: "qc/qccs", QCCQ: "qc/qccq",
-  MBCA: "mb/mbca", MBKB: "mb/mbkb", MBQB: "mb/mbqb", MBPC: "mb/mbpc",
-  SKCA: "sk/skca", SKKB: "sk/skkb", SKQB: "sk/skqb", SKPC: "sk/skpc",
+  MBCA: "mb/mbca", MBQB: "mb/mbqb", MBPC: "mb/mbpc",
+  SKCA: "sk/skca", SKQB: "sk/skqb", SKPC: "sk/skpc",
   NSCA: "ns/nsca", NSSC: "ns/nssc", NSPC: "ns/nspc",
-  NBCA: "nb/nbca", NBKB: "nb/nbkb", NBQB: "nb/nbqb", NBPC: "nb/nbpc",
+  NBCA: "nb/nbca", NBQB: "nb/nbqb", NBPC: "nb/nbpc",
   PECA: "pe/peca", PEICA: "pe/peca",
   NLCA: "nl/nlca", NLSC: "nl/nlsc", NLPC: "nl/nlpc",
   NWTCA: "nt/nwtca", NWTSC: "nt/nwtsc",
@@ -32,10 +32,10 @@ export const COURT_API_MAP = {
   BCCA: "bcca",    BCSC: "bcsc",    BCPC: "bcpc",
   ABCA: "abca",    ABKB: "abkb",    ABQB: "abqb",    ABPC: "abpc",
   QCCA: "qcca",    QCCS: "qccs",    QCCQ: "qccq",
-  MBCA: "mbca",    MBKB: "mbkb",    MBQB: "mbqb",    MBPC: "mbpc",
-  SKCA: "skca",    SKKB: "skkb",    SKQB: "skqb",    SKPC: "skpc",
+  MBCA: "mbca",    MBQB: "mbqb",    MBPC: "mbpc",
+  SKCA: "skca",    SKQB: "skqb",    SKPC: "skpc",
   NSCA: "nsca",    NSSC: "nssc",    NSPC: "nspc",
-  NBCA: "nbca",    NBKB: "nbkb",    NBQB: "nbqb",    NBPC: "nbpc",
+  NBCA: "nbca",    NBQB: "nbqb",    NBPC: "nbpc",
   PECA: "peca",    PEICA: "peca",
   NLCA: "nlca",    NLSC: "nlsc",    NLPC: "nlpc",
   NWTCA: "nwtca",  NWTSC: "nwtsc",
@@ -93,15 +93,14 @@ export function parseCitation(citation) {
   }
 
   // 3. SCR citation: "Parties, [YYYY] N SCR NNN"
-  // More robust: allow optional dots (S.C.R.), optional volume, flexible spacing
-  const scr = trimmed.match(/^(?:(.+?),\s*)?\[(\d{4})\]\s*(?:\d+)?\s*S\.?C\.?R\.?\s*\d+$/i);
+  const scr = trimmed.match(/^(?:(.+?),\s*)?\[(\d{4})\]\s+\d+\s+SCR\s+\d+$/i);
   if (scr) {
     const [, parties, year] = scr;
     return {
       parties: parties ? parties.trim() : null,
       year,
       courtCode: "SCC",
-      number: null,
+      number: null, // SCR doesn't map directly to CanLII number without lookup
       apiDbId: "csc-scc",
       webDbId: "ca/scc",
       isLegacy: true,
@@ -194,22 +193,13 @@ export async function lookupCase(citation, apiKey) {
     return { status: "unknown_court", searchUrl: buildSearchUrl(citation) };
   }
 
-  const caseId = buildCaseId({ 
-    year: parsed.year, 
-    courtCode: parsed.courtCode, 
-    number: parsed.number,
-    isLegacy: parsed.isLegacy 
-  });
-
-  const searchUrl = buildSearchUrl(citation);
-
+  const caseId = buildCaseId({ year: parsed.year, courtCode: parsed.courtCode, number: parsed.number });
   if (!caseId) {
-    // Valid citation format but no direct CanLII ID (e.g. SCR citation)
-    // Return as unverified with search URL
-    return { status: "unverified", searchUrl };
+    return { status: "unparseable", searchUrl: buildSearchUrl(citation) };
   }
 
   const caseUrl = buildCaseUrl(parsed.webDbId, parsed.year, caseId);
+  const searchUrl = buildSearchUrl(citation);
 
   // No API key — return unverified with a best-guess URL
   if (!apiKey) {
