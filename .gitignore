@@ -1,6 +1,7 @@
 node_modules
 dist
 playwright-report
+playwright-report-live
 test-results
 .env
 .env.local
