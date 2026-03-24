@@ -6,7 +6,7 @@ import { COURT_API_MAP, lookupCase, parseCitation } from "../src/lib/canlii.js";
 
 const CANLII_API_BASE = "https://api.canlii.org/v1";
 const SEARCH_TIMEOUT_MS = 3000;
-const MAX_TERMS = 2;
+const MAX_TERMS = 4;
 const MAX_DATABASES = 3;
 const MAX_SEARCH_CALLS = 12;
 const MAX_CANDIDATES = 15;
@@ -105,16 +105,41 @@ function extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode = [] 
     }
   }
 
-  // 3. Fallback: Take a few key nouns/verbs from the scenario (better than first 12 words)
-  const words = sanitizeTerm(scenario || "")
-    .toLowerCase()
+  // 3. Fallback: Use key legal terms and scenario nouns
+  const scenarioText = sanitizeTerm(scenario || "").toLowerCase();
+  
+  // Specific common legal scenarios to boost
+  const keywords = [
+    { match: /impaired|drunk|alcohol|bac|breathalyzer/i, term: "impaired driving" },
+    { match: /accident|struck|collision|vehicle/i, term: "motor vehicle accident" },
+    { match: /injury|serious|bodily/i, term: "bodily harm" },
+    { match: /search|warrant|seizure/i, term: "warrantless search" },
+    { match: /arrest|detain|rights/i, term: "arbitrary detention" },
+    { match: /drug|trafficking|cocaine|fentanyl/i, term: "drug trafficking" },
+  ];
+
+  for (const kw of keywords) {
+    if (kw.match.test(scenarioText)) {
+      terms.push(kw.term);
+    }
+  }
+
+  const words = scenarioText
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
-    .filter(w => w.length > 3 && !["this", "that", "with", "from", "into", "into", "their"].includes(w));
+    .filter(w => w.length > 3 && !["this", "that", "with", "from", "into", "their", "driver", "vehicle"].includes(w));
   
-  if (words.length > 0 && terms.length < MAX_TERMS) {
-    const fallback = words.slice(0, 5).join(" ");
-    if (fallback) terms.push(fallback);
+  if (words.length > 0) {
+    // Try pairs of words for better precision
+    for (let i = 0; i < words.length - 1; i += 2) {
+      if (terms.length >= MAX_TERMS * 2) break;
+      terms.push(`${words[i]} ${words[i+1]}`);
+    }
+    // Individual words as last resort
+    for (const w of words.slice(0, 4)) {
+      if (terms.length >= MAX_TERMS * 2) break;
+      terms.push(w);
+    }
   }
 
   return dedupeStrings(terms).slice(0, MAX_TERMS + 1);
@@ -147,10 +172,11 @@ function buildSearchUrls(term, dbId, apiKey) {
   const encDb = encodeURIComponent(dbId);
   const encKey = encodeURIComponent(apiKey);
 
-  // Attempt search using both the /search (text) and /cases (keywords) endpoints
+  // Attempt search using multiple CanLII endpoints for maximum coverage
   return [
     `${CANLII_API_BASE}/search/?text=${encTerm}&databaseId=${encDb}&api_key=${encKey}`,
     `${CANLII_API_BASE}/cases?db=${encDb}&keywords=${encTerm}&api_key=${encKey}`,
+    `${CANLII_API_BASE}/search/?all=${encTerm}&databaseId=${encDb}&api_key=${encKey}`,
   ];
 }
 
@@ -241,26 +267,28 @@ function candidateFromObject(obj, dbId, term) {
 }
 
 function collectCandidates(node, dbId, term, out, depth = 0) {
-  if (!node || depth > 4 || out.length >= MAX_CANDIDATES * 3) return;
+  if (!node || depth > 6 || out.length >= MAX_CANDIDATES * 3) return;
 
   if (Array.isArray(node)) {
     for (const item of node) {
       collectCandidates(item, dbId, term, out, depth + 1);
-      if (out.length >= MAX_CANDIDATES * 3) return;
     }
     return;
   }
 
   if (typeof node !== "object") return;
 
+  // If this object looks like a case (has title/parties/citation/caseId), try it
   const candidate = candidateFromObject(node, dbId, term);
   if (candidate) {
     out.push(candidate);
   }
 
-  for (const value of Object.values(node)) {
-    collectCandidates(value, dbId, term, out, depth + 1);
-    if (out.length >= MAX_CANDIDATES * 3) return;
+  // Recurse into all properties of the object to find nested results/cases
+  for (const key of Object.keys(node)) {
+    // Avoid re-scanning large text blobs that are already part of a candidate
+    if (["summary", "abstract", "snippet", "matched_content"].includes(key)) continue;
+    collectCandidates(node[key], dbId, term, out, depth + 1);
   }
 }
 
