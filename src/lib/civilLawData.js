@@ -453,7 +453,16 @@ export function lookupCivilLawSection(citation) {
     if (pattern.test(trimmed)) {
       const sectionNum = extractSectionNumber(trimmed);
       if (!sectionNum) continue;
-      const entry = map.get(sectionNum);
+      
+      let entry = map.get(sectionNum);
+      if (!entry) {
+        // Fallback: try base section number (e.g., "4(1)" -> "4")
+        const baseNum = sectionNum.split("(")[0];
+        if (baseNum !== sectionNum) {
+          entry = map.get(baseNum);
+        }
+      }
+      
       if (entry) return { entry, prefix };
     }
   }

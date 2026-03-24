@@ -11,7 +11,9 @@ const MOCK_ANALYZE_RESPONSE = {
   civil_law: [],
   charter: [],
   analysis: "This scenario involves a classic residential break and enter with theft.",
-  searchTerms: ["residential break and enter"],
+  suggestions: [
+    { type: "canlii", label: "residential break and enter", term: "residential break and enter" },
+  ],
 };
 
 const MOCK_VERIFY_RESPONSE = {

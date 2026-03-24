@@ -27,7 +27,10 @@ const MOCK_ANALYZE_RESPONSE = {
   civil_law: [],
   charter: [],
   analysis: "This scenario involves a classic residential break and enter with theft.",
-  searchTerms: ["residential break and enter", "theft under 5000"],
+  suggestions: [
+    { type: "canlii", label: "residential break and enter", term: "residential break and enter" },
+    { type: "canlii", label: "theft under 5000", term: "theft under 5000" },
+  ],
 };
 
 const MOCK_VERIFY_RESPONSE = {
@@ -63,7 +66,7 @@ test.describe("Search flow", () => {
           facts: "The accused entered a home at night and stole jewelry.",
           held: "The court upheld the sentence for the residential break and enter.",
           ratio: "Residential break and enter engages denunciation and deterrence.",
-          keyQuote: "\"Residential break and enter is a serious offence.\"",
+          keyQuote: "Residential break and enter is a serious offence.",
           significance: "The case is often cited for sentencing principles in home invasion cases.",
         }),
       });
@@ -127,12 +130,50 @@ test.describe("Search flow", () => {
     await expect(page.getByText("This scenario involves a classic residential break and enter with theft.")).toBeVisible();
   });
 
-  test("shows CanLII search terms", async ({ page }) => {
+  test("shows suggested links", async ({ page }) => {
     await page.locator("textarea").fill("A person broke into a house at night and stole jewelry");
     await page.locator("button").filter({ hasText: /research/i }).click();
 
-    await expect(page.getByText("Suggested CanLII Searches")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Suggested Links")).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole("link", { name: /residential break and enter/i })).toBeVisible();
+  });
+
+  test("shows suggested links including statutes", async ({ page }) => {
+    await page.unroute("/api/analyze");
+    await page.route("/api/analyze", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...MOCK_ANALYZE_RESPONSE,
+          suggestions: [
+            { type: "canlii", label: "residential break and enter", term: "residential break and enter" },
+            { type: "criminal_code", label: "s. 348", citation: "s. 348" },
+            { type: "provincial_statute", label: "HTA s. 128", citation: "Highway Traffic Act (ON), s. 128" },
+          ],
+        }),
+      });
+    });
+
+    await page.locator("textarea").fill("test statute links");
+    await page.locator("button").filter({ hasText: /research/i }).click();
+
+    await expect(page.getByText("Suggested Links")).toBeVisible({ timeout: 10000 });
+    
+    // Check for CanLII link
+    await expect(page.getByRole("link", { name: /residential break and enter/i })).toBeVisible();
+    
+    // Check for Criminal Code link (should point to justice laws)
+    const ccLink = page.getByRole("link", { name: "s. 348 ↗" });
+    await expect(ccLink).toBeVisible();
+    const ccHref = await ccLink.getAttribute("href");
+    expect(ccHref).toContain("laws-lois.justice.gc.ca");
+
+    // Check for HTA link (should point to e-laws)
+    const htaLink = page.getByRole("link", { name: "HTA s. 128 ↗" });
+    await expect(htaLink).toBeVisible();
+    const htaHref = await htaLink.getAttribute("href");
+    expect(htaHref).toContain("ontario.ca/laws");
   });
 
   test("Cmd+Enter submits the form", async ({ page }) => {
@@ -189,7 +230,7 @@ test.describe("Search flow", () => {
           facts: "The accused entered a home at night and stole jewelry.",
           held: "The court upheld the sentence for the residential break and enter.",
           ratio: "Residential break and enter engages denunciation and deterrence.",
-          keyQuote: "\"Residential break and enter is a serious offence.\"",
+          keyQuote: "Residential break and enter is a serious offence.",
           significance: "The case is often cited for sentencing principles in home invasion cases.",
         }),
       });

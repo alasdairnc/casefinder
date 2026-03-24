@@ -6,7 +6,7 @@ const BASE_ANALYZE = {
   civil_law: [],
   charter: [],
   analysis: "Test analysis.",
-  searchTerms: [],
+  suggestions: [],
 };
 
 test.describe("Hallucination filtering", () => {

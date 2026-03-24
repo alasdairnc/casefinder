@@ -28,7 +28,10 @@ const MOCK_ANALYZE_RESPONSE = {
   ],
   charter: [],
   analysis: "This scenario involves statutes from ON, BC, AB, and Federal jurisdictions.",
-  searchTerms: ["traffic safety act", "motor vehicle act"],
+  suggestions: [
+    { type: "canlii", label: "traffic safety act", term: "traffic safety act" },
+    { type: "canlii", label: "motor vehicle act", term: "motor vehicle act" },
+  ],
 };
 
 const MOCK_VERIFY_RESPONSE = {
