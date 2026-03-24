@@ -9,6 +9,7 @@ import {
   buildApiUrl,
   buildCaseUrl,
   buildSearchUrl,
+  partiesMatch,
 } from "../src/lib/canlii.js";
 import { lookupSection, normalizeSection } from "../src/lib/criminalCodeData.js";
 import { lookupCharterSection } from "../src/lib/charterData.js";
@@ -273,11 +274,16 @@ export default async function handler(req, res) {
           return;
         }
         const data = await apiRes.json();
+        const canliiTitle = data.title || "";
+        if (!partiesMatch(parsed.parties, canliiTitle)) {
+          results[citation] = { status: "not_found", searchUrl };
+          return;
+        }
         results[citation] = {
           status: "verified",
           url: caseUrl,
           searchUrl,
-          title: data.title || citation,
+          title: canliiTitle || citation,
         };
       } catch (err) {
         logError(requestId, "verify", err, 500, 0, { citationIndex: citations.indexOf(rawCitation) });

@@ -107,6 +107,35 @@ export function buildSearchUrl(citation) {
 }
 
 /**
+ * Check whether submitted party names plausibly match the CanLII API title.
+ * Protects against ID collisions where a hallucinated citation shares a year+court+number
+ * with a real but unrelated case (e.g. "R v Penno, 2021 SCC 44" → H.M.B. Holdings Ltd.).
+ */
+export function partiesMatch(submittedParties, canliiTitle) {
+  if (!submittedParties || !canliiTitle) return false;
+
+  const STOP_WORDS = new Set([
+    "r", "v", "the", "her", "his", "majesty", "queen", "king",
+    "attorney", "general", "and", "of", "in", "a", "an",
+    "ltd", "inc", "corp", "co", "et", "al",
+    "des", "du", "le", "la", "les",
+  ]);
+
+  const tokenize = (s) =>
+    s.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+
+  const submitted = tokenize(submittedParties);
+  const canlii = new Set(tokenize(canliiTitle));
+
+  // If we can't extract tokens from submitted parties, allow through
+  if (submitted.length === 0) return true;
+  return submitted.some((word) => canlii.has(word));
+}
+
+/**
  * Look up a single citation against the CanLII API.
  * Returns a verification result object:
  *   { status: "verified" | "not_found" | "unverified" | "unparseable" | "unknown_court" | "error", url?, searchUrl, title? }
@@ -148,11 +177,15 @@ export async function lookupCase(citation, apiKey) {
     }
 
     const data = await res.json();
+    const canliiTitle = data.title || "";
+    if (!partiesMatch(parsed.parties, canliiTitle)) {
+      return { status: "not_found", searchUrl };
+    }
     return {
       status: "verified",
       url: caseUrl,
       searchUrl,
-      title: data.title || citation,
+      title: canliiTitle || citation,
     };
   } catch {
     return { status: "error", searchUrl };
