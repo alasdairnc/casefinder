@@ -14,6 +14,8 @@ const MAX_FALLBACK_TERMS = 5;
 const MAX_DATABASES_FALLBACK = 8;
 const MAX_CANDIDATES = 6;
 const MAX_VERIFICATION_CALLS = 6;
+const MAX_VERIFICATION_CALLS_PHASE1 = Math.ceil(MAX_VERIFICATION_CALLS / 2);
+const MAX_VERIFICATION_CALLS_FALLBACK = Math.floor(MAX_VERIFICATION_CALLS / 2);
 
 const DEFAULT_DB_IDS = ["csc-scc", "onca", "onsc", "bcca", "abca"];
 
@@ -466,17 +468,19 @@ export async function retrieveVerifiedCaseLaw({
   let uniqueCandidates = dedupeCandidates(rawCandidates).slice(0, MAX_CANDIDATES);
 
   const citationLookupTried = new Set();
-  let verificationCalls = 0;
+  let verificationCallsTotal = 0;
 
-  async function verifyCandidates(candidates) {
+  async function verifyCandidates(candidates, maxVerificationCalls) {
     const out = [];
+    let verificationCallsThisPass = 0;
     for (const candidate of candidates) {
       if (out.length >= maxResults) break;
       const key = candidate.citation.toLowerCase();
       if (citationLookupTried.has(key)) continue;
       citationLookupTried.add(key);
-      if (verificationCalls >= MAX_VERIFICATION_CALLS) break;
-      verificationCalls += 1;
+      if (verificationCallsThisPass >= maxVerificationCalls) break;
+      verificationCallsThisPass += 1;
+      verificationCallsTotal += 1;
 
       const verification = await lookupCase(candidate.citation, apiKey);
       if (verification.status !== "verified") continue;
@@ -486,7 +490,7 @@ export async function retrieveVerifiedCaseLaw({
     return out;
   }
 
-  let cases = await verifyCandidates(uniqueCandidates);
+  let cases = await verifyCandidates(uniqueCandidates, MAX_VERIFICATION_CALLS_PHASE1);
   let fallbackSearchUsed = false;
 
   if (cases.length === 0 && searchCalls < MAX_SEARCH_CALLS_TOTAL) {
@@ -500,7 +504,7 @@ export async function retrieveVerifiedCaseLaw({
       rawCandidates.push(...phase2.rawCandidates);
       fallbackSearchUsed = true;
       uniqueCandidates = dedupeCandidates(rawCandidates).slice(0, MAX_CANDIDATES);
-      cases = await verifyCandidates(uniqueCandidates);
+      cases = await verifyCandidates(uniqueCandidates, MAX_VERIFICATION_CALLS_FALLBACK);
     }
   }
 
@@ -511,7 +515,7 @@ export async function retrieveVerifiedCaseLaw({
       databasesTried: dbTargets.length,
       searchCalls,
       candidateCount: uniqueCandidates.length,
-      verificationCalls,
+      verificationCalls: verificationCallsTotal,
       verifiedCount: cases.length,
       fallbackSearchUsed,
     },
