@@ -157,6 +157,7 @@ function curatedTermsFromScenario(scenario) {
     }
   };
 
+  // ── Impaired driving / RIDE ─────────────────────────────────────────────────
   const ride = /\bride\b|\broadside\b|\bcheck\s*point\b|\bcheckpoint\b/.test(s);
   const alcohol =
     /\balcohol\b|\bbreath\b|\bbreathalyzer\b|\bimpaired\b|\bintoxicat\b|\bdrunk\b|\bdwi\b|\bover\s*80\b/.test(s) ||
@@ -176,6 +177,99 @@ function curatedTermsFromScenario(scenario) {
   }
   if (/\bcharter\b/.test(s) && (searchSeizure || /\bsearch\b/.test(s))) {
     push("Charter section 8 search seizure");
+  }
+
+  // ── Assault ─────────────────────────────────────────────────────────────────
+  const assault = /\bassault\b|\bstruck\b|\bhit\b|\bbatter\w*\b|\bbeat\w*\b|\bphysical\s+force\b/.test(s);
+  const weapon = /\bweapon\b|\bknife\b|\bgun\b|\bfirearm\b|\bclub\b|\bstab\w*\b/.test(s);
+  if (assault && weapon) {
+    push("assault with weapon Criminal Code section 267", "R v assault weapon bodily harm");
+  } else if (assault && /\bbodily\s+harm\b|\binjur\w*\b|\bbroke\b|\bfracture\b/.test(s)) {
+    push("assault causing bodily harm Criminal Code section 267", "R v bodily harm assault");
+  } else if (assault) {
+    push("assault Criminal Code section 266", "common assault consent defence");
+  }
+
+  // ── Sexual assault ───────────────────────────────────────────────────────────
+  const sexual = /\bsexual\b|\bsex\b/.test(s);
+  if (sexual && /\bassault\b|\battack\b|\btouch\w*\b|\bintercourse\b|\bcoerce\w*\b/.test(s)) {
+    push("sexual assault Criminal Code section 271", "R v consent sexual assault");
+  }
+
+  // ── Drug offences ────────────────────────────────────────────────────────────
+  const drugs = /\bdrug\w*\b|\bcocaine\b|\bfentanyl\b|\bheroin\b|\bmarijuana\b|\bcannabis\b|\bnarcotic\b|\bCDSA\b|\bcontrolled\s+substance\b/.test(s);
+  const trafficking = /\btraffick\w*\b|\bsell\w*\b|\bdistribut\w*\b|\bdeal\w*\b/.test(s);
+  if (drugs && trafficking) {
+    push("drug trafficking CDSA section 5", "possession for purpose of trafficking");
+  } else if (drugs && /\bpossession\b/.test(s)) {
+    push("possession controlled substance CDSA section 4", "simple possession drug offence");
+  } else if (drugs) {
+    push("CDSA controlled substance offence", "drug possession trafficking Canada");
+  }
+
+  // ── Theft / robbery / fraud ───────────────────────────────────────────────────
+  const theft = /\btheft\b|\bstole\b|\bsteal\w*\b|\bshoplifting\b|\bstolen\b/.test(s);
+  const robbery = /\brobbery\b|\bheld\s+up\b/.test(s);
+  const fraud = /\bfraud\b|\bextort\w*\b|\bdeceiv\w*\b|\bforger\w*\b/.test(s);
+  if (robbery) {
+    push("robbery Criminal Code section 343", "theft violence or threats robbery");
+  } else if (fraud) {
+    push("fraud Criminal Code section 380", "fraudulent misrepresentation Criminal Code");
+  } else if (theft) {
+    push("theft Criminal Code section 322", "theft under over 5000 Criminal Code");
+  }
+
+  // ── Break and enter ───────────────────────────────────────────────────────────
+  if (/\bbreak\s+and\s+enter\b|\bbreaking\s+and\s+enter\w*\b|\bbreaking\s+enter\w*\b|\bburglar\w*\b/.test(s)) {
+    push("break and enter dwelling house Criminal Code section 348", "B&E intent commit offence");
+  }
+
+  // ── Homicide / manslaughter ────────────────────────────────────────────────────
+  const homicide = /\bmurder\b|\bmanslaughter\b|\bhomicide\b|\bkill\w*\b|\bdeath\b/.test(s);
+  if (homicide) {
+    if (/\bfirst\s+degree\b|\bplanned\b|\bdeliberat\w*\b/.test(s)) {
+      push("first degree murder planned deliberate Criminal Code section 231");
+    } else if (/\bmanslaughter\b/.test(s)) {
+      push("manslaughter Criminal Code section 234", "criminal negligence causing death");
+    } else {
+      push("second degree murder Criminal Code section 235", "murder intent subjective mens rea");
+    }
+  }
+
+  // ── Charter s. 9 — arbitrary detention ────────────────────────────────────────
+  const detention = /\bdetain\w*\b|\bdetention\b|\barrest\w*\b/.test(s);
+  if (detention && /\bcharter\b|\barbitrar\w*\b/.test(s)) {
+    push("Charter section 9 arbitrary detention", "R v Grant arbitrary detention analysis");
+  }
+
+  // ── Charter s. 10(b) — right to counsel ───────────────────────────────────────
+  if (/\blawyer\b|\bcounsel\b|\blegal\s+aid\b/.test(s) || (detention && /\bcharter\b/.test(s))) {
+    push("Charter section 10 right to counsel", "informational duty right to counsel detention");
+  }
+
+  // ── Domestic violence ─────────────────────────────────────────────────────────
+  if (/\bdomestic\b|\bspouse\b|\bintimate\s+partner\b|\bfamily\s+violence\b/.test(s) && assault) {
+    push("domestic assault intimate partner violence Criminal Code");
+  }
+
+  // ── Uttering threats ──────────────────────────────────────────────────────────
+  if (/\bthreat\w*\b|\buttering\b/.test(s)) {
+    push("uttering threats Criminal Code section 264.1", "threatening death bodily harm Criminal Code");
+  }
+
+  // ── Criminal harassment / stalking ────────────────────────────────────────────
+  if (/\bharassment\b|\bstalk\w*\b/.test(s)) {
+    push("criminal harassment Criminal Code section 264", "repeated following communication harassment");
+  }
+
+  // ── Mischief ──────────────────────────────────────────────────────────────────
+  if (/\bmischief\b|\bvandal\w*\b|\bdestroy\w*\b|\bdamage\w*\b/.test(s) && !/\bbodily\b/.test(s)) {
+    push("mischief Criminal Code section 430", "wilful damage property Criminal Code");
+  }
+
+  // ── Firearm / weapons ─────────────────────────────────────────────────────────
+  if (weapon && !assault) {
+    push("possession firearm Criminal Code section 91", "unauthorized possession firearm Criminal Code");
   }
 
   return dedupeStrings(out);

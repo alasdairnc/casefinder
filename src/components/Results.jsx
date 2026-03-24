@@ -44,8 +44,13 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
       : caseLawMeta?.reason === "missing_api_key"
         ? "Case law retrieval is unavailable (CanLII not configured)."
         : caseLawMeta?.reason === "no_terms_or_databases"
-          ? "No search terms could be formed for case law. Try rephrasing with more legal detail."
-          : "No verified case law was found for this scenario.";
+          ? "No search terms could be formed. Try describing the offence more specifically — include the charge type, relevant statute, or key facts."
+          : "No verified case law was found for this scenario. Try adding more detail: specify the charge, jurisdiction, or key legal issue (e.g. 'Charter s. 8 search of vehicle').";
+
+  const caseLawEmptyHint =
+    caseLawMeta?.reason === "no_verified" || !caseLawMeta?.reason
+      ? "CanLII was searched but could not confirm any cases for this exact scenario."
+      : null;
 
   // Extract and verify citations on mount
   useEffect(() => {
@@ -347,10 +352,18 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
           </div>
           <div style={{
             fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
-            color: t.textTertiary, lineHeight: 1.5,
+            color: t.textTertiary, lineHeight: 1.6,
           }}>
             {caseLawEmptyMessage}
           </div>
+          {caseLawEmptyHint && (
+            <div style={{
+              fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11,
+              color: t.textTertiary, opacity: 0.6, marginTop: 6, lineHeight: 1.5,
+            }}>
+              {caseLawEmptyHint}
+            </div>
+          )}
         </div>
       )}
 
