@@ -4,6 +4,8 @@
 import { createHash, randomUUID } from "crypto";
 import { buildSystemPrompt } from "../src/lib/prompts.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders, redis } from "./_rateLimit.js";
+import { retrieveVerifiedCaseLaw } from "./_caseLawRetrieval.js";
+import { logRetrievalMetrics } from "./_retrievalMetrics.js";
 import {
   logRequestStart,
   logRateLimitCheck,
@@ -25,6 +27,13 @@ const CACHE_TTL_S = 60 * 60 * 24; // 24 hours
 
 function cacheKey(scenario, filters) {
   return "cache:analyze:" + createHash("sha256").update(scenario + JSON.stringify(filters)).digest("hex");
+}
+
+function ensureMetaContainer(result) {
+  if (!result.meta || typeof result.meta !== "object" || Array.isArray(result.meta)) {
+    result.meta = {};
+  }
+  return result.meta;
 }
 
 // ── Anthropic call ───────────────────────────────────────────────────────────
@@ -185,9 +194,40 @@ export default async function handler(req, res) {
         const cacheKeyStr = cacheKey(scenario, filters);
         const cached = await redis.get(cacheKeyStr);
         if (cached) {
+          const cachedResult = typeof cached === "string" ? JSON.parse(cached) : cached;
+          if (filters.lawTypes.case_law !== false) {
+            const cachedCaseLaw = Array.isArray(cachedResult?.case_law) ? cachedResult.case_law : [];
+            const cachedCaseLawMeta =
+              cachedResult?.meta && typeof cachedResult.meta === "object"
+                ? cachedResult.meta.case_law || {}
+                : {};
+
+            await logRetrievalMetrics({
+              requestId,
+              endpoint: "analyze",
+              source: "cache",
+              filters,
+              reason:
+                typeof cachedCaseLawMeta.reason === "string"
+                  ? cachedCaseLawMeta.reason
+                  : cachedCaseLaw.length > 0
+                  ? "verified_results"
+                  : "unknown_cached",
+              retrievalLatencyMs: 0,
+              finalCaseLawCount: cachedCaseLaw.length,
+              retrievalMeta: {
+                verifiedCount:
+                  typeof cachedCaseLawMeta.verifiedCount === "number"
+                    ? cachedCaseLawMeta.verifiedCount
+                    : cachedCaseLaw.length,
+              },
+              cacheHit: true,
+            });
+          }
+
           logCacheHit(requestId, "analyze", cacheKeyStr);
           logSuccess(requestId, "analyze", 200, Date.now() - startMs, rlResult, { cacheUsed: true });
-          return res.status(200).json(typeof cached === "string" ? JSON.parse(cached) : cached);
+          return res.status(200).json(cachedResult);
         }
         logCacheMiss(requestId, "analyze");
       } catch { /* cache miss — proceed normally */ }
@@ -207,6 +247,92 @@ export default async function handler(req, res) {
       return res.status(422).json({
         error:
           "The AI returned an unstructured response for this scenario. Try adding more detail — specify the location, what happened, and any relevant context.",
+      });
+    }
+
+    // Phase B retrieval-first path: case_law output is retrieval-authoritative only.
+    const meta = ensureMetaContainer(result);
+    if (filters.lawTypes.case_law !== false) {
+      const canliiKey = process.env.CANLII_API_KEY || "";
+      const retrievalStartMs = Date.now();
+      try {
+        const { cases: retrievedCases, meta: retrievalMeta } = await retrieveVerifiedCaseLaw({
+          scenario: scenario.trim(),
+          filters,
+          aiSuggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
+          apiKey: canliiKey,
+          maxResults: 3,
+        });
+        const retrievalDurationMs = Date.now() - retrievalStartMs;
+
+        if ((retrievalMeta.searchCalls || 0) > 0 || (retrievalMeta.verificationCalls || 0) > 0) {
+          logExternalApiCall(requestId, "analyze", "canlii-retrieval", 200, retrievalDurationMs, {
+            ...retrievalMeta,
+            casesReturned: retrievedCases.length,
+          });
+        }
+
+        result.case_law = Array.isArray(retrievedCases) ? retrievedCases : [];
+        const reason = retrievalMeta.reason || (result.case_law.length > 0 ? "verified_results" : "no_verified");
+        meta.case_law = {
+          source: "retrieval",
+          verifiedCount: result.case_law.length,
+          reason,
+        };
+        await logRetrievalMetrics({
+          requestId,
+          endpoint: "analyze",
+          source: "retrieval",
+          filters,
+          reason,
+          retrievalMeta,
+          retrievalLatencyMs: retrievalDurationMs,
+          finalCaseLawCount: result.case_law.length,
+        });
+      } catch (retrievalErr) {
+        const retrievalDurationMs = Date.now() - retrievalStartMs;
+        result.case_law = [];
+        meta.case_law = {
+          source: "retrieval",
+          verifiedCount: 0,
+          reason: "retrieval_error",
+        };
+        await logRetrievalMetrics({
+          requestId,
+          endpoint: "analyze",
+          source: "retrieval",
+          filters,
+          reason: "retrieval_error",
+          retrievalLatencyMs: retrievalDurationMs,
+          finalCaseLawCount: 0,
+          retrievalError: true,
+          errorMessage: retrievalErr?.message || "Case law retrieval failed",
+        });
+        console.log(
+          JSON.stringify({
+            timestamp: new Date().toISOString(),
+            requestId,
+            event: "retrieval_warning",
+            endpoint: "analyze",
+            message: retrievalErr?.message || "Case law retrieval failed",
+          })
+        );
+      }
+    } else {
+      result.case_law = [];
+      meta.case_law = {
+        source: "retrieval",
+        verifiedCount: 0,
+        reason: "filter_disabled",
+      };
+      await logRetrievalMetrics({
+        requestId,
+        endpoint: "analyze",
+        source: "retrieval",
+        filters,
+        reason: "filter_disabled",
+        retrievalLatencyMs: 0,
+        finalCaseLawCount: 0,
       });
     }
 

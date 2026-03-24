@@ -22,6 +22,11 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
   const [selectedCase, setSelectedCase] = useState(null);
   const [pdfState, setPdfState] = useState("idle"); // idle | loading | error
   const pdfErrorTimer = useRef(null);
+  const caseLawMeta = data?.meta?.case_law;
+  const showCaseLawEmptyState =
+    caseLawMeta?.source === "retrieval" &&
+    caseLawMeta?.reason !== "filter_disabled" &&
+    (!Array.isArray(data.case_law) || data.case_law.length === 0);
 
   // Extract and verify citations on mount
   useEffect(() => {
@@ -306,6 +311,23 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
           </div>
         );
       })}
+
+      {showCaseLawEmptyState && (
+        <div style={{ marginTop: 40 }}>
+          <div style={{
+            fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
+            letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
+          }}>
+            Case Law
+          </div>
+          <div style={{
+            fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
+            color: t.textTertiary, lineHeight: 1.5,
+          }}>
+            No verified case law found for this scenario.
+          </div>
+        </div>
+      )}
 
       {/* Analysis */}
       <div style={{ marginTop: 40 }}>

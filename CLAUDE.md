@@ -1,6 +1,6 @@
 # CaseDive - Claude Context File
 
-Last updated: March 24, 2026
+Last updated: March 24, 2026 (Phase C retrieval telemetry + alerts)
 
 ## About
 Built by Alasdair NC, Justice Studies student at University of Guelph-Humber. Toronto-based.
@@ -13,8 +13,16 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 - Completed: Core product flow is production-ready (scenario input -> AI analysis -> grouped legal output -> citation verification).
 - Completed: Serverless API suite includes analysis, citation verification, case summary generation, and PDF export.
 - Completed: Expanded legal datasets now back local verification for Criminal Code, civil law statutes, and Charter citations.
+- Completed (Phase A): retrieval-assisted case-law pipeline added (CanLII term search -> verify -> merge into analyze output).
+- Completed (Phase B): analyze output is retrieval-first for case law (model-generated case_law is no longer used in final output).
+- Completed (Phase C-A): structured retrieval metrics logging added for analyze/retrieve-caselaw (reason, call counts, verification yield, latency).
+- Completed (Phase C-B): rolling retrieval health aggregates (5m/1h) added with Redis + in-memory fallback.
+- Completed (Phase C-C): threshold alert evaluation + deduped alert logs + internal retrieval health endpoint.
 - In progress: Data quality refinement (exact-text/statute precision for expanded civil law entries), docs sync, and targeted test coverage for edge citation formats.
-- Next priorities: tighten verification rate-limit buckets by endpoint, extend automated validation for dataset integrity, and continue citation-quality hardening.
+- Next priorities:
+  - Add dashboard/visualization for retrieval health trendlines over time
+  - Add alert routing (Slack/email webhook) for sustained threshold breaches
+  - Continue case-law retrieval quality tuning (query shaping, fallback DB strategy, and empty-state UX)
 
 ## Tech Stack
 - Frontend: React 18 + Vite, inline styles with ThemeContext (no CSS framework by design)
@@ -32,9 +40,14 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 casedive/
 |- api/
 |  |- _logging.js            # Structured request/API/error logs
+|  |- _retrievalMetrics.js   # Structured retrieval telemetry payload/log helper
+|  |- _retrievalHealthStore.js # Rolling retrieval event storage + 5m/1h aggregation
+|  |- _retrievalThresholds.js # Retrieval threshold evaluator + deduped alert emission
 |  |- _rateLimit.js          # Sliding-window limiter (Redis + in-memory fallback)
 |  |- analyze.js             # POST /api/analyze - main AI legal analysis handler
 |  |- verify.js              # POST /api/verify - citation verification (max 10 citations)
+|  |- retrieve-caselaw.js    # POST /api/retrieve-caselaw - Phase A retrieval endpoint
+|  |- retrieval-health.js    # GET /api/retrieval-health - internal retrieval metrics/alerts snapshot
 |  |- case-summary.js        # POST /api/case-summary - structured case summary via Anthropic
 |  \- export-pdf.js         # POST /api/export-pdf - branded PDF export
 |- src/
@@ -114,6 +127,7 @@ ANTHROPIC_API_KEY=sk-ant-...          # Required for /api/analyze and /api/case-
 CANLII_API_KEY=...                     # Optional; verification degrades gracefully without it
 UPSTASH_REDIS_REST_URL=...             # Optional; enables shared limiter/cache
 UPSTASH_REDIS_REST_TOKEN=...           # Required if UPSTASH_REDIS_REST_URL is set
+RETRIEVAL_HEALTH_TOKEN=...             # Optional; protects GET /api/retrieval-health when set
 ```
 
 ## Design System
