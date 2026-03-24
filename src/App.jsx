@@ -208,6 +208,7 @@ function AppInner() {
       `}</style>
 
       <Header bookmarkCount={bookmarks.length} onOpenBookmarks={() => setBookmarksOpen(true)} onOpenCodeExplorer={() => setCodeExplorerOpen(true)} />
+      {!result && !loading && !error && <LandingContent setQuery={setQuery} t={t} />}
       <FiltersPanel
         filters={filters} setFilters={setFilters}
         filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen}
@@ -249,9 +250,6 @@ function AppInner() {
       }}>
         <AdUnit slotId="7399604405" style={{ maxWidth: "100%" }} />
       </div>
-
-      {/* Landing content — visible only on empty state */}
-      {!result && !loading && !error && <LandingContent setQuery={setQuery} t={t} />}
 
       {/* Loading/error — always visible regardless of result state */}
       <div ref={resultsRef}>
