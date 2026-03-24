@@ -6,7 +6,7 @@ import { COURT_API_MAP, lookupCase, parseCitation } from "../src/lib/canlii.js";
 
 const CANLII_API_BASE = "https://api.canlii.org/v1";
 const SEARCH_TIMEOUT_MS = 1800;
-const MAX_TERMS = 2;
+const MAX_TERMS = 4;
 const MAX_DATABASES = 3;
 const MAX_SEARCH_CALLS_PHASE1 = 4;
 const MAX_SEARCH_CALLS_TOTAL = 10;
@@ -180,7 +180,7 @@ function curatedTermsFromScenario(scenario) {
   }
 
   // ── Assault ─────────────────────────────────────────────────────────────────
-  const assault = /\bassault\b|\bstruck\b|\bhit\b|\bbatter\w*\b|\bbeat\w*\b|\bphysical\s+force\b/.test(s);
+  const assault = /\bassault\w*\b|\bstruck\b|\bhit\b|\bbatter\w*\b|\bbeat\w*\b|\bphysical\s+force\b/.test(s);
   const weapon = /\bweapon\b|\bknife\b|\bgun\b|\bfirearm\b|\bclub\b|\bstab\w*\b/.test(s);
   if (assault && weapon) {
     push("assault with weapon Criminal Code section 267", "R v assault weapon bodily harm");
@@ -220,7 +220,7 @@ function curatedTermsFromScenario(scenario) {
   }
 
   // ── Break and enter ───────────────────────────────────────────────────────────
-  if (/\bbreak\s+and\s+enter\b|\bbreaking\s+and\s+enter\w*\b|\bbreaking\s+enter\w*\b|\bburglar\w*\b/.test(s)) {
+  if (/\bbreak\s+and\s+enter\b|\bbreaking\s+and\s+enter\w*\b|\bbreaking\s+enter\w*\b|\bbroke\s+into\b|\bburglar\w*\b/.test(s)) {
     push("break and enter dwelling house Criminal Code section 348", "B&E intent commit offence");
   }
 
@@ -272,6 +272,41 @@ function curatedTermsFromScenario(scenario) {
     push("possession firearm Criminal Code section 91", "unauthorized possession firearm Criminal Code");
   }
 
+  // ── DUI / impaired without RIDE ───────────────────────────────────────────────
+  if (alcohol && !ride) {
+    push("impaired driving Criminal Code section 320.14", "over 80 blood alcohol concentration");
+  }
+
+  // ── Dangerous / careless driving ──────────────────────────────────────────────
+  if (/\bdangerous\s+driv\w*\b|\bcareless\s+driv\w*\b|\bstreet\s+rac\w*\b|\bstunt\s+driv\w*\b/.test(s)) {
+    push("dangerous driving Criminal Code section 320.13", "criminal negligence operation motor vehicle");
+  }
+
+  // ── Bail / surety / breach of conditions ───────────────────────────────────────
+  if (/\bbail\b|\bsurety\b|\brelease\s+condition\w*\b|\bbreach\s+of\s+condition\w*\b|\bbreach\s+condition\w*\b/.test(s)) {
+    push("bail release conditions Criminal Code section 145", "breach recognizance undertaking Criminal Code");
+  }
+
+  // ── Child exploitation / luring ────────────────────────────────────────────────
+  if (/\bchild\s+pornograph\w*\b|\bluring\b|\bchild\s+exploit\w*\b|\bchild\s+sexual\b/.test(s)) {
+    push("child luring Criminal Code section 172.1", "child exploitation sexual offence Criminal Code");
+  }
+
+  // ── Peace bond ────────────────────────────────────────────────────────────────
+  if (/\bpeace\s+bond\b|\brecognizance\b|\bs\.?\s*810\b/.test(s)) {
+    push("peace bond recognizance Criminal Code section 810", "fear of injury peace bond");
+  }
+
+  // ── Obstruction of justice / resisting arrest ─────────────────────────────────
+  if (/\bobstruct\w*\b|\bresist\w*\s+arrest\w*\b|\bevad\w*\b|\bflee\w*\b|\bflight\b/.test(s)) {
+    push("obstruct justice Criminal Code section 139", "resist arrest obstruct peace officer section 129");
+  }
+
+  // ── Arson ──────────────────────────────────────────────────────────────────────
+  if (/\barson\b|\bset\s+fire\b|\bburn\w*\b/.test(s) && /\bproperty\b|\bhouse\b|\bbuild\w*\b/.test(s)) {
+    push("arson Criminal Code section 434", "intentionally setting fire property Criminal Code");
+  }
+
   return dedupeStrings(out);
 }
 
@@ -317,7 +352,7 @@ function extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode = [] 
     if (fallback) terms.push(fallback);
   }
 
-  return dedupeStrings(terms).slice(0, MAX_TERMS + 1 + Math.min(2, curated.length));
+  return dedupeStrings(terms).slice(0, MAX_TERMS + Math.min(3, curated.length));
 }
 
 function pickDatabaseTargets(filters = {}) {

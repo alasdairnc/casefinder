@@ -99,7 +99,7 @@ function scoreRetrievedCase(scenarioTokens, item) {
   let score = overlap * 4;
 
   // Domain-specific boosts for common impaired-driving / search-and-seizure scenarios.
-  const impairedScenario = scenarioTokens.has("ride") || scenarioTokens.has("breath") || scenarioTokens.has("breathalyzer");
+  const impairedScenario = scenarioTokens.has("ride") || scenarioTokens.has("breath") || scenarioTokens.has("breathalyzer") || scenarioTokens.has("impaired") || scenarioTokens.has("drunk");
   if (impairedScenario) {
     if (/\bcharter\b/.test(haystack)) score += 2;
     if (/\bdetention\b|\barrest\b/.test(haystack)) score += 2;
@@ -110,6 +110,58 @@ function scoreRetrievedCase(scenarioTokens, item) {
 
   const bloodScenario = scenarioTokens.has("blood");
   if (bloodScenario && /\bblood\b/.test(haystack)) score += 2;
+
+  // Assault scenarios
+  const assaultScenario = scenarioTokens.has("assault") || scenarioTokens.has("struck") || scenarioTokens.has("punch");
+  if (assaultScenario) {
+    if (/\bbodily\s+harm\b/.test(haystack)) score += 3;
+    if (/\bweapon\b/.test(haystack)) score += 2;
+    if (/\bdefence\b|\bself[\s-]?defence\b/.test(haystack)) score += 2;
+    if (/\bconsent\b/.test(haystack)) score += 1;
+  }
+
+  // Drug / CDSA scenarios
+  const drugScenario = scenarioTokens.has("drug") || scenarioTokens.has("cocaine") || scenarioTokens.has("fentanyl") || scenarioTokens.has("trafficking") || scenarioTokens.has("cdsa");
+  if (drugScenario) {
+    if (/\btraffick\w*\b/.test(haystack)) score += 3;
+    if (/\bcdsa\b|\bcontrolled\s+substance\b/.test(haystack)) score += 3;
+    if (/\bpossession\b/.test(haystack)) score += 2;
+    if (/\bschedule\b/.test(haystack)) score += 1;
+  }
+
+  // Theft / robbery scenarios
+  const theftScenario = scenarioTokens.has("theft") || scenarioTokens.has("steal") || scenarioTokens.has("robbery") || scenarioTokens.has("stolen");
+  if (theftScenario) {
+    if (/\btheft\b/.test(haystack)) score += 2;
+    if (/\brobbery\b/.test(haystack)) score += 3;
+    if (/\bstolen\b|\bproperty\b/.test(haystack)) score += 1;
+  }
+
+  // Sexual assault scenarios
+  const sexualScenario = scenarioTokens.has("sexual") || scenarioTokens.has("rape");
+  if (sexualScenario) {
+    if (/\bconsent\b/.test(haystack)) score += 3;
+    if (/\bcomplainant\b/.test(haystack)) score += 2;
+    if (/\bsexual\b/.test(haystack)) score += 2;
+  }
+
+  // Charter scenarios
+  const charterScenario = scenarioTokens.has("charter") || scenarioTokens.has("rights") || scenarioTokens.has("detention");
+  if (charterScenario) {
+    if (/\bcharter\b/.test(haystack)) score += 3;
+    if (/\bsection\s+[89]\b|\bs\.\s*[89]\b/.test(haystack)) score += 2;
+    if (/\bsection\s+24\b|\bs\.\s*24\b/.test(haystack)) score += 2;
+    if (/\bexclusion\b|\b24\s*\(2\)/.test(haystack)) score += 2;
+  }
+
+  // Homicide / manslaughter scenarios
+  const homicideScenario = scenarioTokens.has("murder") || scenarioTokens.has("manslaughter") || scenarioTokens.has("homicide") || scenarioTokens.has("kill");
+  if (homicideScenario) {
+    if (/\bmurder\b/.test(haystack)) score += 3;
+    if (/\bmanslaughter\b/.test(haystack)) score += 3;
+    if (/\bcriminal\s+negligence\b/.test(haystack)) score += 2;
+    if (/\bintent\b|\bmens\s+rea\b/.test(haystack)) score += 2;
+  }
 
   if (/\bSCC\b/i.test(item?.citation || "")) score += 1.5;
   if (/\bONCA\b/i.test(item?.citation || "")) score += 1;

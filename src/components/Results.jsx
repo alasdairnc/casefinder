@@ -40,17 +40,21 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
 
   const caseLawEmptyMessage =
     caseLawMeta?.reason === "retrieval_error"
-      ? "Case law could not be retrieved right now. Try again in a moment."
+      ? "Case law retrieval is temporarily unavailable. Please try again in a moment."
       : caseLawMeta?.reason === "missing_api_key"
         ? "Case law retrieval is unavailable (CanLII not configured)."
         : caseLawMeta?.reason === "no_terms_or_databases"
-          ? "No search terms could be formed. Try describing the offence more specifically — include the charge type, relevant statute, or key facts."
-          : "No verified case law was found for this scenario. Try adding more detail: specify the charge, jurisdiction, or key legal issue (e.g. 'Charter s. 8 search of vehicle').";
+          ? "No search terms could be formed from this scenario."
+          : "No verified case law was found for this scenario.";
 
-  const caseLawEmptyHint =
-    caseLawMeta?.reason === "no_verified" || !caseLawMeta?.reason
-      ? "CanLII was searched but could not confirm any cases for this exact scenario."
-      : null;
+  const canliiSearchUrl = scenario
+    ? `https://www.canlii.org/en/#search/text=${encodeURIComponent(scenario.slice(0, 200))}`
+    : null;
+
+  const retrievalStats = caseLawMeta?.retrieval;
+  const showRetrievalStats =
+    retrievalStats &&
+    (retrievalStats.searchCalls > 0 || retrievalStats.candidateCount > 0);
 
   // Extract and verify citations on mount
   useEffect(() => {
@@ -351,19 +355,82 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
             Case Law
           </div>
           <div style={{
-            fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
-            color: t.textTertiary, lineHeight: 1.6,
+            border: `1px solid ${t.border}`,
+            background: t.bgAlt,
+            padding: "20px 22px",
           }}>
-            {caseLawEmptyMessage}
-          </div>
-          {caseLawEmptyHint && (
-            <div style={{
-              fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11,
-              color: t.textTertiary, opacity: 0.6, marginTop: 6, lineHeight: 1.5,
-            }}>
-              {caseLawEmptyHint}
+            {/* Icon + primary message */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <span style={{
+                fontSize: 20, lineHeight: 1, color: t.textTertiary,
+                flexShrink: 0, marginTop: 1,
+              }}>
+                {"\u2315"}
+              </span>
+              <div>
+                <div style={{
+                  fontFamily: "'Helvetica Neue', sans-serif", fontSize: 13,
+                  color: t.textSecondary, lineHeight: 1.6,
+                }}>
+                  {caseLawEmptyMessage}
+                </div>
+
+                {/* Actionable tips — shown for no_verified or no_terms */}
+                {(caseLawMeta?.reason === "no_verified" || caseLawMeta?.reason === "no_terms_or_databases" || !caseLawMeta?.reason) && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{
+                      fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
+                      letterSpacing: 2, textTransform: "uppercase",
+                      color: t.textTertiary, marginBottom: 6,
+                    }}>
+                      Tips to improve results
+                    </div>
+                    <ul style={{
+                      fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
+                      color: t.textTertiary, lineHeight: 1.7,
+                      margin: 0, paddingLeft: 18,
+                    }}>
+                      <li>Specify the offence type (e.g. &quot;assault causing bodily harm&quot;)</li>
+                      <li>Include a jurisdiction (e.g. &quot;in Ontario&quot;)</li>
+                      <li>Mention a specific legal issue (e.g. &quot;Charter s. 8 search&quot;)</li>
+                    </ul>
+                  </div>
+                )}
+
+                {/* Direct CanLII search link */}
+                {canliiSearchUrl && (
+                  <a
+                    href={canliiSearchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11,
+                      color: t.accent, textDecoration: "none", marginTop: 14,
+                      letterSpacing: 0.5,
+                      transition: "opacity 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.7"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                  >
+                    {"\u2192"} Search CanLII directly {"\u2197"}
+                  </a>
+                )}
+
+                {/* Retrieval stats */}
+                {showRetrievalStats && (
+                  <div style={{
+                    fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
+                    color: t.textFaint, marginTop: 12, letterSpacing: 0.5,
+                  }}>
+                    {retrievalStats.searchCalls} database{retrievalStats.searchCalls !== 1 ? "s" : ""} searched
+                    {" · "}
+                    {retrievalStats.candidateCount} candidate{retrievalStats.candidateCount !== 1 ? "s" : ""} evaluated
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       )}
 

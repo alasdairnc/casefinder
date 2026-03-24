@@ -19,7 +19,8 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 - Completed (Phase C-B): rolling retrieval health aggregates (5m/1h) added with Redis + in-memory fallback.
 - Completed (Phase C-C): threshold alert evaluation + deduped alert logs + internal retrieval health endpoint.
 - Completed: optional `RETRIEVAL_ALERT_WEBHOOK_URL` POST for deduped threshold alerts; case-law fallback search + expanded DB targets when primary pass verifies nothing; internal dashboard at `/internal/retrieval-health`.
-- In progress: Data quality refinement (exact-text/statute precision for expanded civil law entries), docs sync, and targeted test coverage for edge citation formats.
+- Completed (pending user testing): Data quality refinement — fixed 5 duplicate Map keys in civilLawData.js, replaced ~160 placeholder summaries with exact statute text across all 15 statute Maps (0 placeholders remaining, 191 entries, all lookups verified).
+- In progress: docs sync, and targeted test coverage for edge citation formats.
 - Next priorities:
   - Optional: retrieval health trendlines over time (dashboard shows 5m/1h snapshots today)
   - Continue case-law retrieval quality tuning (query shaping and empty-state UX)
