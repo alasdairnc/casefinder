@@ -259,8 +259,8 @@ export default async function handler(req, res) {
         logExternalApiCall(requestId, "verify", "canlii", apiRes.status, apiDurationMs);
 
         if (apiRes.status === 404) {
-          // Pre-2000 cases use legacy CanLII IDs, not neutral citations — mark unverified with link
-          results[citation] = { status: "unverified", url: caseUrl, searchUrl };
+          // Pre-2000 cases use legacy CanLII IDs — constructed URL won't resolve, use search instead
+          results[citation] = { status: "unverified", searchUrl };
           return;
         }
         if (!apiRes.ok) {
