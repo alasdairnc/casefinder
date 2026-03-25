@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test:unit": "vitest run",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
@@ -26,6 +27,7 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.7.0",
     "canvas": "^3.2.2",
-    "vite": "^6.4.1"
+    "vite": "^6.4.1",
+    "vitest": "^4.1.1"
   }
 }
