@@ -69,3 +69,15 @@ Append-only. Each run adds a dated section. Never overwrite previous entries.
 - 7 stale audit/migration/deploy .md files in project root | Low | DEPLOYMENT_VALIDATION_REPORT.md, POST_DEPLOYMENT_VERIFICATION_REPORT.md, SECURITY_AUDIT_REPORT.md, SECURITY_AUDIT_REPORT_III.md, SECURITY_REVIEW_FOLLOW_UP.md, MIGRATION_GUIDE.md, phase-b-complete-prompt.md
 - Missing packageManager field in package.json | Low | package.json
 - 3 unlinked skills in `.claude/skills/` not mentioned in CLAUDE.md | Low | .claude/skills/casefinder-audit, casefinder-skill-router, everything-claude-code
+
+## Audit — 2026-03-25 (run 6)
+### Fixed since last run
+- No Playwright mobile device profiles configured — Mobile Chrome and Mobile Safari profiles added. Tests successfully passed.
+- 5/6 API endpoints have no response caching — Upstash Redis response caching with 500ms Promise.race wrappers added to all 5 endpoints.
+- 7 stale audit/migration/deploy .md files in project root — Files safely deleted.
+- Missing packageManager field in package.json — `npm@11.11.0` properly configured.
+- 3 unlinked skills in `.claude/skills/` not mentioned in CLAUDE.md — New `Agent Skills` section documented in `CLAUDE.md`.
+### New findings
+- None
+### Still open
+- None
