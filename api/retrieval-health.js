@@ -17,9 +17,9 @@ const ALLOWED_ORIGINS = ["https://casedive.ca", "https://www.casedive.ca", "http
 function isAuthorized(req) {
   const expectedToken = process.env.RETRIEVAL_HEALTH_TOKEN || "";
   if (!expectedToken) {
-    // No token configured — endpoint is open. Log so this is visible in prod logs.
-    console.warn("[retrieval-health] RETRIEVAL_HEALTH_TOKEN is not set; endpoint is unprotected");
-    return true;
+    // No token configured — deny all requests. Log so this is visible in prod logs.
+    console.warn("[retrieval-health] RETRIEVAL_HEALTH_TOKEN is not set; endpoint is locked");
+    return false;
   }
   const authHeader = req.headers.authorization || "";
   return authHeader === `Bearer ${expectedToken}`;
