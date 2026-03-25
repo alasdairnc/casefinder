@@ -3,7 +3,7 @@
 
 import { createHash, randomUUID } from "crypto";
 import { buildSystemPrompt } from "../src/lib/prompts.js";
-import { criminalCaseLawData } from "../src/lib/criminalCaseLawData.js";
+import { MASTER_CASE_LAW_DB } from "../src/lib/caselaw/index.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders, redis } from "./_rateLimit.js";
 import { applyCorsHeaders } from "./_cors.js";
 import { retrieveVerifiedCaseLaw } from "./_caseLawRetrieval.js";
@@ -198,7 +198,7 @@ function matchLandmarkCases(scenario) {
   const s = scenario.toLowerCase();
   const matched = [];
 
-  for (const caseLaw of criminalCaseLawData) {
+  for (const caseLaw of MASTER_CASE_LAW_DB) {
     let score = 0;
     for (const tag of caseLaw.tags) {
       if (s.includes(tag.toLowerCase())) score += 3;

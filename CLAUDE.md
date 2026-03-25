@@ -111,6 +111,10 @@ This is not the legacy `charges`/`cases` format.
    - CanLII API for case citations
 5. UI renders verification status badges/links in `ResultCard`.
 
+### Scalable Case Law Architecture (RAG)
+- **Short-Term (0-500 cases)**: Isolated JSON modules within `src/lib/caselaw/` (e.g., `criminal.js`, `charter.js`) that are merged into `index.js`. `api/analyze.js` performs lightning-fast substring matching against this unified memory array.
+- **Long-Term (>500 cases)**: To prevent Serverless memory bloat and execution timeouts, a formal SQL migration (Postgres/Supabase) MUST occur once the threshold is crossed. The schema (`citation`, `topics`, `tags`, `facts`, `ratio`) maps 1:1 to SQL columns.
+
 ### Law Type Filtering
 `FiltersPanel` controls `criminal_code`, `case_law`, `civil_law`, `charter` booleans.
 These are passed into `buildSystemPrompt()` and enforced server-side via allowlisted filter values.

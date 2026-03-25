@@ -1,4 +1,4 @@
-export const criminalCaseLawData = [
+export const criminalCases = [
   // ── CHARTER: SECTION 11(b) (DELAY) ─────────────────────────
   {
     citation: "2016 SCC 27",
@@ -143,5 +143,90 @@ export const criminalCaseLawData = [
     tags: ["oakes test", "justification", "proportionality", "narcotics", "reverse onus"],
     facts: "The accused was found with narcotics. A provision in the law required him to prove he was not trafficking, reversing the presumption of innocence under s. 11(d).",
     ratio: "Establishes the 'Oakes test' for justifying Charter infringements under Section 1: The law must have a pressing and substantial objective, and the means must be proportional (rationally connected, minimally impairing, and balancing salutary/deleterious effects). The reverse onus provision failed the minimal impairment test."
+  },
+  // ── CRIMINAL LIABILITY & FAULT ────────────────────────────
+  {
+    citation: "1978 SCC 23",
+    title: "R. v. Sault Ste. Marie (City)",
+    year: 1978,
+    court: "SCC",
+    topics: ["Criminal Law", "Mens Rea", "Strict Liability"],
+    tags: ["regulatory offences", "absolute liability", "due diligence defence"],
+    facts: "The city was charged with pollution after waste leaked into a creek. The case centered on what level of mental fault is required for regulatory vs criminal offences.",
+    ratio: "Created three categories of offences: (1) Mens rea offences (require proof of intent), (2) Strict liability (the Crown doesn't need to prove intent, but the accused can avoid conviction by proving they exercised 'due diligence'), and (3) Absolute liability (no fault required)."
+  },
+  // ── SECTION 7 & FUNDAMENTAL JUSTICE ───────────────────────
+  {
+    citation: "1985 SCC 31",
+    title: "Re B.C. Motor Vehicle Act",
+    year: 1985,
+    court: "SCC",
+    topics: ["Charter", "s. 7", "Principles of Fundamental Justice"],
+    tags: ["substantive justice", "absolute liability jail", "mens rea"],
+    facts: "The BC government created an absolute liability offence for driving while prohibited, which mandated a minimum jail term even if the driver didn't know they were prohibited.",
+    ratio: "Ruled that the 'Principles of Fundamental Justice' in Section 7 are not just procedural but substantive. It is unconstitutional to send someone to jail for an absolute liability offence that requires no mental element (mens rea)."
+  },
+  {
+    citation: "2013 SCC 72",
+    title: "Canada (AG) v. Bedford",
+    year: 2013,
+    court: "SCC",
+    topics: ["Charter", "s. 7", "Prostitution"],
+    tags: ["sex work", "safety", "overbreadth", "grossly disproportionate"],
+    facts: "Sex workers challenged three provisions of the Criminal Code (keeping a bawdy house, living on the avails, and communicating in public) arguing they made their work dangerous.",
+    ratio: "Struck down Canada's prostitution laws. The laws were found to be arbitrary, overbroad, or grossly disproportionate because they prevented sex workers from taking safety measures (like working indoors or hiring security), violating their Section 7 right to security of the person."
+  },
+  // ── SECTION 8: WARRANTS & PRIVACY ─────────────────────────
+  {
+    citation: "1984 SCC 14",
+    title: "Hunter v. Southam Inc.",
+    year: 1984,
+    court: "SCC",
+    topics: ["Charter", "s. 8", "Search and Seizure"],
+    tags: ["reasonable expectation of privacy", "warrant requirement", "prior authorization"],
+    facts: "Combines investigators searched the offices of Southam Inc. under a broad administrative statute without a neutral warrant.",
+    ratio: "The seminal s. 8 case. Established that the purpose of Section 8 is to protect reasonable expectations of privacy. Ruled that 'prior authorization' (a warrant from a neutral and impartial arbiter) is generally required for a search to be reasonable."
+  },
+  {
+    citation: "2004 SCC 67",
+    title: "R. v. Tessling",
+    year: 2004,
+    court: "SCC",
+    topics: ["Charter", "s. 8", "Search and Seizure", "Privacy"],
+    tags: ["flir", "infrared", "heat sensing", "marijuana grow op"],
+    facts: "Police flew a plane over the accused's house using Forward Looking Infra-Red (FLIR) technology to detect heat patterns consistent with a marijuana grow op.",
+    ratio: "At the time, the court ruled that heat patterns escaping a home are 'waste heat' and do not reveal intimate details of private life; therefore, FLIR usage did not violate a reasonable expectation of privacy under s. 8."
+  },
+  // ── EXCLUSION OF EVIDENCE (PRE-GRANT) ─────────────────────
+  {
+    citation: "1997 SCC 48",
+    title: "R. v. Stillman",
+    year: 1997,
+    court: "SCC",
+    topics: ["Charter", "s. 24(2)", "Exclusion of Evidence"],
+    tags: ["conscriptive evidence", "bodily samples", "trial fairness"],
+    facts: "Police forcibly took hair samples and teeth impressions from a youth suspect without a warrant or consent.",
+    ratio: "Established the pre-2009 framework for evidence exclusion. Classified evidence as either 'conscriptive' (compelled from the accused) or 'non-conscriptive'. Conscriptive evidence was almost always excluded as it was seen as fundamentally unfair to the trial process."
+  },
+  // ── EXTRADITION & SECTION 12 ──────────────────────────────
+  {
+    citation: "2001 SCC 7",
+    title: "United States v. Burns",
+    year: 2001,
+    court: "SCC",
+    topics: ["Charter", "s. 7", "s. 12", "Extradition"],
+    tags: ["death penalty", "assurances", "extradition to us"],
+    facts: "The Canadian government sought to extradite two individuals to Washington State to face murder charges without seeking assurances that the death penalty would not be applied.",
+    ratio: "Ruled that extraditing someone to a country where they face the death penalty without assurances violates the Charter (specifically s. 7 and the evolving standards of s. 12 regarding cruel and unusual punishment)."
+  },
+  {
+    citation: "2022 SCC 19",
+    title: "R. v. Bissonnette",
+    year: 2022,
+    court: "SCC",
+    topics: ["Charter", "s. 12", "Sentencing"],
+    tags: ["life without parole", "consecutive sentences", "cruel and unusual punishment", "quebec mosque shooting"],
+    facts: "The shooter in the Quebec City mosque shooting was sentenced to multiple consecutive 25-year blocks, effectively resulting in life without the possibility of parole for 40+ years.",
+    ratio: "Consecutive life sentences that result in life without the realistic possibility of parole are 'cruel and unusual punishment' and violate s. 12 of the Charter. Such sentences deny the possibility of personal rehabilitation and human dignity."
   }
 ];
