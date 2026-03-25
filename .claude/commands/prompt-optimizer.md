@@ -26,6 +26,15 @@ Analyze and rewrite a prompt for better results with Claude Code.
 
 ## Output Format
 
+### Quick Decision
+| | |
+|-|-|
+| **Model** | `claude-sonnet-4-6` or `claude-opus-4-6` |
+| **Thinking mode** | Yes / No — one-line reason |
+| **Effort** | trivial / low / medium / high / epic — one-line justification |
+
+This block appears first, before the diagnosis, so you can decide whether to proceed before reading further.
+
 ### Diagnosis
 | Issue | Impact | Fix |
 |-------|--------|-----|
@@ -42,7 +51,8 @@ Complete, self-contained, ready to paste. Includes:
 ### Quick Version
 One-line pattern for experienced users.
 
-### Model Recommendation
-- Trivial/Low: Sonnet 4.6
-- Medium: Sonnet 4.6
-- High/Epic: Opus 4.6 for planning, Sonnet 4.6 for execution
+### Model / Effort Rules
+- Trivial/Low → Sonnet 4.6, no thinking
+- Medium → Sonnet 4.6, no thinking unless architectural trade-offs are involved
+- High → Sonnet 4.6 for execution; thinking mode if the task requires multi-step reasoning or has significant design decisions
+- Epic → Opus 4.6 for planning (with thinking), Sonnet 4.6 for execution
