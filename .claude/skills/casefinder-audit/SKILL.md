@@ -71,11 +71,14 @@ Launch an Explore subagent at **very thorough** level. Run the following checks 
 - **Unlinked skills**: Check whether any files in the `.claude/skills/` folder tree are not referenced or linked from `.claude/skills/` index or `CLAUDE.md`.
 - **CLAUDE.md roadmap accuracy**: Compare the "Roadmap Status" section in `CLAUDE.md` against actual code state — flag any item marked "Completed" that appears missing in code, or any shipped feature not reflected in the roadmap.
 - **package.json package manager**: Check whether the `packageManager` field in `package.json` is present and matches the lock file actually in the repo (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`).
+- **A11y ARIA Labels**: Verify that all interactive `<button>` and `<a>` tags in `src/components/*.jsx` have proper semantic text or `aria-label` attributes for accessibility.
 
 #### Performance
 
 - **Uncached endpoints**: Identify which `api/*.js` endpoints (excluding `_`-prefixed internal modules) have **no** Redis caching (`get`/`set` calls via Upstash or similar).
 - **Redis operation timeouts**: Check `_rateLimit.js` for whether Redis operations have explicit timeouts (e.g., `AbortSignal.timeout()`, `Promise.race` with a timeout, or a library-level timeout config).
+- **Strict Cache TTLs**: Verify that every Redis caching call in `api/*.js` explicitly enforces a `.setex` (Time-To-Live) rather than a boundless `.set`, preventing persistent database bloat.
+- **Vite Chunk Configuration**: Check `vite.config.js` to ensure `manualChunks` remains declared, maintaining strict vendor splitting for React dependencies rather than compiling them into the main entrypoint.
 
 ### Phase 3 — Diff Against History
 

@@ -100,14 +100,14 @@ export function buildSystemPrompt(filters = {}) {
     {
       "type": "canlii",
       "label": "The display text for the link (e.g., 'R v Jordan - 11(b) delay')",
-      "term": "Specific search terms for CanLII (e.g., 'Jordan 11b unreasonable delay')"
+      "term": "Highly targeted boolean search query matching CanLII's engine (e.g., 'assault AND \"bodily harm\" AND self-defence')"
     }
   ]
 }
 
 RULES:
 - Provide 1-3 items per category where applicable. Return empty arrays for categories that don't apply.${filterInstructions}${lawTypeInstructions}
-- For suggestions, provide 3-5 high-quality CanLII search terms (type: "canlii").
+- For suggestions, provide 3-5 CANLII BOOLEAN QUERIES (type: "canlii"). Do NOT use natural language sentences. Use strictly boolean operators, exact phrase quotes, and core legal concepts (e.g., 'mens rea', 'actus reus'). Drop all stop words.
 - Criminal Code sections are verified against a full local Criminal Code database. Use real section numbers only (e.g., "s. 348(1)(b)").
 - For civil_law: cite specific statutes with section numbers.
 - For charter: use section number format like "s. 7", "s. 8", "s. 11(b)", "s. 24(2)".

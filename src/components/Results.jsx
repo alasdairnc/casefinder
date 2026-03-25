@@ -45,7 +45,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
         ? "Case law retrieval is unavailable (CanLII not configured)."
         : caseLawMeta?.reason === "no_terms_or_databases"
           ? "No search terms could be formed from this scenario."
-          : "No verified case law was found for this scenario.";
+          : "No verified Supreme Court or Appellate cases perfectly matched this highly specific scenario.";
 
   const canliiSearchUrl = scenario
     ? `https://www.canlii.org/en/#search/text=${encodeURIComponent(scenario.slice(0, 200))}`
@@ -356,21 +356,25 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
           </div>
           <div style={{
             border: `1px solid ${t.border}`,
+            borderLeft: `3px solid ${t.accent}`,
             background: t.bgAlt,
-            padding: "20px 22px",
+            padding: "24px 28px",
+            borderRadius: "4px",
+            boxShadow: `0 4px 12px ${t.borderLight}`,
           }}>
             {/* Icon + primary message */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
               <span style={{
-                fontSize: 20, lineHeight: 1, color: t.textTertiary,
-                flexShrink: 0, marginTop: 1,
+                fontSize: 22, lineHeight: 1, color: t.accent,
+                flexShrink: 0, marginTop: 2,
               }}>
                 {"\u2315"}
               </span>
               <div>
                 <div style={{
-                  fontFamily: "'Helvetica Neue', sans-serif", fontSize: 13,
-                  color: t.textSecondary, lineHeight: 1.6,
+                  fontFamily: "'Helvetica Neue', sans-serif", fontSize: 14,
+                  fontWeight: 500, letterSpacing: 0.5,
+                  color: t.text, lineHeight: 1.6,
                 }}>
                   {caseLawEmptyMessage}
                 </div>
@@ -406,14 +410,18 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6,
                       fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11,
-                      color: t.accent, textDecoration: "none", marginTop: 14,
+                      fontWeight: 600,
+                      color: t.accent, textDecoration: "none", marginTop: 16,
                       letterSpacing: 0.5,
                       transition: "opacity 0.15s",
+                      padding: "6px 12px",
+                      border: `1px solid ${t.border}`,
+                      borderRadius: "3px",
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.7"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
                   >
-                    {"\u2192"} Search CanLII directly {"\u2197"}
+                    Launch CanLII Manual Search {"\u2197"}
                   </a>
                 )}
 
