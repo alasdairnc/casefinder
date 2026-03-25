@@ -31,3 +31,17 @@ Append-only. Each run adds a dated section. Never overwrite previous entries.
 - 4/6 API endpoints have no response caching (verify, case-summary, retrieve-caselaw, export-pdf) | Low | api/verify.js, api/case-summary.js, api/retrieve-caselaw.js, api/export-pdf.js
 - 7 stale audit/migration/deploy .md files in project root | Low | DEPLOYMENT_VALIDATION_REPORT.md, POST_DEPLOYMENT_VERIFICATION_REPORT.md, SECURITY_AUDIT_REPORT.md, SECURITY_AUDIT_REPORT_III.md, SECURITY_REVIEW_FOLLOW_UP.md, MIGRATION_GUIDE.md, phase-b-complete-prompt.md
 - Missing packageManager field in package.json | Low | package.json
+
+## Audit — 2026-03-25 (run 3)
+### Fixed since last run
+- Redis operations in _retrievalHealthStore.js have no timeout protection — Promise.race(500ms) added to lrange, rpush, ltrim, expire | api/_retrievalHealthStore.js:89,189-191
+- RetrievalHealthDashboard.jsx not documented in CLAUDE.md — added to component list in project structure
+- ThemeContext.jsx has no unit test — tests/unit/ThemeContext.test.jsx added (6 tests, jsdom environment); all 9/9 lib files now have unit test coverage
+- 13/14 components zero E2E coverage — E2E tests added for FiltersPanel, SearchHistory, CriminalCodeExplorer, ErrorMessage, StagedLoading (tests/e2e/filters.spec.js, tests/e2e/ui-states.spec.js); 61 E2E tests passing
+### New findings
+- 9/14 React components still have zero dedicated E2E test coverage (narrowed from prior finding) | Medium | src/components/CaseSummaryModal.jsx, Header.jsx, Results.jsx, ResultCard.jsx, RetrievalHealthDashboard.jsx, SearchArea.jsx, Select.jsx, SuggestionLink.jsx
+### Still open
+- No Playwright mobile device profiles configured | Medium | playwright.config.js:14-16
+- 3/6 API endpoints have no response caching (verify, case-summary, retrieve-caselaw) | Low | api/verify.js, api/case-summary.js, api/retrieve-caselaw.js
+- 7 stale audit/migration/deploy .md files in project root | Low | DEPLOYMENT_VALIDATION_REPORT.md, POST_DEPLOYMENT_VERIFICATION_REPORT.md, SECURITY_AUDIT_REPORT.md, SECURITY_AUDIT_REPORT_III.md, SECURITY_REVIEW_FOLLOW_UP.md, MIGRATION_GUIDE.md, phase-b-complete-prompt.md
+- Missing packageManager field in package.json | Low | package.json
