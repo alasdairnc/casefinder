@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     return res.status(413).json({ error: "Request body too large" });
   }
 
-  const rlResult = await checkRateLimit(getClientIp(req));
+  const rlResult = await checkRateLimit(getClientIp(req), "verify");
   logRateLimitCheck(requestId, "verify", rlResult, getClientIp(req));
   const rlHeaders = rateLimitHeaders(rlResult);
   Object.entries(rlHeaders).forEach(([k, v]) => res.setHeader(k, v));
