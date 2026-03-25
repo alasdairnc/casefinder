@@ -193,7 +193,7 @@ export async function lookupCase(citation, apiKey) {
     return { status: "unknown_court", searchUrl: buildSearchUrl(citation) };
   }
 
-  const caseId = buildCaseId({ year: parsed.year, courtCode: parsed.courtCode, number: parsed.number });
+  const caseId = buildCaseId({ year: parsed.year, courtCode: parsed.courtCode, number: parsed.number, isLegacy: parsed.isLegacy });
   if (!caseId) {
     return { status: "unparseable", searchUrl: buildSearchUrl(citation) };
   }

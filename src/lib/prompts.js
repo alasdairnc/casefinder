@@ -115,6 +115,7 @@ RULES:
 - CITATION FORMATS: 
   1. For post-2000 cases: use neutral citation format (e.g., "2016 SCC 27"). Including party names (e.g., "R v Jordan, 2016 SCC 27") is optional but preferred for extra verification.
   2. For pre-2000 cases: use neutral citation format if known (e.g., "1988 SCC 30"). For retroactive CanLII citations, use format "1988 CanLII 90 (SCC)".
+  3. CRITICAL: DO NOT use print reporter citations like "[1986] 1 SCR 103" or "14 CCC (3d) 385". You MUST use neutral (SCC) or CanLII-neutral citations because the verification system requires them.
 - Every citation is automatically verified against CanLII — fabricated or misformatted citations are detected and removed.
 - Always respond with valid JSON only.
 
