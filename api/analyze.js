@@ -384,6 +384,7 @@ export default async function handler(req, res) {
           scenario: scenario.trim(),
           filters,
           aiSuggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
+          aiCaseLaw: Array.isArray(result.case_law) ? result.case_law : [],
           criminalCode: Array.isArray(result.criminal_code) ? result.criminal_code : [],
           apiKey: canliiKey,
           maxResults: 10,

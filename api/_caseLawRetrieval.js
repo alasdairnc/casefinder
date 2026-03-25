@@ -723,6 +723,7 @@ export async function retrieveVerifiedCaseLaw({
   scenario = "",
   filters = {},
   aiSuggestions = [],
+  aiCaseLaw = [],
   criminalCode = [],
   apiKey = "",
   maxResults = 3,
@@ -798,7 +799,47 @@ export async function retrieveVerifiedCaseLaw({
     return out;
   }
 
-  let cases = await verifyCandidates(uniqueCandidates, MAX_VERIFICATION_CALLS_PHASE1);
+  // ── Phase 0: Direct verification of AI-generated citations ──
+  // The CanLII API has no text search endpoint. Instead, verify citations
+  // the AI already suggested (with neutral citation format) directly.
+  let aiCitationCandidates = [];
+  if (Array.isArray(aiCaseLaw)) {
+    for (const item of aiCaseLaw) {
+      if (!item || !item.citation) continue;
+      const citation = sanitizeTerm(item.citation);
+      const parsed = parseCitation(citation);
+      if (!parsed) continue;
+      aiCitationCandidates.push({
+        citation,
+        title: parsed.parties || item.summary || citation,
+        summary: item.summary || "",
+        url: "",
+        matchedTerm: "AI suggestion",
+        court: parsed.courtCode,
+        year: parsed.year,
+      });
+    }
+  }
+
+  // Verify AI citations first (highest confidence — these are real citations)
+  let cases = [];
+  if (aiCitationCandidates.length > 0) {
+    cases = await verifyCandidates(
+      sortCandidatesForStableVerification(aiCitationCandidates),
+      Math.min(aiCitationCandidates.length, MAX_VERIFICATION_CALLS_PHASE1)
+    );
+  }
+
+  // ── Phase 1: Search-based candidates (if AI citations didn't suffice) ──
+  if (cases.length < maxResults && uniqueCandidates.length > 0) {
+    const remaining = maxResults - cases.length;
+    const searchVerified = await verifyCandidates(
+      uniqueCandidates,
+      MAX_VERIFICATION_CALLS_PHASE1
+    );
+    cases.push(...searchVerified.slice(0, remaining));
+  }
+
   let fallbackSearchUsed = false;
 
   if (cases.length === 0 && searchCalls < MAX_SEARCH_CALLS_TOTAL) {
@@ -830,10 +871,11 @@ export async function retrieveVerifiedCaseLaw({
       termsTried: terms.length,
       databasesTried: dbTargets.length,
       searchCalls,
-      candidateCount: uniqueCandidates.length,
+      candidateCount: uniqueCandidates.length + aiCitationCandidates.length,
       verificationCalls: verificationCallsTotal,
       verifiedCount: cases.length,
       fallbackSearchUsed,
+      aiCitationsVerified: aiCitationCandidates.length,
       reason: cases.length > 0 ? "verified_results" : "no_verified",
     },
   };
