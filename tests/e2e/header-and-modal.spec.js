@@ -138,7 +138,7 @@ test.describe("CaseSummaryModal", () => {
     await caseLawCitation.click();
     await expect(page.getByText("Test facts content.")).toBeVisible({ timeout: 5000 });
 
-    await page.getByRole("button", { name: /close/i }).click();
+    await page.getByRole("button", { name: /close/i }).first().click();
     await expect(page.getByText("Test facts content.")).not.toBeVisible();
   });
 });
