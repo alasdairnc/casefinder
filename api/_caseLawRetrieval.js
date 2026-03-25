@@ -310,8 +310,54 @@ function curatedTermsFromScenario(scenario) {
   return dedupeStrings(out);
 }
 
+/**
+ * Detect Canadian case-name patterns (e.g. "R v Jordan", "Jordan v Canada")
+ * and return them as high-priority CanLII search terms.
+ */
+function extractCaseNameTerms(scenario) {
+  const s = sanitizeTerm(scenario || "");
+  if (!s) return [];
+
+  const out = [];
+
+  // Normalize "R." → "R", "v." → "v" for consistent search
+  const normalize = (name) =>
+    name.replace(/\bR\./gi, "R").replace(/\bv\./gi, "v").replace(/\s+/g, " ").trim();
+
+  // Full-string match: entire input is a case name (with optional trailing citation)
+  const fullMatch = s.match(/^(R\.?\s+v\.?\s+[A-Za-z][A-Za-z' -]+?)(?:,?\s+\d{4}\s+[A-Z]{2,8}\s+\d+)?$/i);
+  if (fullMatch) {
+    out.push(normalize(fullMatch[1]));
+    // Also push the full string if it includes a neutral citation
+    if (s.length > fullMatch[1].length + 2) out.push(s);
+  }
+
+  // Civil-style: "Smith v Jones" / "Company v Canada" (only short inputs, not full sentences)
+  if (!fullMatch && s.split(/\s+/).length <= 6) {
+    const civilMatch = s.match(/^([A-Za-z][A-Za-z' -]+)\s+v\.?\s+([A-Za-z][A-Za-z' -]+?)(?:,?\s+\d{4}\s+[A-Z]{2,8}\s+\d+)?$/i);
+    if (civilMatch) {
+      out.push(normalize(`${civilMatch[1]} v ${civilMatch[2]}`));
+      // Also push full string if it includes a neutral citation
+      if (s.length > civilMatch[1].length + civilMatch[2].length + 4) out.push(s);
+    }
+  }
+
+  // Embedded case refs within a longer scenario: "the decision in R v Grant about detention"
+  const embedded = [...s.matchAll(/\bR\.?\s+v\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g)];
+  for (const m of embedded) {
+    out.push(normalize(`R v ${m[1]}`));
+  }
+
+  return dedupeStrings(out);
+}
+
 function extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode = [] }) {
   const terms = [];
+
+  // 0. Highest priority: case-name terms ("R v Jordan" → direct search)
+  const caseNameTerms = extractCaseNameTerms(scenario);
+  for (const c of caseNameTerms) terms.push(c);
+
   const curated = curatedTermsFromScenario(scenario);
   for (const c of curated) terms.push(c);
 
@@ -340,8 +386,14 @@ function extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode = [] 
     }
   }
 
-  // 3. Fallback: Take a few key nouns/verbs from the scenario (better than first 12 words)
-  const words = sanitizeTerm(scenario || "")
+  // 3. Short scenarios (≤ 80 chars): use the raw text as a direct search term
+  const trimmedScenario = sanitizeTerm(scenario || "");
+  if (trimmedScenario.length > 0 && trimmedScenario.length <= 80) {
+    terms.push(trimmedScenario);
+  }
+
+  // 4. Fallback: Take a few key nouns/verbs from the scenario
+  const words = trimmedScenario
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
@@ -352,7 +404,9 @@ function extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode = [] 
     if (fallback) terms.push(fallback);
   }
 
-  return dedupeStrings(terms).slice(0, MAX_TERMS + Math.min(3, curated.length));
+  // Allow extra term slots when case-name detected
+  const extraSlots = caseNameTerms.length > 0 ? 2 : 0;
+  return dedupeStrings(terms).slice(0, MAX_TERMS + Math.min(3, curated.length) + extraSlots);
 }
 
 function pickDatabaseTargets(filters = {}) {
