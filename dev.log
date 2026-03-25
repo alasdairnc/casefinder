@@ -1,0 +1,22 @@
+
+> casedive@1.0.0 dev
+> vite
+
+node:fs:2760
+      const stats = binding.lstat(base, true, undefined, true /* throwIfNoEntry */);
+                            ^
+
+Error: EPERM: operation not permitted, lstat '/Users/alasdairnc/Desktop/casefinder-project/node_modules'
+    at Object.realpathSync (node:fs:2760:29)
+    at toRealPath (node:internal/modules/helpers:65:13)
+    at Module._findPath (node:internal/modules/cjs/loader:780:22)
+    at resolveMainPath (node:internal/modules/run_main:35:21)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:146:20)
+    at node:internal/main/run_main_module:33:47 {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'lstat',
+  path: '/Users/alasdairnc/Desktop/casefinder-project/node_modules'
+}
+
+Node.js v25.8.0
