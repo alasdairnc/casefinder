@@ -3,6 +3,8 @@
 
 import { createLog } from "./_logging.js";
 import { redis } from "./_rateLimit.js";
+
+const REDIS_TIMEOUT_MS = 500;
 import { getRetrievalHealthSnapshot } from "./_retrievalHealthStore.js";
 
 const ALERT_DEDUPE_SECONDS = 15 * 60;
@@ -184,9 +186,12 @@ async function shouldEmitAlert(alertId, nowMs = Date.now()) {
 
   if (redis) {
     try {
-      const existing = await redis.get(key);
+      const timeout = () => new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+      );
+      const existing = await Promise.race([redis.get(key), timeout()]);
       if (existing) return false;
-      await redis.setex(key, ALERT_DEDUPE_SECONDS, String(nowMs));
+      await Promise.race([redis.setex(key, ALERT_DEDUPE_SECONDS, String(nowMs)), timeout()]);
       return true;
     } catch {
       // fallback to in-memory dedupe

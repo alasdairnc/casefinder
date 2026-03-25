@@ -7,6 +7,7 @@ import { Redis } from "@upstash/redis";
 
 const MAX_REQUESTS = 5;
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const REDIS_TIMEOUT_MS = 500;
 
 export let redis = null;
 
@@ -35,7 +36,10 @@ export async function checkRateLimit(ip, endpoint) {
   try {
     // Try Redis if available
     if (redis) {
-      const hitsJson = await redis.get(key);
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+      );
+      const hitsJson = await Promise.race([redis.get(key), timeout]);
       let hits = hitsJson ? JSON.parse(hitsJson) : [];
       hits = hits.filter((t) => now - t < WINDOW_MS);
 
@@ -48,7 +52,10 @@ export async function checkRateLimit(ip, endpoint) {
       }
 
       hits.push(now);
-      await redis.setex(key, Math.ceil(WINDOW_MS / 1000), JSON.stringify(hits));
+      await Promise.race([
+        redis.setex(key, Math.ceil(WINDOW_MS / 1000), JSON.stringify(hits)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)),
+      ]);
 
       return { allowed: true, remaining: MAX_REQUESTS - hits.length };
     }
