@@ -4,6 +4,7 @@
 import { redis } from "./_rateLimit.js";
 
 const EVENT_LIST_KEY = "metrics:retrieval:events:v1";
+const REDIS_TIMEOUT_MS = 500;
 const MAX_EVENTS = 2500;
 const MAX_RETENTION_MS = 2 * 60 * 60 * 1000;
 
@@ -82,7 +83,10 @@ function pruneMemory(nowMs = Date.now()) {
 }
 
 async function readRedisEvents() {
-  const rows = await redis.lrange(EVENT_LIST_KEY, 0, -1);
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+  );
+  const rows = await Promise.race([redis.lrange(EVENT_LIST_KEY, 0, -1), timeout]);
   if (!Array.isArray(rows)) return [];
   const out = [];
   for (const row of rows) {
@@ -178,9 +182,13 @@ export async function recordRetrievalMetricsEvent(metricsPayload = {}) {
 
   if (redis) {
     try {
-      await redis.rpush(EVENT_LIST_KEY, JSON.stringify(event));
-      await redis.ltrim(EVENT_LIST_KEY, -MAX_EVENTS, -1);
-      await redis.expire(EVENT_LIST_KEY, Math.ceil(MAX_RETENTION_MS / 1000));
+      const timeout = () =>
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+        );
+      await Promise.race([redis.rpush(EVENT_LIST_KEY, JSON.stringify(event)), timeout()]);
+      await Promise.race([redis.ltrim(EVENT_LIST_KEY, -MAX_EVENTS, -1), timeout()]);
+      await Promise.race([redis.expire(EVENT_LIST_KEY, Math.ceil(MAX_RETENTION_MS / 1000)), timeout()]);
       return true;
     } catch {
       // fall through to in-memory store
