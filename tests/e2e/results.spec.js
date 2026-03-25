@@ -100,7 +100,7 @@ test.describe("ResultCard", () => {
 
   test("shows verified badge for a verified case law citation", async ({ page }) => {
     await setupAndSearch(page);
-    await expect(page.getByText("Verified on CanLII")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Verified on CanLII").first()).toBeVisible({ timeout: 5000 });
   });
 
   test("bookmark button is present on a result card", async ({ page }) => {
