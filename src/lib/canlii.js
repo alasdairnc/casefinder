@@ -207,7 +207,9 @@ export async function lookupCase(citation, apiKey) {
   }
 
   try {
-    const res = await fetch(buildApiUrl(parsed.apiDbId, caseId, apiKey));
+    const res = await fetch(buildApiUrl(parsed.apiDbId, caseId, apiKey), {
+      signal: AbortSignal.timeout(8_000),
+    });
 
     if (res.status === 404) {
       return { status: "not_found", searchUrl };

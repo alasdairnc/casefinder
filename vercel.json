@@ -9,7 +9,9 @@
     "api/export-pdf.js": { "memory": 1024, "maxDuration": 30 },
     "api/analyze.js":    { "memory": 512,  "maxDuration": 60 },
     "api/verify.js":     { "memory": 256,  "maxDuration": 15 },
-    "api/case-summary.js": { "memory": 512, "maxDuration": 30 }
+    "api/case-summary.js": { "memory": 512, "maxDuration": 30 },
+    "api/retrieve-caselaw.js": { "memory": 512, "maxDuration": 30 },
+    "api/retrieval-health.js": { "memory": 256, "maxDuration": 15 }
   },
   "headers": [
     {

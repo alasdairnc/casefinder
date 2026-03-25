@@ -269,7 +269,9 @@ export default async function handler(req, res) {
 
       try {
         const apiStartMs = Date.now();
-        const apiRes = await fetch(buildApiUrl(parsed.apiDbId, caseId, apiKey));
+        const apiRes = await fetch(buildApiUrl(parsed.apiDbId, caseId, apiKey), {
+          signal: AbortSignal.timeout(8_000),
+        });
         const apiDurationMs = Date.now() - apiStartMs;
         logExternalApiCall(requestId, "verify", "canlii", apiRes.status, apiDurationMs);
 
