@@ -1,5 +1,6 @@
 // /api/case-summary.js — Generate structured case summary via Claude
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
+import { applyCorsHeaders } from "./_cors.js";
 import { randomUUID } from "crypto";
 import {
   logRequestStart,
@@ -15,8 +16,6 @@ function sanitizeUserInput(input) {
   if (typeof input !== "string") return input;
   return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>\s][^>]*)?>/g, "");
 }
-
-const ALLOWED_ORIGINS = ["https://casedive.ca", "https://www.casedive.ca", "https://casefinder-project.vercel.app"];
 
 function normalizeSummaryResult(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -83,13 +82,7 @@ export default async function handler(req, res) {
   const requestId = req.headers['x-vercel-id'] || randomUUID();
   const startMs = Date.now();
   logRequestStart(req, "case-summary", requestId);
-  const origin = req.headers.origin ?? "";
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Vary", "Origin");
+  applyCorsHeaders(req, res, "POST, OPTIONS", "Content-Type");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");

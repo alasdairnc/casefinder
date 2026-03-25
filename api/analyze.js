@@ -4,6 +4,7 @@
 import { createHash, randomUUID } from "crypto";
 import { buildSystemPrompt } from "../src/lib/prompts.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders, redis } from "./_rateLimit.js";
+import { applyCorsHeaders } from "./_cors.js";
 import { retrieveVerifiedCaseLaw } from "./_caseLawRetrieval.js";
 import { logRetrievalMetrics } from "./_retrievalMetrics.js";
 import {
@@ -228,14 +229,7 @@ export default async function handler(req, res) {
   const requestId = req.headers['x-vercel-id'] || randomUUID();
   const startMs = Date.now();
   logRequestStart(req, "analyze", requestId);
-  const origin = req.headers.origin ?? "";
-  const allowed = ["https://casedive.ca", "https://www.casedive.ca", "https://casefinder-project.vercel.app"];
-  if (allowed.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Vary", "Origin");
+  applyCorsHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");

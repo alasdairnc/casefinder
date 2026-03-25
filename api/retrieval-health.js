@@ -2,6 +2,7 @@
 
 import { randomUUID } from "crypto";
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
+import { applyCorsHeaders } from "./_cors.js";
 import { getRetrievalHealthSnapshot } from "./_retrievalHealthStore.js";
 import { evaluateRetrievalAlerts, RETRIEVAL_ALERT_THRESHOLDS } from "./_retrievalThresholds.js";
 import {
@@ -11,8 +12,6 @@ import {
   logSuccess,
   logError,
 } from "./_logging.js";
-
-const ALLOWED_ORIGINS = ["https://casedive.ca", "https://www.casedive.ca", "https://casefinder-project.vercel.app"];
 
 function isAuthorized(req) {
   const expectedToken = process.env.RETRIEVAL_HEALTH_TOKEN || "";
@@ -30,13 +29,7 @@ export default async function handler(req, res) {
   const startMs = Date.now();
   logRequestStart(req, "retrieval-health", requestId);
 
-  const origin = req.headers.origin ?? "";
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-  res.setHeader("Vary", "Origin");
+  applyCorsHeaders(req, res, "GET, OPTIONS", "Authorization, Content-Type");
 
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
