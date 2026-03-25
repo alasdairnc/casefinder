@@ -81,3 +81,11 @@ Append-only. Each run adds a dated section. Never overwrite previous entries.
 - None
 ### Still open
 - None
+
+## Audit — 2026-03-25 (run 7)
+### Fixed since last run
+- None
+### New findings
+- None (Codebase fully complies with new Level 2 Advanced Rules: A11y semantics verified via Playwright roles, strictly enforced `setex` bounds found on all 5 Redis endpoints, and `manualChunks` present in Vite config).
+### Still open
+- None
