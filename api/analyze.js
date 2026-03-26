@@ -215,13 +215,17 @@ function matchLandmarkCases(scenario) {
     const tagTokens = new Set();
     caseLaw.tags.forEach(t => t.toLowerCase().split(/\s+/).forEach(token => tagTokens.add(token)));
     caseLaw.topics.forEach(t => t.toLowerCase().split(/\s+/).forEach(token => tagTokens.add(token)));
+    // Also add title tokens to the matching pool!
+    caseLaw.title.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).forEach(token => tagTokens.add(token));
     
     for (const token of scenarioTokens) {
       if (tagTokens.has(token)) score += 3;
     }
 
-    // 3. Case Name Match (Direct Signal)
-    if (s.includes(caseLaw.title.toLowerCase())) score += 20;
+    // 3. Case Name Match (Direct Signal - punctuation insensitive)
+    const normalizedTitle = caseLaw.title.toLowerCase().replace(/[^a-z0-9\s]/g, "");
+    const normalizedS = s.replace(/[^a-z0-9\s]/g, "");
+    if (normalizedS.includes(normalizedTitle)) score += 20;
 
     if (score >= 3) {
       matched.push({ caseLaw, score });
