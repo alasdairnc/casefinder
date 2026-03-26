@@ -40,7 +40,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
 
   const caseLawEmptyMessage =
     caseLawMeta?.reason?.startsWith("retrieval_error")
-      ? `Case law retrieval is temporarily unavailable${caseLawMeta.error ? `: ${caseLawMeta.error}` : ""}. Please try again later.`
+      ? "Case law retrieval is temporarily unavailable. Please try again in a moment."
       : caseLawMeta?.reason === "missing_api_key"
         ? "Case law retrieval is unavailable (CanLII not configured)."
         : caseLawMeta?.reason === "no_terms_or_databases"
