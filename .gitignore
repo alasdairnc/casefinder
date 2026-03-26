@@ -12,3 +12,5 @@ test-results
 .claude/mcp.json
 node_modules_old/
 tmp/
+.claude-flow/
+.swarm/
