@@ -19,9 +19,9 @@ Execute verification in this exact order:
    - Report warnings and errors
 
 4. **Test Suite**
-   - Run all tests
+   - Run `npm run test:unit` (vitest unit tests — fast, node env, no server needed)
+   - Do NOT run `npm test` (Playwright — requires dev server, use only manually)
    - Report pass/fail count
-   - Report coverage percentage
 
 5. **Console.log Audit**
    - Search for console.log in source files
