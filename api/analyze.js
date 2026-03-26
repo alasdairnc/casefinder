@@ -429,7 +429,7 @@ export default async function handler(req, res) {
       const canliiKey = process.env.CANLII_API_KEY || "";
       const retrievalStartMs = Date.now();
       
-      if (!canliiKey) {
+      if (!canliiKey || canliiKey.trim() === "") {
         result.case_law = [];
         meta.case_law = {
           source: "retrieval",
