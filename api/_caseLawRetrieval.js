@@ -469,6 +469,7 @@ export async function retrieveVerifiedCaseLaw({
   filters = {},
   aiSuggestions = [],
   aiCaseLaw = [],
+  landmarkMatches = [],
   criminalCode = [],
   apiKey = "",
   maxResults = 3,
@@ -507,6 +508,24 @@ export async function retrieveVerifiedCaseLaw({
         matchedTerm: "AI suggestion",
         court: parsed.courtCode,
         year: parsed.year,
+      });
+    }
+  }
+
+  // Inject Local Landmark RAG Matches into the verification pool
+  if (Array.isArray(landmarkMatches)) {
+    for (const landmark of landmarkMatches) {
+      if (!landmark || !landmark.citation) continue;
+      const citation = sanitizeTerm(landmark.citation);
+      const parsed = parseCitation(citation);
+      aiCitationCandidates.push({
+        citation,
+        title: landmark.title || citation,
+        summary: landmark.ratio || "",
+        url: "",
+        matchedTerm: "Landmark RAG Match",
+        court: parsed?.courtCode || landmark.court,
+        year: parsed?.year || landmark.year,
       });
     }
   }
