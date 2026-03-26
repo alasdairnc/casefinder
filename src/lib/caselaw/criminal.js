@@ -151,7 +151,7 @@ export const criminalCases = [
     year: 1978,
     court: "SCC",
     topics: ["Criminal Law", "Mens Rea", "Strict Liability"],
-    tags: ["regulatory offences", "absolute liability", "due diligence defence"],
+    tags: ["regulatory offences", "absolute liability", "strict liability", "due diligence defence"],
     facts: "The city was charged with pollution after waste leaked into a creek. The case centered on what level of mental fault is required for regulatory vs criminal offences.",
     ratio: "Created three categories of offences: (1) Mens rea offences (require proof of intent), (2) Strict liability (the Crown doesn't need to prove intent, but the accused can avoid conviction by proving they exercised 'due diligence'), and (3) Absolute liability (no fault required)."
   },

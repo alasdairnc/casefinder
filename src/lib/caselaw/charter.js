@@ -25,7 +25,7 @@ export const charterCases = [
     year: 2015,
     court: "SCC",
     topics: ["Charter", "s. 7", "Medical Assistance in Dying"],
-    tags: ["maid", "euthanasia", "assisted suicide", "life liberty security"],
+    tags: ["maid", "euthanasia", "assisted suicide", "assisted dying", "medical assistance in dying", "life liberty security"],
     facts: "Individuals suffering from grievous and irremediable medical conditions challenged the absolute criminal ban on physician-assisted dying.",
     ratio: "The absolute prohibition on assisted dying was overly broad and violated s. 7, legally establishing the right to Medical Assistance in Dying (MAID) for consenting adults."
   },

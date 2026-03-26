@@ -15,7 +15,7 @@ export const administrativeCases = [
     year: 2019,
     court: "SCC",
     topics: ["Administrative Law", "Standard of Review"],
-    tags: ["vavilov", "judicial review", "reasonableness standard", "correctness"],
+    tags: ["vavilov", "judicial review", "reasonableness standard", "correctness", "standard of review"],
     facts: "The son of Russian spies stripped of Canadian citizenship challenged the administrative tribunal's decision. The SCC used the case to completely rewrite the Dunsmuir framework.",
     ratio: "The massive overhaul of judicial review. Establishes a rigid presumption that the standard of 'reasonableness' applies to all administrative decisions, with 'correctness' reserved strictly for constitutional questions, general questions of law, and jurisdictional overlap."
   },
@@ -35,7 +35,7 @@ export const administrativeCases = [
     year: 1992,
     court: "SCC",
     topics: ["Family Law", "Spousal Support"],
-    tags: ["divorce", "economic disadvantage", "equitable sharing", "stay-at-home parent"],
+    tags: ["divorce", "spousal support", "economic disadvantage", "equitable sharing", "stay-at-home parent"],
     facts: "Following a long-term marriage where the wife stayed home to raise children, the husband sought to terminate spousal support, arguing she should be self-sufficient.",
     ratio: "Revolutionized spousal support by rejecting the 'clean break' model. Established that support must recognize the long-term economic disadvantages caused by the roles assumed during marriage (e.g., stay-at-home parents)."
   },

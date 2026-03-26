@@ -171,6 +171,10 @@ function scoreRetrievedCase(scenarioTokens, item) {
   const yearNum = Number(item?.year);
   if (Number.isFinite(yearNum) && yearNum >= 2000) score += 0.4;
 
+  if (String(item?.matched_content || "").includes("Landmark RAG Match")) {
+    score += 8; // Massive boost to ensure landmarks surface if they are relevant
+  }
+
   return score;
 }
 
@@ -192,22 +196,32 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
   return cases.slice(0, limit);
 }
 
-// ── Deterministic RAG Substring Matching ─────────────────────────────────────
+// ── Deterministic RAG Token Matching ─────────────────────────────────────────
 function matchLandmarkCases(scenario) {
   if (!scenario) return [];
   const s = scenario.toLowerCase();
+  const scenarioTokens = new Set(tokenizeForRanking(s));
   const matched = [];
 
   for (const caseLaw of MASTER_CASE_LAW_DB) {
     let score = 0;
+    
+    // 1. Literal Substring Matches (High Signal)
     for (const tag of caseLaw.tags) {
-      if (s.includes(tag.toLowerCase())) score += 3;
+      if (s.includes(tag.toLowerCase())) score += 10;
     }
-    for (const topic of caseLaw.topics) {
-      if (s.includes(topic.toLowerCase())) score += 2;
+    
+    // 2. Token Overlap (Fuzzy Signal)
+    const tagTokens = new Set();
+    caseLaw.tags.forEach(t => t.toLowerCase().split(/\s+/).forEach(token => tagTokens.add(token)));
+    caseLaw.topics.forEach(t => t.toLowerCase().split(/\s+/).forEach(token => tagTokens.add(token)));
+    
+    for (const token of scenarioTokens) {
+      if (tagTokens.has(token)) score += 3;
     }
-    // High-priority case-name specific match
-    if (s.includes(caseLaw.title.toLowerCase())) score += 10;
+
+    // 3. Case Name Match (Direct Signal)
+    if (s.includes(caseLaw.title.toLowerCase())) score += 20;
 
     if (score >= 3) {
       matched.push({ caseLaw, score });
@@ -222,11 +236,12 @@ function matchLandmarkCases(scenario) {
 
 async function analyzeWithRetry(scenario, filters, apiKey) {
   let system = buildSystemPrompt(filters || {});
+  let matchedLandmarks = [];
   
   if (filters?.lawTypes?.case_law !== false) {
-    const landmarks = matchLandmarkCases(scenario);
-    if (landmarks.length > 0) {
-      const contextStr = landmarks.map((c) => `- ${c.title} (${c.citation}): ${c.ratio}`).join("\n");
+    matchedLandmarks = matchLandmarkCases(scenario);
+    if (matchedLandmarks.length > 0) {
+      const contextStr = matchedLandmarks.map((c) => `- ${c.title} (${c.citation}): ${c.ratio}`).join("\n");
       system += `\n\nCRITICAL CONTEXT: Based on the user's scenario, you MUST consider applying the following Supreme Court of Canada landmark cases:\n${contextStr}\nEnsure you accurately cite these specific cases and strictly apply their ratios to the analysis where relevant.`;
     }
   }
@@ -237,7 +252,7 @@ async function analyzeWithRetry(scenario, filters, apiKey) {
   // First attempt
   const raw = await callAnthropic(messages, system, apiKey);
   try {
-    return { result: JSON.parse(raw), raw };
+    return { result: JSON.parse(raw), raw, matchedLandmarks };
   } catch {
     // Retry: feed Claude its bad output back and ask for valid JSON only
     const retryMessages = [
@@ -252,9 +267,9 @@ async function analyzeWithRetry(scenario, filters, apiKey) {
 
     const retryRaw = await callAnthropic(retryMessages, system, apiKey);
     try {
-      return { result: JSON.parse(retryRaw), raw, retryRaw };
+      return { result: JSON.parse(retryRaw), raw, retryRaw, matchedLandmarks };
     } catch {
-      return { result: null, raw, retryRaw };
+      return { result: null, raw, retryRaw, matchedLandmarks };
     }
   }
 }
@@ -387,7 +402,7 @@ export default async function handler(req, res) {
     }
 
     const anthropicStartMs = Date.now();
-    const { result, raw, retryRaw } = await analyzeWithRetry(
+    const { result, raw, retryRaw, matchedLandmarks } = await analyzeWithRetry(
       scenario,
       filters,
       apiKey
@@ -415,6 +430,7 @@ export default async function handler(req, res) {
           filters,
           aiSuggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
           aiCaseLaw: Array.isArray(result.case_law) ? result.case_law : [],
+          landmarkMatches: matchedLandmarks,
           criminalCode: Array.isArray(result.criminal_code) ? result.criminal_code : [],
           apiKey: canliiKey,
           maxResults: 10,
