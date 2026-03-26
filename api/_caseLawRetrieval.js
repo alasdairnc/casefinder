@@ -526,6 +526,7 @@ export async function retrieveVerifiedCaseLaw({
         matchedTerm: "Landmark RAG Match",
         court: parsed?.courtCode || landmark.court,
         year: parsed?.year || landmark.year,
+        isLandmark: true, // Flag for verification bypass
       });
     }
   }
@@ -553,6 +554,21 @@ export async function retrieveVerifiedCaseLaw({
 
   for (const candidate of sorted) {
     if (cases.length >= maxResults) break;
+
+    // Use absolute bypass for Local Landmarks (we already know they're valid)
+    if (candidate.isLandmark) {
+      cases.push({
+        citation: candidate.citation,
+        summary: candidate.summary,
+        court: candidate.court,
+        year: candidate.year,
+        url_canlii: candidate.url || buildSearchUrl(candidate.citation),
+        matched_content: "Landmark Case Law Database",
+        verificationStatus: "verified"
+      });
+      continue;
+    }
+
     if (verificationCallsTotal >= MAX_VERIFICATION_CALLS) break;
 
     const key = candidate.citation.toLowerCase();

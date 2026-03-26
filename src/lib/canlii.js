@@ -92,8 +92,8 @@ export function parseCitation(citation) {
     };
   }
 
-  // 3. SCR citation: "Parties, [YYYY] N SCR NNN"
-  const scr = trimmed.match(/^(?:(.+?),\s*)?\[(\d{4})\]\s+\d+\s+SCR\s+\d+$/i);
+  // 3. SCR citation: "Parties, [YYYY] N SCR NNN" or "YYYY N SCR NNN"
+  const scr = trimmed.match(/^(?:(.+?),\s*)?\[?(\d{4})\]?\s+\d+\s+SCR\s+\d+$/i);
   if (scr) {
     const [, parties, year] = scr;
     return {
