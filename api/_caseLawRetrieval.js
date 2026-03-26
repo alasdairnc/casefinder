@@ -2,7 +2,7 @@
 // Phase A helper: retrieve real case-law candidates from CanLII search endpoints
 // and return only citations that verify through the existing lookup pipeline.
 
-import { COURT_API_MAP, lookupCase, parseCitation } from "../src/lib/canlii.js";
+import { COURT_API_MAP, lookupCase, parseCitation, buildSearchUrl } from "../src/lib/canlii.js";
 
 const CANLII_API_BASE = "https://api.canlii.org/v1";
 const MAX_TERMS = 4;

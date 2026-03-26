@@ -501,7 +501,7 @@ export default async function handler(req, res) {
         meta.case_law = {
           source: "retrieval_error",
           verifiedCount: 0,
-          reason: `retrieval_error: ${errorMsg}`,
+          reason: "retrieval_error",
           error: errorMsg,
         };
       }
