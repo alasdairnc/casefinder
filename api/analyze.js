@@ -497,11 +497,12 @@ export default async function handler(req, res) {
         logError(requestId, "analyze-retrieval", retrievalErr, 500, Date.now() - retrievalStartMs);
         
         result.case_law = [];
+        const errorMsg = retrievalErr.message || String(retrievalErr);
         meta.case_law = {
           source: "retrieval_error",
           verifiedCount: 0,
-          reason: "retrieval_error",
-          error: retrievalErr.message,
+          reason: `retrieval_error: ${errorMsg}`,
+          error: errorMsg,
         };
       }
     }
