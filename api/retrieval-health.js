@@ -3,7 +3,7 @@
 import { randomUUID } from "crypto";
 import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
 import { applyCorsHeaders } from "./_cors.js";
-import { getRetrievalHealthSnapshot } from "./_retrievalHealthStore.js";
+import { getRetrievalHealthSnapshot, getTrendlineSnapshots } from "./_retrievalHealthStore.js";
 import { evaluateRetrievalAlerts, RETRIEVAL_ALERT_THRESHOLDS } from "./_retrievalThresholds.js";
 import {
   logRequestStart,
@@ -65,7 +65,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const snapshot = await getRetrievalHealthSnapshot();
+    const [snapshot, trendline] = await Promise.all([
+      getRetrievalHealthSnapshot(),
+      getTrendlineSnapshots(),
+    ]);
     const alerts = evaluateRetrievalAlerts(snapshot);
 
     const response = {
@@ -73,6 +76,7 @@ export default async function handler(req, res) {
       retentionMs: snapshot.retentionMs,
       totalStoredEvents: snapshot.totalStoredEvents,
       windows: snapshot.windows,
+      trendline,
       thresholds: RETRIEVAL_ALERT_THRESHOLDS,
       alerts,
     };

@@ -36,6 +36,53 @@ function BarRow({ label, value, max, t }) {
   );
 }
 
+function TrendlineChart({ trendline, t }) {
+  if (!Array.isArray(trendline) || trendline.length === 0) {
+    return (
+      <p style={{ margin: 0, fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textTertiary }}>
+        No trendline data
+      </p>
+    );
+  }
+
+  const width = 300;
+  const height = 60;
+  const pad = 4;
+  const innerW = width - pad * 2;
+  const innerH = height - pad * 2;
+
+  function toPoints(getValue) {
+    const values = trendline.map(getValue);
+    const defined = values.filter((v) => v != null);
+    if (defined.length === 0) return null;
+    const max = Math.max(...defined, 0.01);
+    return trendline
+      .map((_, i) => {
+        const v = values[i];
+        if (v == null) return null;
+        const x = pad + (i / (trendline.length - 1)) * innerW;
+        const y = pad + innerH - (v / max) * innerH;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  const errorPoints = toPoints((d) => d.errorRate);
+  const noVerifiedPoints = toPoints((d) => d.noVerifiedRate);
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", maxWidth: width, display: "block" }}>
+      {errorPoints && (
+        <polyline points={errorPoints} fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinejoin="round" />
+      )}
+      {noVerifiedPoints && (
+        <polyline points={noVerifiedPoints} fill="none" stroke={t.textSecondary} strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="3 2" />
+      )}
+    </svg>
+  );
+}
+
 function WindowPanel({ label, windowStats, thresholds, t }) {
   if (!windowStats) {
     return (
@@ -270,6 +317,16 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 24 }}>
               <WindowPanel label="5 minute window" windowStats={data.windows?.["5m"]} thresholds={data.thresholds} t={t} />
               <WindowPanel label="1 hour window" windowStats={data.windows?.["1h"]} thresholds={data.thresholds} t={t} />
+            </div>
+            <div style={{ border: `1px solid ${t.borderLight}`, padding: 16, marginBottom: 16 }}>
+              <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10, letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8 }}>
+                Trendline — last 75 min
+              </div>
+              <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11, color: t.textTertiary, marginBottom: 10 }}>
+                <span style={{ color: t.accent }}>—</span> error rate &nbsp;
+                <span style={{ color: t.textSecondary }}>- -</span> no-verified rate
+              </div>
+              <TrendlineChart trendline={data.trendline} t={t} />
             </div>
             <div style={{ border: `1px solid ${t.borderLight}`, padding: 16 }}>
               <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10, letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 12 }}>

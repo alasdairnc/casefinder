@@ -224,6 +224,38 @@ export async function getRetrievalEvents({ nowMs = Date.now() } = {}) {
   return recent;
 }
 
+export async function getTrendlineSnapshots({ nowMs = Date.now(), buckets = 15, bucketMs = 5 * 60 * 1000 } = {}) {
+  const events = await getRetrievalEvents({ nowMs });
+  const windowStart = nowMs - buckets * bucketMs;
+
+  const result = [];
+  for (let i = 0; i < buckets; i++) {
+    const bucketStart = windowStart + i * bucketMs;
+    const bucketEnd = bucketStart + bucketMs;
+    const ts = bucketEnd;
+
+    const bucketEvents = events.filter((e) => e.ts >= bucketStart && e.ts < bucketEnd);
+    const operational = bucketEvents.filter(
+      (e) => e.source === "retrieval" && e.caseLawFilterEnabled && e.reason !== "filter_disabled"
+    );
+    const quality = operational.filter(
+      (e) => e.reason !== "retrieval_error" && e.reason !== "missing_api_key"
+    );
+    const errors = operational.filter((e) => e.retrievalError);
+    const noVerified = quality.filter((e) => e.finalCaseLawCount === 0);
+    const latencies = operational.map((e) => e.retrievalLatencyMs).filter((v) => Number.isFinite(v));
+
+    result.push({
+      ts,
+      errorRate: operational.length > 0 ? Number((errors.length / operational.length).toFixed(4)) : null,
+      noVerifiedRate: quality.length > 0 ? Number((noVerified.length / quality.length).toFixed(4)) : null,
+      avgLatencyMs: latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : null,
+    });
+  }
+
+  return result;
+}
+
 export async function getRetrievalHealthSnapshot({ nowMs = Date.now() } = {}) {
   const events = await getRetrievalEvents({ nowMs });
   const windows = {};
