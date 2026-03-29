@@ -170,3 +170,12 @@ RETRIEVAL_ALERT_WEBHOOK_URL=...        # Optional; Slack/generic webhook for ded
 - Preserve legal-disclaimer behavior in the UI.
 - Use clear, scoped commit messages; separate unrelated changes.
 - Never commit `.env` or secrets.
+## Communication Style (Alasdair's Preferences)
+- Be concise. Confirm actions in one sentence. Don't over-explain.
+- If something is ambiguous, ask one clarifying question only.
+- No time estimates.
+- Never commit or push to git without being explicitly told to.
+
+## Current Focus
+- CanLII case law retrieval semi-working — some cases not found, some summaries inaccurate, actively improving
+- Next major focus: UI improvements
