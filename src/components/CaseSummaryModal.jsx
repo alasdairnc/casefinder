@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "../lib/ThemeContext.jsx";
 import { isValidUrl } from "../lib/validateUrl.js";
 
@@ -141,7 +142,7 @@ export default function CaseSummaryModal({ item, canliiUrl, onClose }) {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -307,6 +308,7 @@ export default function CaseSummaryModal({ item, canliiUrl, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
