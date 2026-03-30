@@ -5,6 +5,33 @@ import CaseSummaryModal from "./CaseSummaryModal.jsx";
 import SuggestionLink from "./SuggestionLink.jsx";
 import { useEffect, useState, useRef, useCallback } from "react";
 
+// Section header with a 2px gold left accent marker
+function SectionLabel({ label, count, t }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+      <div style={{ width: 2, height: 14, background: t.accent, flexShrink: 0 }} />
+      <div style={{
+        fontFamily: "'Helvetica Neue', sans-serif",
+        fontSize: 9,
+        letterSpacing: "0.38em",
+        textTransform: "uppercase",
+        color: t.textTertiary,
+      }}>
+        {label}
+      </div>
+      {count != null && (
+        <span style={{
+          fontSize: 10, color: t.tagText, background: t.tagBg,
+          padding: "1px 6px", border: `1px solid ${t.border}`,
+          fontWeight: 700,
+        }}>
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
+
 const PDF_ERROR_RESET_MS = 4000;
 
 /** Sources where an empty `case_law` array should still show the Case Law section (must stay in sync with `api/analyze.js`). */
@@ -148,12 +175,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
     <section data-testid="results-section" style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px 60px" }}>
       {/* Summary */}
       <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 28, marginBottom: 8 }}>
-        <div style={{
-          fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-          letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 14,
-        }}>
-          Scenario Summary
-        </div>
+        <SectionLabel label="Scenario Summary" t={t} />
         <p style={{
           fontFamily: "'Times New Roman', serif",
           fontSize: "clamp(16px, 2.5vw, 18px)",
@@ -250,12 +272,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
           if (key === "case_law" && rawItems.length > 0) {
             return (
               <div key={key} style={{ marginTop: 40 }}>
-                <div style={{
-                  fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-                  letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
-                }}>
-                  {label}
-                </div>
+                <SectionLabel label={label} t={t} />
                 <div style={{
                   fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12,
                   color: t.textTertiary, lineHeight: 1.5,
@@ -281,20 +298,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
              <div key={key} style={{ marginTop: 40 }}>
                 {Object.entries(groups).map(([groupName, groupItems], idx) => (
                    <div key={`${key}-${idx}`} style={{ marginBottom: idx < Object.keys(groups).length - 1 ? 24 : 0 }}>
-                      <div style={{
-                        fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-                        letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
-                        display: "flex", alignItems: "center", gap: 10,
-                      }}>
-                        {groupName}
-                        <span style={{
-                          fontSize: 10, color: t.tagText, background: t.tagBg,
-                          padding: "1px 6px", border: `1px solid ${t.border}`,
-                          fontWeight: 700,
-                        }}>
-                          {groupItems.length}
-                        </span>
-                      </div>
+                      <SectionLabel label={groupName} count={groupItems.length} t={t} />
                       {idx === 0 && verificationBanner}
                       {groupItems.map((item, i) => (
                         <ResultCard
@@ -315,20 +319,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
 
         return (
           <div key={key} style={{ marginTop: 40 }}>
-            <div style={{
-              fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-              letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-              {label}
-              <span style={{
-                fontSize: 10, color: t.tagText, background: t.tagBg,
-                padding: "1px 6px", border: `1px solid ${t.border}`,
-                fontWeight: 700,
-              }}>
-                {items.length}
-              </span>
-            </div>
+            <SectionLabel label={label} count={items.length} t={t} />
             {verificationBanner}
             {items.map((item, i) => (
               <ResultCard
@@ -348,12 +339,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
 
       {showCaseLawEmptyState && (
         <div style={{ marginTop: 40 }}>
-          <div style={{
-            fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-            letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8,
-          }}>
-            Case Law
-          </div>
+          <SectionLabel label="Case Law" t={t} />
           <div style={{
             border: `1px solid ${t.border}`,
             borderLeft: `3px solid ${t.accent}`,
@@ -444,12 +430,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
 
       {/* Analysis */}
       <div style={{ marginTop: 40 }}>
-        <div style={{
-          fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-          letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 14,
-        }}>
-          Legal Analysis
-        </div>
+        <SectionLabel label="Legal Analysis" t={t} />
         <div style={{
           fontFamily: "'Times New Roman', serif",
           fontSize: "clamp(15px, 2.3vw, 17px)",
@@ -463,12 +444,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
       {/* Suggested Links */}
       {data.suggestions?.length > 0 && (
         <div style={{ marginTop: 40 }}>
-          <div style={{
-            fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10,
-            letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 12,
-          }}>
-            Suggested Links
-          </div>
+          <SectionLabel label="Suggested Links" t={t} />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {data.suggestions.map((suggestion, i) => (
               <SuggestionLink key={i} suggestion={suggestion} />
