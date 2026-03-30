@@ -458,12 +458,14 @@ function toCaseLawItem(candidate, verification) {
   const parsed = parseCitation(candidate.citation);
   const court = parsed?.courtCode || candidate.court || "";
   const year = parsed?.year || candidate.year || "";
+  const title = verification?.title || candidate.title || null;
   const summary =
     candidate.summary ||
-    `${candidate.title || candidate.citation} (${court}${year ? ` ${year}` : ""})`;
+    `${title || candidate.citation} (${court}${year ? ` ${year}` : ""})`;
 
   return {
     citation: candidate.citation,
+    title,
     summary,
     court,
     year,
@@ -520,7 +522,7 @@ export async function retrieveVerifiedCaseLaw({
       if (!parsed) continue;
       aiCitationCandidates.push({
         citation,
-        title: parsed.parties || item.summary || citation,
+        title: parsed.parties || sanitizeTerm(item.title || "") || null,
         summary: item.summary || "",
         url: "",
         matchedTerm: "AI suggestion",

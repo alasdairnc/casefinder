@@ -1,6 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { retrieveVerifiedCaseLaw } from "../../api/_caseLawRetrieval.js";
+
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
 
 describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
   it("uses CanLII search URL for pre-2000 landmark citations", async () => {
@@ -42,5 +48,28 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     expect(cases[0].url_canlii).toBe(
       "https://www.canlii.org/en/ca/scc/doc/2016/2016scc27/2016scc27.html"
     );
+  });
+
+  it("returns verified CanLII case title for non-landmark retrieval", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: async () => ({ title: "R v Jordan" }),
+    });
+
+    const { cases } = await retrieveVerifiedCaseLaw({
+      apiKey: "test-key",
+      aiCaseLaw: [
+        {
+          citation: "2016 SCC 27",
+          summary: "Delay ceiling analysis.",
+        },
+      ],
+      maxResults: 3,
+    });
+
+    expect(cases).toHaveLength(1);
+    expect(cases[0].citation).toBe("2016 SCC 27");
+    expect(cases[0].title).toBe("R v Jordan");
   });
 });
