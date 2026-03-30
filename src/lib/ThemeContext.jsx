@@ -4,7 +4,7 @@ import { themes } from "./themes.js";
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
   const theme = isDark ? themes.dark : themes.light;
 
   const value = useMemo(
