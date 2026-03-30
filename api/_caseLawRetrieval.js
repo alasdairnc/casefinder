@@ -438,12 +438,16 @@ function dedupeCandidates(candidates) {
     if (!byCitation.has(key)) {
       byCitation.set(key, candidate);
     } else {
-      // Prefer the entry with a case name over one that is citation-only
+      // Prefer landmark entries (they bypass verification); then prefer named entries over citation-only
       const existing = byCitation.get(key);
-      const existingHasName = Boolean(existing.title && existing.title !== existing.citation);
-      const candidateHasName = Boolean(candidate.title && candidate.title !== candidate.citation);
-      if (!existingHasName && candidateHasName) {
+      if (!existing.isLandmark && candidate.isLandmark) {
         byCitation.set(key, candidate);
+      } else if (!existing.isLandmark && !candidate.isLandmark) {
+        const existingHasName = Boolean(existing.title && existing.title !== existing.citation);
+        const candidateHasName = Boolean(candidate.title && candidate.title !== candidate.citation);
+        if (!existingHasName && candidateHasName) {
+          byCitation.set(key, candidate);
+        }
       }
     }
   }
