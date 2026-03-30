@@ -141,6 +141,8 @@ UPSTASH_REDIS_REST_URL=...             # Optional; enables shared limiter/cache
 UPSTASH_REDIS_REST_TOKEN=...           # Required if UPSTASH_REDIS_REST_URL is set
 RETRIEVAL_HEALTH_TOKEN=...             # Optional; protects GET /api/retrieval-health when set
 RETRIEVAL_ALERT_WEBHOOK_URL=...        # Optional; Slack/generic webhook for deduped retrieval threshold alerts
+RETRIEVAL_ALERT_WEBHOOK_HOST_ALLOWLIST=hooks.slack.com # Optional; comma-separated host allowlist for webhook destination
+RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP=false # Optional; set true only for local/dev webhook endpoints
 ```
 
 ## Design System

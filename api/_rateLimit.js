@@ -85,10 +85,13 @@ export async function checkRateLimit(ip, endpoint) {
     }
     // If still over limit, evict oldest entries (LRU)
     if (store.size > 500) {
-      const excess = store.size - 1_000;
-      const keys = store.keys();
-      for (let i = 0; i < excess; i++) {
-        store.delete(keys.next().value);
+      const targetSize = 430;
+      const excess = store.size - targetSize;
+      if (excess > 0) {
+        const oldestKeys = Array.from(store.keys()).slice(0, excess);
+        for (const staleKey of oldestKeys) {
+          store.delete(staleKey);
+        }
       }
     }
   }

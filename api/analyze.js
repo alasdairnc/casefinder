@@ -497,7 +497,11 @@ export default async function handler(req, res) {
       } catch (retrievalErr) {
         // Keep retrieval-first behavior even on retrieval failures.
         Sentry.captureException(retrievalErr);
-        console.error(`[analyze] Retrieval failed for requestId ${requestId}:`, retrievalErr);
+        const retrievalErrMessage =
+          retrievalErr && typeof retrievalErr.message === "string"
+            ? retrievalErr.message
+            : String(retrievalErr);
+        console.error(`[analyze] Retrieval failed for requestId ${requestId}: ${retrievalErrMessage}`);
         logError(requestId, "analyze-retrieval", retrievalErr, 500, Date.now() - retrievalStartMs);
         
         result.case_law = [];

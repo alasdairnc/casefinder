@@ -3,6 +3,7 @@
 
 import { createLog } from "./_logging.js";
 import { redis } from "./_rateLimit.js";
+import { isIP } from "node:net";
 
 const REDIS_TIMEOUT_MS = 500;
 import { getRetrievalHealthSnapshot } from "./_retrievalHealthStore.js";
@@ -15,9 +16,60 @@ const memoryAlertState = new Map();
 
 const WEBHOOK_TIMEOUT_MS = 8000;
 
+function isPrivateOrLocalHost(hostname = "") {
+  const host = String(hostname).trim().toLowerCase();
+  if (!host) return true;
+  if (host === "localhost" || host === "0.0.0.0" || host.endsWith(".local")) return true;
+
+  const ipVersion = isIP(host);
+  if (ipVersion === 4) {
+    const [a, b] = host.split(".").map((v) => Number.parseInt(v, 10));
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    return false;
+  }
+
+  if (ipVersion === 6) {
+    if (host === "::1") return true;
+    if (host.startsWith("fc") || host.startsWith("fd")) return true; // ULA
+    if (host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb")) return true; // link-local
+  }
+
+  return false;
+}
+
+function isAllowedWebhookHost(hostname = "") {
+  const allowlistRaw = process.env.RETRIEVAL_ALERT_WEBHOOK_HOST_ALLOWLIST || "";
+  const allowlist = allowlistRaw
+    .split(",")
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (allowlist.length === 0) return true;
+  const host = String(hostname).trim().toLowerCase();
+  return allowlist.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+}
+
 function getAlertWebhookUrl() {
   const url = process.env.RETRIEVAL_ALERT_WEBHOOK_URL || "";
-  return typeof url === "string" && url.startsWith("http") ? url.trim() : "";
+  if (typeof url !== "string" || !url.trim()) return "";
+
+  let parsed;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return "";
+  }
+
+  const allowInsecureHttp = process.env.RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP === "true";
+  if (parsed.protocol !== "https:" && !allowInsecureHttp) return "";
+  if (isPrivateOrLocalHost(parsed.hostname)) return "";
+  if (!isAllowedWebhookHost(parsed.hostname)) return "";
+
+  return parsed.toString();
 }
 
 function buildWebhookBody(alert) {
