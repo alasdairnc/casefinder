@@ -577,6 +577,7 @@ export async function retrieveVerifiedCaseLaw({
     if (candidate.isLandmark) {
       cases.push({
         citation: candidate.citation,
+        title: candidate.title || null,
         summary: candidate.summary,
         court: candidate.court,
         year: candidate.year,

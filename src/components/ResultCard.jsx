@@ -167,7 +167,7 @@ export default function ResultCard({ item, type, verification, onCardClick, addB
         gap: 12,
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Citation */}
+          {/* Title / Citation heading */}
           <div style={{
             fontFamily: "'Times New Roman', serif",
             fontSize: "clamp(15px, 2.2vw, 17px)",
@@ -175,8 +175,20 @@ export default function ResultCard({ item, type, verification, onCardClick, addB
             fontWeight: 700,
             lineHeight: 1.3,
           }}>
-            {item.citation}
+            {item.title || item.citation}
           </div>
+
+          {/* Neutral citation below title when both present */}
+          {item.title && item.title !== item.citation && (
+            <div style={{
+              fontFamily: "'Courier New', monospace",
+              fontSize: 11,
+              color: t.textTertiary,
+              marginTop: 2,
+            }}>
+              {item.citation}
+            </div>
+          )}
 
           {/* Court / year / jurisdiction tag — same line below citation */}
           <div style={{
