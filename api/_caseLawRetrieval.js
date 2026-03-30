@@ -425,12 +425,26 @@ function sortCandidatesForStableVerification(candidates) {
   });
 }
 
+function extractNeutralCitation(citation) {
+  const match = String(citation || "").match(/(\d{4}\s+[A-Z]+\s+\d+)/i);
+  return match ? match[1].replace(/\s+/g, " ").toUpperCase() : null;
+}
+
 function dedupeCandidates(candidates) {
   const byCitation = new Map();
   for (const candidate of candidates) {
-    const key = candidate.citation.toLowerCase();
+    const neutral = extractNeutralCitation(candidate.citation);
+    const key = neutral ?? candidate.citation.toLowerCase();
     if (!byCitation.has(key)) {
       byCitation.set(key, candidate);
+    } else {
+      // Prefer the entry with a case name over one that is citation-only
+      const existing = byCitation.get(key);
+      const existingHasName = Boolean(existing.title && existing.title !== existing.citation);
+      const candidateHasName = Boolean(candidate.title && candidate.title !== candidate.citation);
+      if (!existingHasName && candidateHasName) {
+        byCitation.set(key, candidate);
+      }
     }
   }
   return Array.from(byCitation.values());
@@ -571,7 +585,8 @@ export async function retrieveVerifiedCaseLaw({
 
     if (verificationCallsTotal >= MAX_VERIFICATION_CALLS) break;
 
-    const key = candidate.citation.toLowerCase();
+    const neutral = extractNeutralCitation(candidate.citation);
+    const key = neutral ?? candidate.citation.toLowerCase();
     if (citationLookupTried.has(key)) continue;
     citationLookupTried.add(key);
     verificationCallsTotal += 1;
