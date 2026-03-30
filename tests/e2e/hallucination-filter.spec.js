@@ -79,7 +79,7 @@ test.describe("Hallucination filtering", () => {
     await page.locator("textarea").fill("test scenario");
     await page.locator("button").filter({ hasText: /research/i }).click();
 
-    await expect(page.getByText("R v Dorfer")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("R v Dorfer, 2014 BCCA 449")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("1 of 1 citation verified on CanLII")).toBeVisible();
   });
 
@@ -112,8 +112,8 @@ test.describe("Hallucination filtering", () => {
     await page.locator("textarea").fill("test scenario");
     await page.locator("button").filter({ hasText: /research/i }).click();
 
-    await expect(page.getByText("R v Dorfer")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("R v Dorfer, 2014 BCCA 449")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("R v Fake")).not.toBeVisible();
-    await expect(page.getByText("1 of 2 citations verified — 1 unconfirmed removed")).toBeVisible();
+    await expect(page.getByText("1 of 2 verified — 1 unconfirmed removed")).toBeVisible();
   });
 });

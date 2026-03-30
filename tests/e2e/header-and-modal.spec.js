@@ -66,8 +66,9 @@ test.describe("Header", () => {
     await expect(page.getByRole("heading", { name: "casedive" })).toBeVisible();
   });
 
-  test("renders the Legal Research Tool subtitle", async ({ page }) => {
-    await expect(page.getByText("Legal Research Tool", { exact: true })).toBeVisible();
+  test("renders navigation actions", async ({ page }) => {
+    await expect(page.getByRole("button", { name: /saved/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /criminal code explorer/i })).toBeVisible();
   });
 
   test("theme toggle button is visible and shows Dark in light mode", async ({ page }) => {

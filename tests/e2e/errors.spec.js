@@ -35,10 +35,8 @@ test.describe("Error handling", () => {
   test("character counter updates when typing in textarea", async ({ page }) => {
     await page.goto("/");
     const input = page.locator('[data-testid="scenario-input"]');
-    await input.fill("A person broke into a house");
-    // Dispatch input event so React state updates
-    await input.dispatchEvent("input");
-    // Counter should show non-zero / 5,000
-    await expect(page.locator("text=/\\d+ \\/ 5,000/")).toBeVisible();
+    await input.fill("a".repeat(4500));
+    // Counter appears only near limit and shows remaining characters.
+    await expect(page.getByText(/^500$/)).toBeVisible();
   });
 });

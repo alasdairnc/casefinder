@@ -105,7 +105,7 @@ test.describe("Scenario: Impaired Driving", () => {
 
   test("shows Charter rights section", async ({ page }) => {
     await submitScenario(page, "Driver pulled over with BAC of 0.12 after refusing a roadside test");
-    await expect(page.getByText("Charter Rights", { exact: true })).toBeVisible();
+    await expect(page.locator('[data-testid="results-section"]').getByText("Charter Rights", { exact: true })).toBeVisible();
     await expect(page.getByText("Warrantless breath demands must be supported by reasonable grounds.")).toBeVisible();
     await expect(page.getByText("A traffic stop must not constitute arbitrary detention.")).toBeVisible();
   });
@@ -260,7 +260,7 @@ test.describe("Scenario: Drug Trafficking (CDSA)", () => {
 
   test("shows Charter Search and Seizure concern", async ({ page }) => {
     await submitScenario(page, "Accused sold cocaine to an undercover officer and had more drugs at home");
-    await expect(page.getByText("Charter Rights", { exact: true })).toBeVisible();
+    await expect(page.locator('[data-testid="results-section"]').getByText("Charter Rights", { exact: true })).toBeVisible();
     await expect(page.getByText("Residential search requires a warrant. Evidence at residence may be challenged.")).toBeVisible();
   });
 

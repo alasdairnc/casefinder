@@ -13,8 +13,7 @@ test.describe("SearchArea", () => {
     await expect(button).toBeVisible();
     await expect(button).toHaveText("Research");
     
-    // Check placeholder pattern
-    await expect(input).toHaveAttribute("placeholder", /e\.g\., A suspect was observed/);
+    await expect(input).toHaveAttribute("placeholder", /Describe your legal scenario in plain language/);
   });
 
   test("accepts text correctly and character count updates", async ({ page }) => {
@@ -24,9 +23,9 @@ test.describe("SearchArea", () => {
     await input.fill(scenario);
     await expect(input).toHaveValue(scenario);
 
-    // Initial max chars is 5000. We should see the remaining count format.
-    const charCount = page.locator("text=/\\d+ \\/ 5,000/");
-    await expect(charCount).toBeVisible();
+    // Remaining count appears only when near the max-length threshold.
+    await input.fill("x".repeat(4600));
+    await expect(page.getByText("400")).toBeVisible();
   });
 
   test("form submission triggers analyzing state", async ({ page }) => {
@@ -44,7 +43,7 @@ test.describe("SearchArea", () => {
     
     // Confirm button state changes
     await expect(button).toBeDisabled();
-    await expect(button).toHaveText("Analyzing...");
+    await expect(button).toContainText("Analyzing");
   });
 
   test("keyboard shortcut (Meta+Enter) submits the form", async ({ page }) => {
@@ -66,6 +65,6 @@ test.describe("SearchArea", () => {
     }
     
     await expect(button).toBeDisabled();
-    await expect(button).toHaveText("Analyzing...");
+    await expect(button).toContainText("Analyzing");
   });
 });

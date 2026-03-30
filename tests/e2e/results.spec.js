@@ -72,7 +72,7 @@ test.describe("Results", () => {
 
   test("renders Criminal Code section label and Export PDF button", async ({ page }) => {
     await setupAndSearch(page);
-    await expect(page.getByText("Criminal Code", { exact: true })).toBeVisible();
+    await expect(page.locator('[data-testid="results-section"]').getByText("Criminal Code", { exact: true })).toBeVisible();
     await expect(page.locator('[data-testid="export-pdf-btn"]')).toBeVisible();
   });
 
@@ -128,9 +128,7 @@ test.describe("Select", () => {
   });
 
   test("jurisdiction select is visible in the filters panel with default value", async ({ page }) => {
-    // Filters start open by default
-    await expect(page.locator('input[type="checkbox"]').first()).toBeVisible({ timeout: 5000 });
-    const jurisdictionSelect = page.locator("select").nth(0);
+    const jurisdictionSelect = page.getByRole("combobox", { name: /jurisdiction/i });
     await expect(jurisdictionSelect).toBeVisible();
     // Default jurisdiction is "all" per constants.js
     await expect(jurisdictionSelect).toHaveValue("all");

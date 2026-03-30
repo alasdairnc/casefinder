@@ -43,6 +43,8 @@ const MOCK_VERIFY_RESPONSE = {
 };
 
 test.describe("Search flow", () => {
+  const caseTitle = (page) => page.getByText("R v Dorfer", { exact: true });
+
   test.beforeEach(async ({ page }) => {
     await page.route("/api/analyze", async (route) => {
       await route.fulfill({
@@ -96,7 +98,7 @@ test.describe("Search flow", () => {
     await page.locator("button").filter({ hasText: /research/i }).click();
 
     await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("R v Dorfer")).toBeVisible();
+    await expect(caseTitle(page)).toBeVisible();
   });
 
   test("sends citation batch to verify and renders the verified badge", async ({ page }) => {
@@ -115,7 +117,7 @@ test.describe("Search flow", () => {
     await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
     await page.locator('[data-testid="research-submit"]').click();
 
-    await expect(page.getByText("R v Dorfer")).toBeVisible({ timeout: 10000 });
+    await expect(caseTitle(page)).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole("link", { name: /Verified on CanLII/i })).toBeVisible();
     
     expect(verifyPayload).toEqual({
@@ -240,8 +242,8 @@ test.describe("Search flow", () => {
     await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
     await page.locator('[data-testid="research-submit"]').click();
 
-    await expect(page.getByText("R v Dorfer")).toBeVisible({ timeout: 10000 });
-    await page.getByText("R v Dorfer").click();
+    await expect(caseTitle(page)).toBeVisible({ timeout: 10000 });
+    await caseTitle(page).click();
 
     await expect(page.getByText("Facts")).toBeVisible();
     await expect(page.getByText("Ratio Decidendi")).toBeVisible();
@@ -269,8 +271,8 @@ test.describe("Search flow", () => {
     await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
     await page.locator('[data-testid="research-submit"]').click();
 
-    await expect(page.getByText("R v Dorfer")).toBeVisible({ timeout: 10000 });
-    await page.getByText("R v Dorfer").click();
+    await expect(caseTitle(page)).toBeVisible({ timeout: 10000 });
+    await caseTitle(page).click();
     await expect(page.getByText("Summary service temporarily unavailable.")).toBeVisible();
   });
 });

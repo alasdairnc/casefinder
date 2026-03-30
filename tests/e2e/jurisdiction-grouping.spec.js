@@ -86,10 +86,10 @@ test.describe("Jurisdiction Grouping Expansion", () => {
     await expect(page.getByText("Alberta Statutes")).toBeVisible();
     await expect(page.getByText("Federal Statutes")).toBeVisible();
 
-    // Check item counts
-    await expect(page.locator('div').filter({ hasText: /^Ontario Statutes1$/ })).toBeVisible();
-    await expect(page.locator('div').filter({ hasText: /^British Columbia Statutes1$/ })).toBeVisible();
-    await expect(page.locator('div').filter({ hasText: /^Alberta Statutes1$/ })).toBeVisible();
-    await expect(page.locator('div').filter({ hasText: /^Federal Statutes1$/ })).toBeVisible();
+    // Check grouped citations are rendered under each section.
+    await expect(page.getByText("Highway Traffic Act, s. 53")).toBeVisible();
+    await expect(page.getByText("Motor Vehicle Act, s. 144")).toBeVisible();
+    await expect(page.getByText("Traffic Safety Act, s. 115")).toBeVisible();
+    await expect(page.getByText("Controlled Drugs and Substances Act, s. 4")).toBeVisible();
   });
 });

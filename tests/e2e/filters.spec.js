@@ -24,8 +24,7 @@ test.describe("FiltersPanel", () => {
     await page.goto("/");
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    // Filters panel starts open by default — wait for checkboxes
-    await expect(page.locator('input[type="checkbox"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Case Law" })).toBeVisible({ timeout: 5000 });
   });
 
   test("toggling a law type off removes it from the analyze request payload", async ({ page }) => {
@@ -40,8 +39,7 @@ test.describe("FiltersPanel", () => {
       });
     });
 
-    // Uncheck "Case Law" — it's the second checkbox (index 1)
-    await page.locator('input[type="checkbox"]').nth(1).uncheck();
+    await page.getByRole("button", { name: "Case Law" }).click();
 
     await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house");
     await page.locator('[data-testid="research-submit"]').click();
@@ -63,10 +61,9 @@ test.describe("FiltersPanel", () => {
       });
     });
 
-    // Uncheck then re-check "Case Law"
-    const caseLawCheckbox = page.locator('input[type="checkbox"]').nth(1);
-    await caseLawCheckbox.uncheck();
-    await caseLawCheckbox.check();
+    const caseLawToggle = page.getByRole("button", { name: "Case Law" });
+    await caseLawToggle.click();
+    await caseLawToggle.click();
 
     await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house");
     await page.locator('[data-testid="research-submit"]').click();
