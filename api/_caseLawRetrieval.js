@@ -578,16 +578,16 @@ export async function retrieveVerifiedCaseLaw({
       let landmarkUrl = candidate.url || "";
       if (!landmarkUrl) {
         const parsed = parseCitation(candidate.citation);
-        if (parsed?.webDbId) {
+        const searchQuery = candidate.title && candidate.title !== candidate.citation
+          ? `${candidate.title} ${candidate.citation}`
+          : candidate.citation;
+        // Pre-2000 cases predate the neutral citation scheme — no reliable direct CanLII URL.
+        // Use name+citation search URL for those; prefer direct URL for post-2000.
+        const useDirectUrl = parsed?.webDbId && Number(parsed.year) >= 2000;
+        if (useDirectUrl) {
           const caseId = buildCaseId({ year: parsed.year, courtCode: parsed.courtCode, number: parsed.number, isLegacy: parsed.isLegacy });
-          const searchQuery = candidate.title && candidate.title !== candidate.citation
-            ? `${candidate.title} ${candidate.citation}`
-            : candidate.citation;
           landmarkUrl = caseId ? buildCaseUrl(parsed.webDbId, parsed.year, caseId) : buildSearchUrl(searchQuery);
         } else {
-          const searchQuery = candidate.title && candidate.title !== candidate.citation
-            ? `${candidate.title} ${candidate.citation}`
-            : candidate.citation;
           landmarkUrl = buildSearchUrl(searchQuery);
         }
       }
