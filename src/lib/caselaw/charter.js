@@ -10,7 +10,7 @@ export const charterCases = [
     ratio: "Establishes the 'Oakes Test' for Section 1 limitations: the government must prove a pressing and substantial objective, rational connection, minimal impairment, and proportionality between effects and objective."
   },
   {
-    citation: "1988 SCC 41",
+    citation: "1988 SCC 30",
     title: "R. v. Morgentaler",
     year: 1988,
     court: "SCC",
