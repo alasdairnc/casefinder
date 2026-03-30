@@ -2,7 +2,7 @@
 // Phase A helper: retrieve real case-law candidates from CanLII search endpoints
 // and return only citations that verify through the existing lookup pipeline.
 
-import { COURT_API_MAP, lookupCase, parseCitation, buildSearchUrl } from "../src/lib/canlii.js";
+import { COURT_API_MAP, lookupCase, parseCitation, buildSearchUrl, buildCaseUrl, buildCaseId } from "../src/lib/canlii.js";
 
 const CANLII_API_BASE = "https://api.canlii.org/v1";
 const MAX_TERMS = 4;
@@ -575,13 +575,23 @@ export async function retrieveVerifiedCaseLaw({
 
     // Use absolute bypass for Local Landmarks (we already know they're valid)
     if (candidate.isLandmark) {
+      let landmarkUrl = candidate.url || "";
+      if (!landmarkUrl) {
+        const parsed = parseCitation(candidate.citation);
+        if (parsed?.webDbId) {
+          const caseId = buildCaseId({ year: parsed.year, courtCode: parsed.courtCode, number: parsed.number, isLegacy: parsed.isLegacy });
+          landmarkUrl = caseId ? buildCaseUrl(parsed.webDbId, parsed.year, caseId) : buildSearchUrl(candidate.citation);
+        } else {
+          landmarkUrl = buildSearchUrl(candidate.citation);
+        }
+      }
       cases.push({
         citation: candidate.citation,
         title: candidate.title || null,
         summary: candidate.summary,
         court: candidate.court,
         year: candidate.year,
-        url_canlii: candidate.url || buildSearchUrl(candidate.citation),
+        url_canlii: landmarkUrl,
         matched_content: "Landmark Case Law Database",
         verificationStatus: "verified"
       });
