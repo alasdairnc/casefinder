@@ -2,6 +2,8 @@
 // Retrieves real, verified case-law candidates from CanLII search + verification.
 
 import { randomUUID, createHash } from "crypto";
+import { initSentry, Sentry } from "./_sentry.js";
+initSentry();
 import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
 import { applyCorsHeaders } from "./_cors.js";
 import { retrieveVerifiedCaseLaw } from "./_caseLawRetrieval.js";
@@ -142,6 +144,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ case_law: cases, meta });
   } catch (err) {
+    Sentry.captureException(err);
     const retrievalDurationMs = Date.now() - retrievalStartMs;
     await logRetrievalMetrics({
       requestId,

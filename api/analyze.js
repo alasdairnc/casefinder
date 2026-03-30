@@ -2,6 +2,8 @@
 // Keeps the Anthropic API key server-side
 
 import { createHash, randomUUID } from "crypto";
+import { initSentry, Sentry } from "./_sentry.js";
+initSentry();
 import { buildSystemPrompt } from "../src/lib/prompts.js";
 import { MASTER_CASE_LAW_DB } from "../src/lib/caselaw/index.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders, redis } from "./_rateLimit.js";
@@ -494,6 +496,7 @@ export default async function handler(req, res) {
         });
       } catch (retrievalErr) {
         // Keep retrieval-first behavior even on retrieval failures.
+        Sentry.captureException(retrievalErr);
         console.error(`[analyze] Retrieval failed for requestId ${requestId}:`, retrievalErr);
         logError(requestId, "analyze-retrieval", retrievalErr, 500, Date.now() - retrievalStartMs);
         
@@ -524,6 +527,7 @@ export default async function handler(req, res) {
     logSuccess(requestId, "analyze", 200, Date.now() - startMs, rlResult, { cached: true });
     return res.status(200).json(result);
   } catch (err) {
+    Sentry.captureException(err);
     const statusCode = err.status ? (err.status >= 500 ? 502 : err.status) : 500;
     logError(requestId, "analyze", err, statusCode, Date.now() - startMs);
     if (err.status) {
