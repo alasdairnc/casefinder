@@ -16,9 +16,8 @@ import {
 function isAuthorized(req) {
   const expectedToken = process.env.RETRIEVAL_HEALTH_TOKEN || "";
   if (!expectedToken) {
-    // No token configured — deny all requests. Log so this is visible in prod logs.
-    console.warn("[retrieval-health] RETRIEVAL_HEALTH_TOKEN is not set; endpoint is locked");
-    return false;
+    // No token configured — allow unauthenticated access.
+    return true;
   }
   const authHeader = req.headers.authorization || "";
   return authHeader === `Bearer ${expectedToken}`;
