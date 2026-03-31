@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { CRIMINAL_CODE_SECTIONS } from "../lib/criminalCodeData.js";
 
 const MAX_RESULTS = 100;
 const DEBOUNCE_MS = 100;
@@ -25,22 +24,36 @@ export function useCriminalCodeSearch() {
   const [partFilter, setPartFilter] = useState("all");
   const [results, setResults] = useState([]);
   const [totalMatches, setTotalMatches] = useState(0);
+  const [sections, setSections] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const timerRef = useRef(null);
 
-  // Convert Map to array once
+  // Lazy-load the full Criminal Code dataset on first mount.
+  // Since this hook is only used inside CriminalCodeExplorer (a conditional modal),
+  // the dynamic import only fires when the user opens the explorer.
+  useEffect(() => {
+    import("../lib/criminalCodeData.js").then((m) => {
+      setSections(m.CRIMINAL_CODE_SECTIONS);
+      setIsLoading(false);
+    });
+  }, []);
+
+  // Convert Map to array once sections are loaded
   const allSections = useMemo(() => {
-    return Array.from(CRIMINAL_CODE_SECTIONS.entries())
+    if (!sections) return [];
+    return Array.from(sections.entries())
       .map(([num, entry]) => ({
         num,
         ...entry,
       }))
       .sort((a, b) => compareSections(a.num, b.num));
-  }, []);
+  }, [sections]);
 
   // Total section count
   const totalSections = allSections.length;
 
   useEffect(() => {
+    if (!sections) return;
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       const q = query.toLowerCase().replace(/^s\.\s*/, "").trim();
@@ -104,7 +117,7 @@ export function useCriminalCodeSearch() {
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timerRef.current);
-  }, [query, severityFilter, partFilter, allSections]);
+  }, [query, severityFilter, partFilter, allSections, sections]);
 
   return {
     query,
@@ -116,5 +129,6 @@ export function useCriminalCodeSearch() {
     results,
     totalMatches,
     totalSections,
+    isLoading,
   };
 }

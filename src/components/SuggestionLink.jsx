@@ -1,22 +1,9 @@
 import { useTheme } from "../lib/ThemeContext.jsx";
-import { lookupSection } from "../lib/criminalCodeData.js";
-import { lookupCivilLawSection } from "../lib/civilLawData.js";
 
 function getUrlForSuggestion(suggestion) {
   if (suggestion.type === "canlii") {
     return `https://www.canlii.org/en/#search/text=${encodeURIComponent(suggestion.term)}`;
   }
-
-  if (suggestion.type === "criminal_code") {
-    const entry = lookupSection(suggestion.citation);
-    return entry?.url || null;
-  }
-
-  if (suggestion.type === "provincial_statute") {
-    const found = lookupCivilLawSection(suggestion.citation);
-    return found?.entry?.url || null;
-  }
-
   return null;
 }
 

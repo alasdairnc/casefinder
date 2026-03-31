@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useTheme } from "../lib/ThemeContext.jsx";
-import { CRIMINAL_CODE_PARTS } from "../lib/criminalCodeData.js";
+import { CRIMINAL_CODE_PARTS } from "../lib/criminalCodeParts.js";
 import { useCriminalCodeSearch } from "../hooks/useCriminalCodeSearch.js";
 import Select from "./Select.jsx";
 
@@ -374,6 +374,7 @@ export default function CriminalCodeExplorer({ onClose }) {
     results,
     totalMatches,
     totalSections,
+    isLoading,
   } = useCriminalCodeSearch();
 
   // Close on Escape
@@ -567,7 +568,20 @@ export default function CriminalCodeExplorer({ onClose }) {
 
         {/* Results list */}
         <div style={{ overflowY: "auto", flexGrow: 1, background: t.bg }}>
-          {results.length === 0 ? (
+          {isLoading ? (
+            <div
+              style={{
+                padding: "48px 24px",
+                fontFamily: "'Times New Roman', serif",
+                fontSize: 16,
+                color: t.textTertiary,
+                fontStyle: "italic",
+                textAlign: "center",
+              }}
+            >
+              Loading sections…
+            </div>
+          ) : results.length === 0 ? (
             <div
               style={{
                 padding: "48px 24px",

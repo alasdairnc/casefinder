@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { ThemeProvider, useTheme } from "./lib/ThemeContext.jsx";
 import { defaultLawTypes } from "./lib/constants.js";
 import Header from "./components/Header.jsx";
@@ -7,12 +7,13 @@ import SearchArea from "./components/SearchArea.jsx";
 import StagedLoading from "./components/StagedLoading.jsx";
 import Results from "./components/Results.jsx";
 import ErrorMessage from "./components/ErrorMessage.jsx";
-import SearchHistory from "./components/SearchHistory.jsx";
-import BookmarksPanel from "./components/BookmarksPanel.jsx";
-import CriminalCodeExplorer from "./components/CriminalCodeExplorer.jsx";
 import RetrievalHealthDashboard from "./components/RetrievalHealthDashboard.jsx";
 import { useSearchHistory } from "./hooks/useSearchHistory.js";
 import { useBookmarks } from "./hooks/useBookmarks.js";
+
+const SearchHistory = lazy(() => import("./components/SearchHistory.jsx"));
+const BookmarksPanel = lazy(() => import("./components/BookmarksPanel.jsx"));
+const CriminalCodeExplorer = lazy(() => import("./components/CriminalCodeExplorer.jsx"));
 
 const EXAMPLE_SCENARIOS = [
   { label: "Impaired driving", text: "A driver was pulled over at a RIDE checkpoint, failed the roadside breath test, and refused to provide a breathalyzer sample. Police arrested the driver and obtained a blood sample." },
@@ -354,39 +355,41 @@ function AppInner() {
         </div>
       </div>
 
-      {bookmarksOpen && (
-        <BookmarksPanel
-          bookmarks={bookmarks}
-          removeBookmark={removeBookmark}
-          clearBookmarks={clearBookmarks}
-          onClose={() => setBookmarksOpen(false)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {bookmarksOpen && (
+          <BookmarksPanel
+            bookmarks={bookmarks}
+            removeBookmark={removeBookmark}
+            clearBookmarks={clearBookmarks}
+            onClose={() => setBookmarksOpen(false)}
+          />
+        )}
 
-      {codeExplorerOpen && (
-        <CriminalCodeExplorer onClose={() => setCodeExplorerOpen(false)} />
-      )}
+        {codeExplorerOpen && (
+          <CriminalCodeExplorer onClose={() => setCodeExplorerOpen(false)} />
+        )}
 
-      {historyOpen && (
-        <SearchHistory
-          history={history}
-          onClose={() => setHistoryOpen(false)}
-          clearHistory={clearHistory}
-          onSelect={(id) => {
-            const entry = rerunQuery(id);
-            if (!entry) return;
-            setQuery(entry.query);
-            const restoredFilters = {
-              jurisdiction: entry.filters.jurisdiction || "all",
-              courtLevel: entry.filters.courtLevel || "all",
-              dateRange: entry.filters.dateRange || "all",
-              lawTypes: entry.filters.lawTypes || { ...defaultLawTypes },
-            };
-            setFilters(restoredFilters);
-            analyzeScenario(entry.query, restoredFilters);
-          }}
-        />
-      )}
+        {historyOpen && (
+          <SearchHistory
+            history={history}
+            onClose={() => setHistoryOpen(false)}
+            clearHistory={clearHistory}
+            onSelect={(id) => {
+              const entry = rerunQuery(id);
+              if (!entry) return;
+              setQuery(entry.query);
+              const restoredFilters = {
+                jurisdiction: entry.filters.jurisdiction || "all",
+                courtLevel: entry.filters.courtLevel || "all",
+                dateRange: entry.filters.dateRange || "all",
+                lawTypes: entry.filters.lawTypes || { ...defaultLawTypes },
+              };
+              setFilters(restoredFilters);
+              analyzeScenario(entry.query, restoredFilters);
+            }}
+          />
+        )}
+      </Suspense>
 
       <footer style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px" }}>
         <div style={{ borderTop: `1px solid ${t.borderLight}`, paddingTop: 20 }}>
