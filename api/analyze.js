@@ -248,7 +248,9 @@ async function analyzeWithRetry(scenario, filters, apiKey) {
   if (filters?.lawTypes?.case_law !== false) {
     matchedLandmarks = matchLandmarkCases(scenario);
     if (matchedLandmarks.length > 0) {
-      const contextStr = matchedLandmarks.map((c) => `- ${c.title} (${c.citation}): ${c.ratio}`).join("\n");
+      // Strip any characters that could escape prompt delimiters before injecting into system prompt.
+      const safeLine = (s) => String(s || "").replace(/[<>`\n\r]/g, " ").slice(0, 300);
+      const contextStr = matchedLandmarks.map((c) => `- ${safeLine(c.title)} (${safeLine(c.citation)}): ${safeLine(c.ratio)}`).join("\n");
       system += `\n\nCRITICAL CONTEXT: Based on the user's scenario, you MUST consider applying the following Supreme Court of Canada landmark cases:\n${contextStr}\nEnsure you accurately cite these specific cases and strictly apply their ratios to the analysis where relevant.`;
     }
   }
@@ -451,16 +453,23 @@ export default async function handler(req, res) {
         });
       } else {
         try {
-          const { cases: retrievedCases, meta: retrievalMeta } = await retrieveVerifiedCaseLaw({
-            scenario: scenario.trim(),
-            filters,
-            aiSuggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
-            aiCaseLaw: Array.isArray(result.case_law) ? result.case_law : [],
-            landmarkMatches: matchedLandmarks,
-            criminalCode: Array.isArray(result.criminal_code) ? result.criminal_code : [],
-            apiKey: canliiKey,
-            maxResults: 10,
-          });
+          const RETRIEVAL_BUDGET_MS = 7_000;
+          const retrievalTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(Object.assign(new Error("Retrieval timeout"), { isTimeout: true })), RETRIEVAL_BUDGET_MS)
+          );
+          const { cases: retrievedCases, meta: retrievalMeta } = await Promise.race([
+            retrieveVerifiedCaseLaw({
+              scenario: scenario.trim(),
+              filters,
+              aiSuggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
+              aiCaseLaw: Array.isArray(result.case_law) ? result.case_law : [],
+              landmarkMatches: matchedLandmarks,
+              criminalCode: Array.isArray(result.criminal_code) ? result.criminal_code : [],
+              apiKey: canliiKey,
+              maxResults: 10,
+            }),
+            retrievalTimeout,
+          ]);
         const retrievalDurationMs = Date.now() - retrievalStartMs;
 
         if ((retrievalMeta.searchCalls || 0) > 0 || (retrievalMeta.verificationCalls || 0) > 0) {
@@ -496,13 +505,14 @@ export default async function handler(req, res) {
           finalCaseLawCount: result.case_law.length,
         });
       } catch (retrievalErr) {
-        // Keep retrieval-first behavior even on retrieval failures.
-        Sentry.captureException(retrievalErr);
+        // Keep retrieval-first behavior even on retrieval failures (including timeout).
+        if (!retrievalErr?.isTimeout) Sentry.captureException(retrievalErr);
         const retrievalErrMessage =
           retrievalErr && typeof retrievalErr.message === "string"
             ? retrievalErr.message
             : String(retrievalErr);
-        console.error(`[analyze] Retrieval failed for requestId ${requestId}: ${retrievalErrMessage}`);
+        const retrievalReason = retrievalErr?.isTimeout ? "retrieval_timeout" : "retrieval_error";
+        console.error(`[analyze] Retrieval ${retrievalReason} for requestId ${requestId}: ${retrievalErrMessage}`);
         logError(requestId, "analyze-retrieval", retrievalErr, 500, Date.now() - retrievalStartMs);
 
         const retrievalDurationMs = Date.now() - retrievalStartMs;
@@ -511,7 +521,7 @@ export default async function handler(req, res) {
           endpoint: "analyze",
           source: "retrieval",
           filters,
-          reason: "retrieval_error",
+          reason: retrievalReason,
           retrievalLatencyMs: retrievalDurationMs,
           finalCaseLawCount: 0,
           retrievalError: true,
@@ -522,7 +532,7 @@ export default async function handler(req, res) {
         meta.case_law = {
           source: "retrieval_error",
           verifiedCount: 0,
-          reason: "retrieval_error",
+          reason: retrievalReason,
         };
       }
     }
