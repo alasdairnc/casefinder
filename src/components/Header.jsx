@@ -39,7 +39,7 @@ export default function Header({ bookmarkCount = 0, onOpenBookmarks, onOpenCodeE
         }}>
           {/* Wordmark */}
           <img
-            src={isDark ? '/logos/casedive-logo-dark.svg' : '/logos/casedive-header.svg'}
+            src={isDark ? '/logos/casedive-header-dark.svg' : '/logos/casedive-header.svg'}
             alt="CaseDive"
             style={{ height: '28px', width: 'auto', display: 'block' }}
           />
