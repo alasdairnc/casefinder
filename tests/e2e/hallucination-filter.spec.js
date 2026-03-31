@@ -9,6 +9,12 @@ const BASE_ANALYZE = {
   suggestions: [],
 };
 
+async function expectAmberVerificationBanner(page, verified, total, removed) {
+  // Safari may normalize em/en dashes differently; allow either dash and flexible spacing.
+  const pattern = new RegExp(`${verified} of ${total} verified\\s*[—-]\\s*${removed} unconfirmed removed`, "i");
+  await expect(page.getByText(pattern)).toBeVisible({ timeout: 10000 });
+}
+
 test.describe("Hallucination filtering", () => {
   test("hides not_found case law citations", async ({ page }) => {
     await page.route("/api/analyze", (route) =>
@@ -114,6 +120,6 @@ test.describe("Hallucination filtering", () => {
 
     await expect(page.getByText("R v Dorfer, 2014 BCCA 449")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("R v Fake")).not.toBeVisible();
-    await expect(page.getByText(/1 of 2 verified\s*[—-]\s*1 unconfirmed removed/i)).toBeVisible({ timeout: 10000 });
+    await expectAmberVerificationBanner(page, 1, 2, 1);
   });
 });

@@ -90,6 +90,45 @@ describe("verify handler", () => {
     expect(res.body["2016 SCC 27"].searchUrl).toContain("canlii.org");
   });
 
+  it("returns 415 when content-type is not application/json", async () => {
+    const req = createReq({
+      body: { citations: ["2016 SCC 27"] },
+      headers: { "content-type": "text/plain" },
+    });
+    const res = createRes();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(415);
+    expect(res.body).toEqual({ error: "Content-Type must be application/json" });
+    expect(mockCheckRateLimit).not.toHaveBeenCalled();
+  });
+
+  it("returns 413 when content-length exceeds 50kb", async () => {
+    const req = createReq({
+      body: { citations: ["2016 SCC 27"] },
+      headers: { "content-length": "50001" },
+    });
+    const res = createRes();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(413);
+    expect(res.body).toEqual({ error: "Request body too large" });
+    expect(mockCheckRateLimit).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 when verify rate limit is exceeded", async () => {
+    mockCheckRateLimit.mockResolvedValue({ allowed: false, limit: 60, remaining: 0, reset: 123 });
+    const req = createReq({ body: { citations: ["2016 SCC 27"] } });
+    const res = createRes();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(429);
+    expect(res.body).toEqual({ error: "Rate limit exceeded. Please try again later." });
+  });
+
   it("returns error status when upstream responds with non-JSON content type", async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       status: 200,
