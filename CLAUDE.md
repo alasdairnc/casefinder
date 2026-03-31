@@ -1,6 +1,6 @@
 # CaseDive - Claude Context File
 
-Last updated: March 24, 2026 (Phase C retrieval telemetry + alerts)
+Last updated: March 30, 2026 (edge citation + retrieval-health tests + docs sync)
 
 ## About
 Built by Alasdair NC, Justice Studies student at University of Guelph-Humber. Toronto-based.
@@ -21,7 +21,9 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 - Completed: optional `RETRIEVAL_ALERT_WEBHOOK_URL` POST for deduped threshold alerts; case-law fallback search + expanded DB targets when primary pass verifies nothing; internal dashboard at `/internal/retrieval-health`.
 - Completed: Redis operation timeout guards (500ms Promise.race) added to all Redis call sites in _rateLimit.js, _retrievalThresholds.js, and _retrievalHealthStore.js.
 - Completed (pending user testing): Data quality refinement — fixed 5 duplicate Map keys in civilLawData.js, replaced ~160 placeholder summaries with exact statute text across all 15 statute Maps (0 placeholders remaining, 191 entries, all lookups verified).
-- In progress: docs sync, and targeted test coverage for edge citation formats.
+- Completed: targeted unit test coverage for edge citation formats in CanLII parsing/ID generation paths.
+- Completed: retrieval-health endpoint unit tests for auth, method guards, rate limiting, CORS/security headers, and upstream error mapping.
+- Completed: docs sync for current retrieval telemetry + alert status.
 - Next priorities:
   - Optional: retrieval health trendlines over time (dashboard shows 5m/1h snapshots today)
   - Continue case-law retrieval quality tuning (query shaping and empty-state UX)
@@ -180,4 +182,4 @@ RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP=false # Optional; set true only for local/dev
 
 ## Current Focus
 - CanLII case law retrieval semi-working — some cases not found, some summaries inaccurate, actively improving
-- Next major focus: UI improvements
+- Next major focus: retrieval quality tuning and incremental test hardening

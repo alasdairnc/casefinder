@@ -61,6 +61,26 @@ describe("parseCitation", () => {
       });
     });
 
+    it("parses alias court code CSC as SCC database", () => {
+      const result = parseCitation("R v Oakes, 1986 CSC 46");
+      expect(result).toMatchObject({
+        courtCode: "CSC",
+        apiDbId: "csc-scc",
+        webDbId: "ca/scc",
+        isLegacy: false,
+      });
+    });
+
+    it("parses party names containing punctuation", () => {
+      const result = parseCitation("R. v. Jordan, 2016 SCC 27");
+      expect(result).toMatchObject({
+        parties: "R. v. Jordan",
+        year: "2016",
+        courtCode: "SCC",
+        number: "27",
+      });
+    });
+
     it("returns null apiDbId for unknown court", () => {
       const result = parseCitation("2020 ZZZZ 99");
       expect(result).not.toBeNull();
@@ -91,6 +111,19 @@ describe("parseCitation", () => {
         isLegacy: true,
       });
     });
+
+    it("parses lowercase canlii token and lowercased court code", () => {
+      const result = parseCitation("R v Oakes, 1988 canlii 90 (scc)");
+      expect(result).toMatchObject({
+        parties: "R v Oakes",
+        year: "1988",
+        courtCode: "SCC",
+        number: "90",
+        apiDbId: "csc-scc",
+        webDbId: "ca/scc",
+        isLegacy: true,
+      });
+    });
   });
 
   describe("SCR legacy citation", () => {
@@ -103,6 +136,17 @@ describe("parseCitation", () => {
         number: null,
         apiDbId: "csc-scc",
         webDbId: "ca/scc",
+        isLegacy: true,
+      });
+    });
+
+    it("parses bare SCR citation without parties", () => {
+      const result = parseCitation("1986 1 SCR 103");
+      expect(result).toMatchObject({
+        parties: null,
+        year: "1986",
+        courtCode: "SCC",
+        number: null,
         isLegacy: true,
       });
     });
@@ -136,6 +180,11 @@ describe("buildCaseId", () => {
   it("lowercases the court code in the ID", () => {
     expect(buildCaseId({ year: "2020", courtCode: "ONCA", number: "123", isLegacy: false }))
       .toBe("2020onca123");
+  });
+
+  it("uses canlii format for legacy citations regardless of court alias", () => {
+    expect(buildCaseId({ year: "1988", courtCode: "CSC", number: "90", isLegacy: true }))
+      .toBe("1988canlii90");
   });
 });
 
