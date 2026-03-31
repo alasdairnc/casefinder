@@ -4,6 +4,7 @@
 import { redis } from "./_rateLimit.js";
 
 const EVENT_LIST_KEY = "metrics:retrieval:events:v1";
+const HEALTH_CACHE_KEY = "cache:retrieval-health";
 const REDIS_TIMEOUT_MS = 500;
 const MAX_EVENTS = 2500;
 const MAX_RETENTION_MS = 2 * 60 * 60 * 1000;
@@ -178,11 +179,7 @@ function computeWindowStats(events, nowMs, windowMs) {
 
 export async function recordRetrievalMetricsEvent(metricsPayload = {}) {
   const event = buildStoredEvent(metricsPayload);
-  console.log("[retrieval-store] buildStoredEvent result:", JSON.stringify(event));
-  if (!event) {
-    console.warn("[retrieval-store] Event was null, skipping record");
-    return false;
-  }
+  if (!event) return false;
 
   if (redis) {
     try {
@@ -193,16 +190,16 @@ export async function recordRetrievalMetricsEvent(metricsPayload = {}) {
       await Promise.race([redis.rpush(EVENT_LIST_KEY, JSON.stringify(event)), timeout()]);
       await Promise.race([redis.ltrim(EVENT_LIST_KEY, -MAX_EVENTS, -1), timeout()]);
       await Promise.race([redis.expire(EVENT_LIST_KEY, Math.ceil(MAX_RETENTION_MS / 1000)), timeout()]);
-      console.log("[retrieval-store] Event stored in Redis");
+
+      // Invalidate snapshot cache so the health endpoint reflects new events immediately.
+      await Promise.race([redis.del(HEALTH_CACHE_KEY), timeout()]);
       return true;
-    } catch (err) {
-      console.error("[retrieval-store] Redis storage failed, falling back to memory:", err.message);
+    } catch {
       // fall through to in-memory store
     }
   }
 
   memoryEvents.push(event);
-  console.log("[retrieval-store] Event stored in memory. Total in-memory events:", memoryEvents.length);
   pruneMemory(event.ts);
   return true;
 }
@@ -212,19 +209,15 @@ export async function getRetrievalEvents({ nowMs = Date.now() } = {}) {
   if (redis) {
     try {
       events = await readRedisEvents();
-      console.log("[retrieval-store] Retrieved", events.length, "events from Redis");
-    } catch (err) {
-      console.error("[retrieval-store] Redis read failed, falling back to memory:", err.message);
+    } catch {
       events = [...memoryEvents];
     }
   } else {
-    console.log("[retrieval-store] No Redis configured, using in-memory events. Total:", memoryEvents.length);
     events = [...memoryEvents];
   }
 
   const cutoff = nowMs - MAX_RETENTION_MS;
   const recent = events.filter((event) => event.ts >= cutoff).sort((a, b) => a.ts - b.ts);
-  console.log("[retrieval-store] After retention filter:", recent.length, "events");
 
   if (!redis) {
     memoryEvents.length = 0;

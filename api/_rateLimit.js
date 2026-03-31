@@ -79,7 +79,7 @@ export async function checkRateLimit(ip, endpoint) {
   hits.push(now);
   store.set(key, hits);
 
-  return { allowed: true, remaining: maxRequests - hits.length };
+  // Prune old entries to avoid unbounded memory growth
   if (store.size > 500) {
     // Remove expired entries first
     for (const [k, v] of store) {
@@ -98,7 +98,7 @@ export async function checkRateLimit(ip, endpoint) {
     }
   }
 
-  return { allowed: true, remaining: MAX_REQUESTS - hits.length };
+  return { allowed: true, remaining: maxRequests - hits.length };
 }
 
 /**

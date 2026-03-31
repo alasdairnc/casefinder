@@ -102,14 +102,12 @@ export function buildRetrievalMetrics(input = {}) {
 export async function logRetrievalMetrics(input = {}) {
   const payload = buildRetrievalMetrics(input);
   console.log(createLog(payload));
-  console.log("[retrieval-metrics] payload:", JSON.stringify(payload));
 
   let healthSnapshot = null;
   try {
     await recordRetrievalMetricsEvent(payload);
     healthSnapshot = await getRetrievalHealthSnapshot();
-  } catch (err) {
-    console.error("[retrieval-metrics] Error recording event:", err);
+  } catch {
     return payload;
   }
 
