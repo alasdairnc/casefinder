@@ -6,6 +6,7 @@ import { redis } from "./_rateLimit.js";
 const EVENT_LIST_KEY = "metrics:retrieval:events:v1";
 const LAST_EVENT_KEY = "metrics:retrieval:last-event:v1";
 const EVENT_COUNT_KEY = "metrics:retrieval:event-count:v1";
+const ALLTIME_KEY = "metrics:retrieval:alltime:v1";
 const REDIS_TIMEOUT_MS = 2000;
 const MAX_EVENTS = 2500;
 const MAX_RETENTION_MS = 2 * 60 * 60 * 1000;
@@ -228,6 +229,111 @@ function computeWindowStats(events, nowMs, windowMs) {
   };
 }
 
+async function updateAlltimeAccumulator(event) {
+  const timeout = () =>
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+    );
+
+  const raw = await Promise.race([redis.get(ALLTIME_KEY), timeout()]);
+  let acc = {};
+  if (raw) {
+    try {
+      acc = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (typeof acc !== "object" || acc === null) acc = {};
+    } catch {
+      acc = {};
+    }
+  }
+
+  const isRetrieval = event.source !== "cache";
+  const isCache = event.source === "cache";
+  const isOperational =
+    isRetrieval && event.caseLawFilterEnabled && event.reason !== "filter_disabled";
+  const isError =
+    isOperational &&
+    (event.retrievalError ||
+      event.reason === "retrieval_error" ||
+      event.reason === "missing_api_key");
+  const isQuality = isOperational && !isError;
+  const hasLatency = isOperational && Number.isFinite(event.retrievalLatencyMs);
+
+  acc.firstTs = acc.firstTs ? Math.min(acc.firstTs, event.ts) : event.ts;
+  acc.lastTs = Math.max(acc.lastTs || 0, event.ts);
+  acc.total = (acc.total || 0) + 1;
+  acc.retrieval = (acc.retrieval || 0) + (isRetrieval ? 1 : 0);
+  acc.cache = (acc.cache || 0) + (isCache ? 1 : 0);
+  acc.operational = (acc.operational || 0) + (isOperational ? 1 : 0);
+  acc.quality = (acc.quality || 0) + (isQuality ? 1 : 0);
+  acc.latencyCount = (acc.latencyCount || 0) + (hasLatency ? 1 : 0);
+  acc.filterDisabled =
+    (acc.filterDisabled || 0) + (isRetrieval && event.reason === "filter_disabled" ? 1 : 0);
+  acc.missingApiKey =
+    (acc.missingApiKey || 0) + (isRetrieval && event.reason === "missing_api_key" ? 1 : 0);
+  acc.errors = (acc.errors || 0) + (isError ? 1 : 0);
+  acc.noVerified =
+    (acc.noVerified || 0) + (isQuality && event.finalCaseLawCount === 0 ? 1 : 0);
+  acc.verifiedResults =
+    (acc.verifiedResults || 0) + (isQuality && event.finalCaseLawCount > 0 ? 1 : 0);
+  acc.verifiedTotal = (acc.verifiedTotal || 0) + (isQuality ? event.finalCaseLawCount : 0);
+  acc.latencySum = (acc.latencySum || 0) + (hasLatency ? event.retrievalLatencyMs : 0);
+
+  await Promise.race([redis.set(ALLTIME_KEY, JSON.stringify(acc)), timeout()]);
+}
+
+async function getAlltimeSnapshot(events) {
+  if (redis) {
+    try {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+      );
+      const raw = await Promise.race([redis.get(ALLTIME_KEY), timeout]);
+      if (raw) {
+        const acc = typeof raw === "string" ? JSON.parse(raw) : raw;
+        if (acc && typeof acc === "object") {
+          const {
+            total = 0,
+            retrieval = 0,
+            cache = 0,
+            operational = 0,
+            quality = 0,
+            latencyCount = 0,
+            filterDisabled = 0,
+            missingApiKey = 0,
+            errors = 0,
+            noVerified = 0,
+            verifiedResults = 0,
+            verifiedTotal = 0,
+            latencySum = 0,
+          } = acc;
+          return {
+            firstEventAt: acc.firstTs ? new Date(acc.firstTs).toISOString() : null,
+            samples: { total, retrieval, cache, operational, quality, latency: latencyCount },
+            counts: { filterDisabled, missingApiKey, errors, noVerified, verifiedResults },
+            rates: {
+              errorRate: ratio(errors, operational),
+              noVerifiedRate: ratio(noVerified, quality),
+              avgVerifiedPerRequest: quality
+                ? Number((verifiedTotal / quality).toFixed(4))
+                : null,
+            },
+            latencyMs: {
+              avg: latencyCount > 0 ? Math.round(latencySum / latencyCount) : null,
+              p95: null,
+            },
+            lastEventAt: acc.lastTs ? new Date(acc.lastTs).toISOString() : null,
+          };
+        }
+      }
+    } catch {
+      // fall through to in-memory computation
+    }
+  }
+
+  // In-memory fallback: compute from all stored events (no window cutoff)
+  return computeWindowStats(events, Date.now(), Infinity);
+}
+
 export async function recordRetrievalMetricsEvent(metricsPayload = {}) {
   const event = buildStoredEvent(metricsPayload);
   if (!event) return false;
@@ -238,6 +344,13 @@ export async function recordRetrievalMetricsEvent(metricsPayload = {}) {
       await Promise.allSettled([writeRedisLastEvent(event), incrementRedisEventCount()]);
     } catch {
       // Ignore; continue to best-effort primary write path.
+    }
+
+    // Best-effort alltime accumulator update (no TTL — persists indefinitely).
+    try {
+      await updateAlltimeAccumulator(event);
+    } catch {
+      // Non-fatal.
     }
 
     try {
@@ -377,11 +490,14 @@ export async function getRetrievalHealthSnapshot({ nowMs = Date.now() } = {}) {
     snapshotSource = "empty";
   }
 
+  const alltime = await getAlltimeSnapshot(events);
+
   return {
     generatedAt: new Date(nowMs).toISOString(),
     snapshotSource,
     retentionMs: MAX_RETENTION_MS,
     totalStoredEvents,
     windows,
+    alltime,
   };
 }

@@ -222,6 +222,9 @@ function WindowPanel({ label, windowStats, thresholds, t }) {
       </div>
       <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, lineHeight: 1.6, marginBottom: 12 }}>
         <div>Samples (operational / quality / latency): {num(samples.operational)} / {num(samples.quality)} / {num(samples.latency)}</div>
+        {windowStats.firstEventAt && (
+          <div>Since: {fmtDate(windowStats.firstEventAt)}</div>
+        )}
         <div>Last event: {fmtDate(windowStats.lastEventAt)}</div>
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
@@ -235,7 +238,9 @@ function WindowPanel({ label, windowStats, thresholds, t }) {
         Avg verified / request: {num(rates.avgVerifiedPerRequest)}
       </div>
       <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, marginTop: 4 }}>
-        Latency avg / p95: {num(latency.avg)} ms / {num(latency.p95)} ms
+        {latency.p95 != null
+          ? `Latency avg / p95: ${num(latency.avg)} ms / ${num(latency.p95)} ms`
+          : `Latency avg: ${num(latency.avg)} ms`}
       </div>
     </div>
   );
@@ -514,6 +519,7 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 24 }}>
               <WindowPanel label="5 minute window" windowStats={data.windows?.["5m"]} thresholds={data.thresholds} t={t} />
               <WindowPanel label="1 hour window" windowStats={data.windows?.["1h"]} thresholds={data.thresholds} t={t} />
+              <WindowPanel label="All time" windowStats={data.alltime} thresholds={data.thresholds} t={t} />
             </div>
             <div style={{ border: `1px solid ${t.borderLight}`, padding: 16, marginBottom: 16 }}>
               <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10, letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8 }}>
