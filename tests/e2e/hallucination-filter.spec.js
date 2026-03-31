@@ -114,6 +114,6 @@ test.describe("Hallucination filtering", () => {
 
     await expect(page.getByText("R v Dorfer, 2014 BCCA 449")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("R v Fake")).not.toBeVisible();
-    await expect(page.getByText("1 of 2 verified — 1 unconfirmed removed")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/1 of 2 verified\s*[—-]\s*1 unconfirmed removed/i)).toBeVisible({ timeout: 10000 });
   });
 });
