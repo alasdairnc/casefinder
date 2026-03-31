@@ -1,6 +1,6 @@
 # CaseDive - Claude Context File
 
-Last updated: March 30, 2026 (edge citation + retrieval-health tests + docs sync)
+Last updated: March 30, 2026 (verify+retrieval-health tests + docs sync)
 
 ## About
 Built by Alasdair NC, Justice Studies student at University of Guelph-Humber. Toronto-based.
@@ -23,6 +23,8 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 - Completed (pending user testing): Data quality refinement — fixed 5 duplicate Map keys in civilLawData.js, replaced ~160 placeholder summaries with exact statute text across all 15 statute Maps (0 placeholders remaining, 191 entries, all lookups verified).
 - Completed: targeted unit test coverage for edge citation formats in CanLII parsing/ID generation paths.
 - Completed: retrieval-health endpoint unit tests for auth, method guards, rate limiting, CORS/security headers, and upstream error mapping.
+- Completed: verify endpoint unit tests for timeout handling, non-JSON upstream responses, and mixed citation batches.
+- Completed: retrieval-health dashboard E2E coverage for auth failure (401) and successful render after token save.
 - Completed: docs sync for current retrieval telemetry + alert status.
 - Next priorities:
   - Optional: retrieval health trendlines over time (dashboard shows 5m/1h snapshots today)
