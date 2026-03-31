@@ -16,8 +16,8 @@ import {
 function isAuthorized(req) {
   const expectedToken = process.env.RETRIEVAL_HEALTH_TOKEN || "";
   if (!expectedToken) {
-    // No token configured — allow unauthenticated access.
-    return true;
+    // Secure by default: lock endpoint if token is not configured.
+    return false;
   }
   const authHeader = req.headers.authorization || "";
   return authHeader === `Bearer ${expectedToken}`;
