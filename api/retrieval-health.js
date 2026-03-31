@@ -60,6 +60,7 @@ export default async function handler(req, res) {
 
     const response = {
       generatedAt: snapshot.generatedAt,
+      snapshotSource: snapshot.snapshotSource,
       retentionMs: snapshot.retentionMs,
       totalStoredEvents: snapshot.totalStoredEvents,
       windows: snapshot.windows,

@@ -4,6 +4,7 @@
 import { redis } from "./_rateLimit.js";
 
 const EVENT_LIST_KEY = "metrics:retrieval:events:v1";
+const LAST_EVENT_KEY = "metrics:retrieval:last-event:v1";
 const REDIS_TIMEOUT_MS = 2000;
 const MAX_EVENTS = 2500;
 const MAX_RETENTION_MS = 2 * 60 * 60 * 1000;
@@ -106,6 +107,24 @@ async function readRedisEvents() {
   return out;
 }
 
+async function readRedisLastEvent() {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+  );
+  const raw = await Promise.race([redis.get(LAST_EVENT_KEY), timeout]);
+  return normalizeEvent(raw);
+}
+
+async function writeRedisLastEvent(event) {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+  );
+  await Promise.race([
+    redis.setex(LAST_EVENT_KEY, Math.ceil(MAX_RETENTION_MS / 1000), JSON.stringify(event)),
+    timeout,
+  ]);
+}
+
 function ratio(numerator, denominator) {
   if (!denominator) return null;
   return Number((numerator / denominator).toFixed(4));
@@ -206,9 +225,21 @@ export async function recordRetrievalMetricsEvent(metricsPayload = {}) {
         redis.setex(EVENT_LIST_KEY, Math.ceil(MAX_RETENTION_MS / 1000), JSON.stringify(capped)),
         timeout(),
       ]);
+
+      // Backup channel: keep at least the latest event available for health checks.
+      try {
+        await writeRedisLastEvent(event);
+      } catch {
+        // Non-fatal backup write failure.
+      }
       return true;
     } catch {
       // fall through to in-memory store
+      try {
+        await writeRedisLastEvent(event);
+      } catch {
+        // Ignore backup write failures.
+      }
     }
   }
 
@@ -276,15 +307,50 @@ export async function getTrendlineSnapshots({ nowMs = Date.now(), buckets = 15, 
 export async function getRetrievalHealthSnapshot({ nowMs = Date.now() } = {}) {
   const events = await getRetrievalEvents({ nowMs });
   const windows = {};
+  let snapshotSource = "primary";
 
   for (const [label, windowMs] of Object.entries(RETRIEVAL_WINDOWS)) {
     windows[label] = computeWindowStats(events, nowMs, windowMs);
   }
 
+  let totalStoredEvents = events.length;
+
+  // Backup read path: if primary storage returns no events, fall back to the latest event key.
+  if (totalStoredEvents === 0 && redis) {
+    try {
+      const lastEvent = await readRedisLastEvent();
+      if (lastEvent && lastEvent.ts >= nowMs - MAX_RETENTION_MS) {
+        totalStoredEvents = 1;
+        snapshotSource = "backup_last_event";
+
+        for (const [label, windowMs] of Object.entries(RETRIEVAL_WINDOWS)) {
+          if (lastEvent.ts >= nowMs - windowMs) {
+            const stats = windows[label];
+            stats.samples.total = Math.max(1, stats.samples.total);
+            if (lastEvent.source === "cache") {
+              stats.samples.cache = Math.max(1, stats.samples.cache);
+            } else {
+              stats.samples.retrieval = Math.max(1, stats.samples.retrieval);
+            }
+            if (!stats.lastEventAt) {
+              stats.lastEventAt = new Date(lastEvent.ts).toISOString();
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore fallback read failures and keep empty snapshot.
+      snapshotSource = "empty";
+    }
+  } else if (totalStoredEvents === 0) {
+    snapshotSource = "empty";
+  }
+
   return {
     generatedAt: new Date(nowMs).toISOString(),
+    snapshotSource,
     retentionMs: MAX_RETENTION_MS,
-    totalStoredEvents: events.length,
+    totalStoredEvents,
     windows,
   };
 }
