@@ -15,3 +15,4 @@ tmp/
 .claude-flow/
 .swarm/
 logs/
+.retrieval-health-token

@@ -10,7 +10,7 @@ import { getRetrievalHealthSnapshot } from "./_retrievalHealthStore.js";
 
 const ALERT_DEDUPE_SECONDS = 15 * 60;
 const ALERT_KEY_PREFIX = "metrics:retrieval:alert";
-const MIN_SAMPLE_SIZE = 10;
+const MIN_SAMPLE_SIZE = 3;
 
 const memoryAlertState = new Map();
 
@@ -111,9 +111,9 @@ async function postAlertToWebhook(alert, webhookUrl) {
 
 export const RETRIEVAL_ALERT_THRESHOLDS = {
   errorRate1h: 0.05,
-  noVerifiedRate1h: 0.45,
+  noVerifiedRate1h: 0.70,
   p95LatencyMs1h: 2500,
-  avgVerifiedPerRequestMin1h: 0.6,
+  avgVerifiedPerRequestMin1h: 0.3,
   minSampleSize1h: MIN_SAMPLE_SIZE,
 };
 
