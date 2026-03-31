@@ -38,17 +38,11 @@ export default function Header({ bookmarkCount = 0, onOpenBookmarks, onOpenCodeE
           gap: 12,
         }}>
           {/* Wordmark */}
-          <h1 style={{
-            fontSize: "clamp(20px, 3vw, 26px)",
-            fontWeight: 400,
-            margin: 0,
-            fontFamily: "'Times New Roman', Times, serif",
-            letterSpacing: "0.14em",
-            lineHeight: 1,
-            color: t.text,
-          }}>
-            CaseDive
-          </h1>
+          <img
+            src={isDark ? '/logos/casedive-logo-dark.svg' : '/logos/casedive-header.svg'}
+            alt="CaseDive"
+            style={{ height: '28px', width: 'auto', display: 'block' }}
+          />
 
           {/* Nav */}
           <nav style={{ display: "flex", gap: 22, alignItems: "center", flexWrap: "wrap" }}>
