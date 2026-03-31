@@ -12,11 +12,27 @@ const RETRIEVAL_HEALTH_MAX_REQUESTS = 100; // Higher limit for internal monitori
 
 export let redis = null;
 
+// Support both direct Upstash env vars and Vercel KV integration env vars.
+const redisUrl =
+  process.env.UPSTASH_REDIS_REST_URL ||
+  process.env.KV_REST_API_URL ||
+  "";
+const redisToken =
+  process.env.UPSTASH_REDIS_REST_TOKEN ||
+  process.env.KV_REST_API_TOKEN ||
+  "";
+
+export const redisConfigSource = process.env.UPSTASH_REDIS_REST_URL
+  ? "UPSTASH_REDIS_REST_*"
+  : process.env.KV_REST_API_URL
+  ? "KV_REST_API_*"
+  : "none";
+
 // Initialize Redis client only if credentials are provided
-if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+if (redisUrl && redisToken) {
   redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    url: redisUrl,
+    token: redisToken,
   });
 }
 

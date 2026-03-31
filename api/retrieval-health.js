@@ -1,7 +1,7 @@
 // /api/retrieval-health.js — Internal retrieval health + alert status endpoint.
 
 import { randomUUID } from "crypto";
-import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
+import { redis, redisConfigSource, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
 import { applyCorsHeaders } from "./_cors.js";
 import { getRetrievalHealthSnapshot, getTrendlineSnapshots } from "./_retrievalHealthStore.js";
 import { evaluateRetrievalAlerts, RETRIEVAL_ALERT_THRESHOLDS } from "./_retrievalThresholds.js";
@@ -104,6 +104,7 @@ export default async function handler(req, res) {
       alerts,
       diagnostics: {
         redis: storageDiagnostics,
+        redisConfigSource,
         canliiApiKeyConfigured: Boolean((process.env.CANLII_API_KEY || "").trim()),
       },
     };
