@@ -4,7 +4,10 @@
 
 import { COURT_API_MAP, lookupCase, parseCitation, buildSearchUrl, buildCaseUrl, buildCaseId } from "../src/lib/canlii.js";
 
-const CANLII_API_BASE = "https://api.canlii.org/v1";
+// SECURITY TESTING: Set CANLII_API_BASE_URL env var to redirect to a mock server.
+// Also update the matching constant in src/lib/canlii.js (where HTTP calls originate).
+// Revert both after testing. See scripts/README-security-testing.md.
+const CANLII_API_BASE = process.env.CANLII_API_BASE_URL ?? "https://api.canlii.org/v1";
 const MAX_TERMS = 4;
 const MAX_DATABASES = 3;
 

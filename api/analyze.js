@@ -518,12 +518,10 @@ export default async function handler(req, res) {
         });
         
         result.case_law = [];
-        const errorMsg = retrievalErr.message || String(retrievalErr);
         meta.case_law = {
           source: "retrieval_error",
           verifiedCount: 0,
           reason: "retrieval_error",
-          error: errorMsg,
         };
       }
     }
