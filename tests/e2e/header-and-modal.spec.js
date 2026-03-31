@@ -63,7 +63,7 @@ test.describe("Header", () => {
   });
 
   test("renders the casedive title", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "casedive" })).toBeVisible();
+    await expect(page.getByAltText(/casedive/i)).toBeVisible();
   });
 
   test("renders navigation actions", async ({ page }) => {
@@ -278,7 +278,7 @@ test.describe("RetrievalHealthDashboard", () => {
     await expect(page.getByRole("button", { name: /back to app/i })).toBeVisible({ timeout: 5000 });
     await page.getByRole("button", { name: /back to app/i }).click();
 
-    // Should be back on the main page with the casedive heading
-    await expect(page.getByRole("heading", { name: "casedive" })).toBeVisible({ timeout: 5000 });
+    // Should be back on the main page with the CaseDive wordmark
+    await expect(page.getByAltText(/casedive/i)).toBeVisible({ timeout: 5000 });
   });
 });

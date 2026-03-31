@@ -6,7 +6,7 @@ test.describe("Home page", () => {
   });
 
   test("loads and shows core UI elements", async ({ page }) => {
-    await expect(page.locator("h1")).toContainText("CaseDive");
+    await expect(page.getByAltText(/casedive/i)).toBeVisible();
     await expect(page.locator('[data-testid="scenario-input"]')).toBeVisible();
     await expect(page.getByPlaceholder("Describe your legal scenario in plain language…")).toBeVisible();
     await expect(page.locator("button").filter({ hasText: /research/i })).toBeVisible();
