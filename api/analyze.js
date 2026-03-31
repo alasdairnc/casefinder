@@ -503,6 +503,19 @@ export default async function handler(req, res) {
             : String(retrievalErr);
         console.error(`[analyze] Retrieval failed for requestId ${requestId}: ${retrievalErrMessage}`);
         logError(requestId, "analyze-retrieval", retrievalErr, 500, Date.now() - retrievalStartMs);
+
+        const retrievalDurationMs = Date.now() - retrievalStartMs;
+        await logRetrievalMetrics({
+          requestId,
+          endpoint: "analyze",
+          source: "retrieval",
+          filters,
+          reason: "retrieval_error",
+          retrievalLatencyMs: retrievalDurationMs,
+          finalCaseLawCount: 0,
+          retrievalError: true,
+          errorMessage: retrievalErrMessage,
+        });
         
         result.case_law = [];
         const errorMsg = retrievalErr.message || String(retrievalErr);
