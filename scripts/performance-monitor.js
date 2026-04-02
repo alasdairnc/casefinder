@@ -61,7 +61,7 @@ function evaluateLocalBreaches(oneHour, thresholds) {
 }
 
 async function run() {
-  const endpoint = process.env.PERF_HEALTH_URL || "https://casedive.ca/api/retrieval-health";
+  const endpoint = process.env.PERF_HEALTH_URL || "https://www.casedive.ca/api/retrieval-health";
   const token = process.env.RETRIEVAL_HEALTH_TOKEN || "";
   const outputFormat = (process.env.PERF_MONITOR_OUTPUT || "text").toLowerCase();
 
@@ -101,6 +101,13 @@ async function run() {
     console.log(`1h avg relevance: ${num(oneHour?.rates?.avgRelevanceScore)}`);
     console.log(`1h p95 latency: ${num(oneHour?.latencyMs?.p95)} ms`);
     console.log(`active alerts: ${alerts.length}`);
+  }
+
+  if (outputFormat !== "json" && alerts.length > 0) {
+    console.log("[perf-monitor] Active alerts:");
+    for (const alert of alerts.slice(0, 5)) {
+      console.log(`- ${alert?.id || "unknown"}: ${alert?.message || "(no message)"}`);
+    }
   }
 
   const topFailures = failures.slice(0, 3);
