@@ -1195,11 +1195,24 @@ export async function retrieveVerifiedCaseLaw({
   }
 
   // Rank and gate final verified output by scenario relevance.
-  const selectedCandidates = selectFinalCandidates({
+  let selectedCandidates = selectFinalCandidates({
       candidates: [...landmarkResults, ...verifiedCases],
       issuePrimary: issue?.primary || "general_criminal",
       maxResults,
     });
+
+  let postVerificationFallbackUsed = false;
+  if (selectedCandidates.length === 0) {
+    const postVerifyFallback = buildLocalFallbackCandidates({ scenario, maxResults });
+    if (postVerifyFallback.length > 0) {
+      selectedCandidates = selectFinalCandidates({
+        candidates: postVerifyFallback,
+        issuePrimary: issue?.primary || "general_criminal",
+        maxResults,
+      });
+      postVerificationFallbackUsed = selectedCandidates.length > 0;
+    }
+  }
 
   const relevanceScoreAvg =
     selectedCandidates.length > 0
@@ -1224,6 +1237,8 @@ export async function retrieveVerifiedCaseLaw({
 
   const fallbackReason = localFallbackUsed
     ? "local_fallback"
+    : postVerificationFallbackUsed
+    ? "post_verify_local_fallback"
     : semanticFilter.fallbackUsed
     ? "semantic_filter_fallback"
     : null;
