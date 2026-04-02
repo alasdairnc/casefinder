@@ -8,10 +8,10 @@ import { test, expect } from "@playwright/test";
 test.describe("Live: UI Smoke", () => {
   test("page loads and shows core UI elements", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1")).toContainText("casedive");
-    await expect(page.locator("textarea")).toBeVisible();
-    await expect(page.locator("button").filter({ hasText: /research/i })).toBeVisible();
-    await expect(page.locator("button").filter({ hasText: /research/i })).toBeDisabled();
+    await expect(page.getByAltText("CaseDive")).toBeVisible();
+    await expect(page.locator('[data-testid="scenario-input"]')).toBeVisible();
+    await expect(page.locator('[data-testid="research-submit"]')).toBeVisible();
+    await expect(page.locator('[data-testid="research-submit"]')).toBeDisabled();
   });
 
   test("dark mode toggle works", async ({ page }) => {
@@ -23,14 +23,22 @@ test.describe("Live: UI Smoke", () => {
     expect(after).not.toBe(before);
   });
 
-  test("filters panel opens and closes", async ({ page }) => {
+  test("filters controls are visible and interactive", async ({ page }) => {
     await page.goto("/");
-    const filtersBtn = page.locator("button").filter({ hasText: /filters/i });
-    await expect(page.locator("text=JURISDICTION").first()).toBeVisible();
-    await filtersBtn.click();
-    await expect(page.locator("text=JURISDICTION").first()).toBeHidden();
-    await filtersBtn.click();
-    await expect(page.locator("text=JURISDICTION").first()).toBeVisible();
+
+    const jurisdiction = page.getByLabel("Jurisdiction");
+    const courtLevel = page.getByLabel("Court level");
+    const dateRange = page.getByLabel("Date range");
+
+    await expect(jurisdiction).toBeVisible();
+    await expect(courtLevel).toBeVisible();
+    await expect(dateRange).toBeVisible();
+
+    await jurisdiction.selectOption("Ontario");
+    await expect(jurisdiction).toHaveValue("Ontario");
+
+    await jurisdiction.selectOption("all");
+    await expect(jurisdiction).toHaveValue("all");
   });
 });
 

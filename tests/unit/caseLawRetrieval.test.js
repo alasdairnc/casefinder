@@ -72,4 +72,29 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     expect(cases[0].citation).toBe("2016 SCC 27");
     expect(cases[0].title).toBe("R v Jordan");
   });
+
+  it("uses post-verification local fallback when AI citations do not verify", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      status: 404,
+      ok: false,
+      json: async () => ({}),
+    });
+
+    const { cases, meta } = await retrieveVerifiedCaseLaw({
+      apiKey: "test-key",
+      scenario:
+        "A person broke into a residential home at night through a back window and stole jewelry and electronics.",
+      aiCaseLaw: [
+        {
+          citation: "2024 SCC 999",
+          summary: "invalid citation should force fallback",
+        },
+      ],
+      maxResults: 3,
+    });
+
+    expect(cases.length).toBeGreaterThan(0);
+    expect(meta.fallbackPathUsed).toBe(true);
+    expect(["local_fallback", "post_verify_local_fallback"]).toContain(meta.fallbackReason);
+  });
 });
