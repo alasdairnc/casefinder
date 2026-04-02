@@ -54,6 +54,28 @@ const SECTIONS = [
   { key: "charter", label: "Charter Rights" },
 ];
 
+function resolveVerification(item, type, verifications) {
+  const direct = verifications[item?.citation];
+  if (direct) return direct;
+
+  // Retrieval-first case law already carries server-side verification metadata.
+  if (
+    type === "case_law" &&
+    item?.verificationStatus === "verified" &&
+    typeof item?.url_canlii === "string" &&
+    item.url_canlii.trim()
+  ) {
+    return {
+      status: "verified",
+      url: item.url_canlii,
+      searchUrl: item.url_canlii,
+      title: item.title || item.citation || "",
+    };
+  }
+
+  return null;
+}
+
 export default function Results({ data, scenario, addBookmark, removeBookmark, isBookmarked }) {
   const t = useTheme();
   const analysisText = useTypewriter(data.analysis || "", 10);
@@ -89,7 +111,8 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
   useEffect(() => {
     if (!data || verifyingCitations) return;
     const citationSet = new Set();
-    const sections = ["criminal_code", "case_law", "civil_law", "charter"];
+    // Prioritize case-law citations so landmark badges are less likely to be dropped by the 10-citation cap.
+    const sections = ["case_law", "criminal_code", "civil_law", "charter"];
     for (const section of sections) {
       const items = data[section];
       if (!Array.isArray(items)) continue;
@@ -293,7 +316,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
         if (key === "civil_law") {
           const groups = {};
           items.forEach(item => {
-            const v = verifications[item.citation];
+            const v = resolveVerification(item, key, verifications);
             const groupName = v?.jurisdiction
               ? (v.jurisdiction === "Federal" ? "Federal Statutes" : `${v.jurisdiction} Statutes`)
               : "Civil Law";
@@ -312,7 +335,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
                       key={i}
                       item={item}
                       type={key}
-                      verification={verifications[item.citation]}
+                      verification={resolveVerification(item, key, verifications)}
                       addBookmark={addBookmark}
                       removeBookmark={removeBookmark}
                       isBookmarked={isBookmarked}
@@ -333,7 +356,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
                 key={i}
                 item={item}
                 type={key}
-                verification={verifications[item.citation]}
+                verification={resolveVerification(item, key, verifications)}
                 onCardClick={key === "case_law" ? setSelectedCase : undefined}
                 addBookmark={addBookmark}
                 removeBookmark={removeBookmark}
