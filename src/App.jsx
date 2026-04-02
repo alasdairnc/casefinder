@@ -8,6 +8,7 @@ import StagedLoading from "./components/StagedLoading.jsx";
 import Results from "./components/Results.jsx";
 import ErrorMessage from "./components/ErrorMessage.jsx";
 import RetrievalHealthDashboard from "./components/RetrievalHealthDashboard.jsx";
+import RetrievalRecommendationsDashboard from "./components/RetrievalRecommendationsDashboard.jsx";
 import { useSearchHistory } from "./hooks/useSearchHistory.js";
 import { useBookmarks } from "./hooks/useBookmarks.js";
 
@@ -158,6 +159,25 @@ function AppInner() {
         onNavigateHome={() => {
           window.history.pushState({}, "", "/");
           setPathname("/");
+        }}
+        onNavigateRecommendations={() => {
+          window.history.pushState({}, "", "/internal/retrieval-recommendations");
+          setPathname("/internal/retrieval-recommendations");
+        }}
+      />
+    );
+  }
+
+  if (pathname === "/internal/retrieval-recommendations") {
+    return (
+      <RetrievalRecommendationsDashboard
+        onNavigateHome={() => {
+          window.history.pushState({}, "", "/");
+          setPathname("/");
+        }}
+        onNavigateHealth={() => {
+          window.history.pushState({}, "", "/internal/retrieval-health");
+          setPathname("/internal/retrieval-health");
         }}
       />
     );
