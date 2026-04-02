@@ -100,6 +100,25 @@ async function run() {
   if (!res.ok) {
     const rawPreview = typeof rawText === "string" ? rawText.replace(/\s+/g, " ").trim().slice(0, 220) : "";
     const details = body?.error || rawPreview || "unknown error";
+    const looksLikeHtml = /^<!doctype html>/i.test(rawPreview);
+    const looksLikeCloudflareChallenge =
+      /just a moment/i.test(rawPreview) || /cf-chl|cloudflare/i.test(rawPreview);
+    const looksLikeDeploymentNotFound =
+      /deployment_not_found/i.test(rawPreview) || /this deployment cannot be found/i.test(rawPreview);
+
+    if (res.status === 404 && looksLikeDeploymentNotFound) {
+      fail(
+        6,
+        `Invalid Vercel deployment hostname in PERF_HEALTH_URL. Set PERF_HEALTH_URL to your real production domain/API URL (for example: https://<your-project>.vercel.app/api/retrieval-health), then re-run.`
+      );
+    }
+
+    if (res.status === 403 && (looksLikeHtml || looksLikeCloudflareChallenge)) {
+      fail(
+        6,
+        `Blocked by edge protection (403 challenge page). Use PERF_HEALTH_URL with your actual Vercel production API hostname or allowlist this route in Cloudflare. Preview: ${details}`
+      );
+    }
     if (res.status === 401) {
       fail(4, `Unauthorized (401) from retrieval-health endpoint: ${details}`);
     }
