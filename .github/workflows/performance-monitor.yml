@@ -10,7 +10,7 @@ on:
       perf_health_url:
         description: Retrieval health endpoint URL
         required: false
-        default: https://www.casedive.ca/api/retrieval-health
+        default: https://casefinder-project-git-main-alasdairnas-projects.vercel.app/api/retrieval-health
         type: string
   schedule:
     - cron: "*/30 * * * *"
@@ -47,7 +47,7 @@ jobs:
           else
             export RETRIEVAL_HEALTH_TOKEN="$SECRET_RETRIEVAL_HEALTH_TOKEN"
           fi
-          export PERF_HEALTH_URL="${INPUT_PERF_HEALTH_URL:-${SECRET_PERF_HEALTH_URL:-https://www.casedive.ca/api/retrieval-health}}"
+          export PERF_HEALTH_URL="${INPUT_PERF_HEALTH_URL:-${SECRET_PERF_HEALTH_URL:-https://casefinder-project-git-main-alasdairnas-projects.vercel.app/api/retrieval-health}}"
 
           # Normalize operator-provided values to avoid hidden whitespace/newline auth failures.
           RETRIEVAL_HEALTH_TOKEN="$(printf '%s' "$RETRIEVAL_HEALTH_TOKEN" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
