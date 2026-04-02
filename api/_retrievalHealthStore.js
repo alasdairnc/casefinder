@@ -55,6 +55,18 @@ function normalizeEvent(raw) {
     retrievalLatencyMs: latency != null && latency >= 0 ? Math.floor(latency) : null,
     finalCaseLawCount: toNonNegativeInt(event.finalCaseLawCount),
     verifiedCount: toNonNegativeInt(event.verifiedCount),
+    relevanceScoreAvg: (() => {
+      const score = toNumber(event.relevanceScoreAvg);
+      if (score == null || score < 0) return null;
+      return Number(score.toFixed(3));
+    })(),
+    fallbackPathUsed: event.fallbackPathUsed === true,
+    semanticFilterDropCount: toNonNegativeInt(event.semanticFilterDropCount),
+    candidateSourceMix: {
+      ai: toNonNegativeInt(event?.candidateSourceMix?.ai),
+      landmark: toNonNegativeInt(event?.candidateSourceMix?.landmark),
+      localFallback: toNonNegativeInt(event?.candidateSourceMix?.localFallback),
+    },
   };
 }
 
@@ -72,6 +84,10 @@ function buildStoredEvent(metricsPayload = {}) {
     retrievalLatencyMs: metricsPayload.retrievalLatencyMs,
     finalCaseLawCount: metricsPayload.finalCaseLawCount,
     verifiedCount: metricsPayload.verifiedCount,
+    relevanceScoreAvg: metricsPayload.relevanceScoreAvg,
+    fallbackPathUsed: metricsPayload.fallbackPathUsed === true,
+    semanticFilterDropCount: metricsPayload.semanticFilterDropCount,
+    candidateSourceMix: metricsPayload.candidateSourceMix,
   });
 }
 
@@ -196,6 +212,24 @@ function computeWindowStats(events, nowMs, windowMs) {
     .filter((value) => Number.isFinite(value));
 
   const verifiedTotal = qualityEvents.reduce((sum, event) => sum + event.finalCaseLawCount, 0);
+  const relevanceScores = qualityEvents
+    .map((event) => event.relevanceScoreAvg)
+    .filter((value) => Number.isFinite(value));
+  const fallbackPathCount = operationalEvents.filter((event) => event.fallbackPathUsed).length;
+  const semanticFilterDrops = operationalEvents.reduce(
+    (sum, event) => sum + toNonNegativeInt(event.semanticFilterDropCount),
+    0
+  );
+  const sourceMixTotals = operationalEvents.reduce(
+    (acc, event) => {
+      acc.ai += toNonNegativeInt(event?.candidateSourceMix?.ai);
+      acc.landmark += toNonNegativeInt(event?.candidateSourceMix?.landmark);
+      acc.localFallback += toNonNegativeInt(event?.candidateSourceMix?.localFallback);
+      return acc;
+    },
+    { ai: 0, landmark: 0, localFallback: 0 }
+  );
+  const sourceTotal = sourceMixTotals.ai + sourceMixTotals.landmark + sourceMixTotals.localFallback;
   const lastEvent = windowEvents.length > 0 ? windowEvents[windowEvents.length - 1] : null;
 
   return {
@@ -213,12 +247,28 @@ function computeWindowStats(events, nowMs, windowMs) {
       errors: errorEvents.length,
       noVerified: noVerifiedEvents.length,
       verifiedResults: verifiedEvents.length,
+      fallbackPath: fallbackPathCount,
+      semanticFilterDrops,
     },
     rates: {
       errorRate: ratio(errorEvents.length, operationalEvents.length),
       noVerifiedRate: ratio(noVerifiedEvents.length, qualityEvents.length),
       avgVerifiedPerRequest: qualityEvents.length
         ? Number((verifiedTotal / qualityEvents.length).toFixed(4))
+        : null,
+      fallbackPathRate: ratio(fallbackPathCount, operationalEvents.length),
+      avgRelevanceScore: relevanceScores.length
+        ? Number((relevanceScores.reduce((sum, value) => sum + value, 0) / relevanceScores.length).toFixed(4))
+        : null,
+      avgSemanticFilterDrops: operationalEvents.length
+        ? Number((semanticFilterDrops / operationalEvents.length).toFixed(4))
+        : null,
+      candidateSourceMix: sourceTotal > 0
+        ? {
+            ai: Number((sourceMixTotals.ai / sourceTotal).toFixed(4)),
+            landmark: Number((sourceMixTotals.landmark / sourceTotal).toFixed(4)),
+            localFallback: Number((sourceMixTotals.localFallback / sourceTotal).toFixed(4)),
+          }
         : null,
     },
     latencyMs: {
@@ -277,6 +327,19 @@ async function updateAlltimeAccumulator(event) {
     (acc.verifiedResults || 0) + (isQuality && event.finalCaseLawCount > 0 ? 1 : 0);
   acc.verifiedTotal = (acc.verifiedTotal || 0) + (isQuality ? event.finalCaseLawCount : 0);
   acc.latencySum = (acc.latencySum || 0) + (hasLatency ? event.retrievalLatencyMs : 0);
+  acc.fallbackPath = (acc.fallbackPath || 0) + (isOperational && event.fallbackPathUsed ? 1 : 0);
+  acc.semanticFilterDrops =
+    (acc.semanticFilterDrops || 0) + (isOperational ? toNonNegativeInt(event.semanticFilterDropCount) : 0);
+  acc.relevanceScoreCount =
+    (acc.relevanceScoreCount || 0) + (isQuality && Number.isFinite(event.relevanceScoreAvg) ? 1 : 0);
+  acc.relevanceScoreSum =
+    (acc.relevanceScoreSum || 0) + (isQuality && Number.isFinite(event.relevanceScoreAvg) ? event.relevanceScoreAvg : 0);
+  acc.sourceAi =
+    (acc.sourceAi || 0) + (isOperational ? toNonNegativeInt(event?.candidateSourceMix?.ai) : 0);
+  acc.sourceLandmark =
+    (acc.sourceLandmark || 0) + (isOperational ? toNonNegativeInt(event?.candidateSourceMix?.landmark) : 0);
+  acc.sourceLocalFallback =
+    (acc.sourceLocalFallback || 0) + (isOperational ? toNonNegativeInt(event?.candidateSourceMix?.localFallback) : 0);
 
   await Promise.race([redis.set(ALLTIME_KEY, JSON.stringify(acc)), timeout()]);
 }
@@ -305,16 +368,46 @@ async function getAlltimeSnapshot(events) {
             verifiedResults = 0,
             verifiedTotal = 0,
             latencySum = 0,
+            fallbackPath = 0,
+            semanticFilterDrops = 0,
+            relevanceScoreCount = 0,
+            relevanceScoreSum = 0,
+            sourceAi = 0,
+            sourceLandmark = 0,
+            sourceLocalFallback = 0,
           } = acc;
+          const sourceTotal = sourceAi + sourceLandmark + sourceLocalFallback;
           return {
             firstEventAt: acc.firstTs ? new Date(acc.firstTs).toISOString() : null,
             samples: { total, retrieval, cache, operational, quality, latency: latencyCount },
-            counts: { filterDisabled, missingApiKey, errors, noVerified, verifiedResults },
+            counts: {
+              filterDisabled,
+              missingApiKey,
+              errors,
+              noVerified,
+              verifiedResults,
+              fallbackPath,
+              semanticFilterDrops,
+            },
             rates: {
               errorRate: ratio(errors, operational),
               noVerifiedRate: ratio(noVerified, quality),
               avgVerifiedPerRequest: quality
                 ? Number((verifiedTotal / quality).toFixed(4))
+                : null,
+              fallbackPathRate: ratio(fallbackPath, operational),
+              avgRelevanceScore: relevanceScoreCount
+                ? Number((relevanceScoreSum / relevanceScoreCount).toFixed(4))
+                : null,
+              avgSemanticFilterDrops: operational
+                ? Number((semanticFilterDrops / operational).toFixed(4))
+                : null,
+              candidateSourceMix: sourceTotal > 0
+                ? {
+                    ai: Number((sourceAi / sourceTotal).toFixed(4)),
+                    landmark: Number((sourceLandmark / sourceTotal).toFixed(4)),
+                    localFallback: Number((sourceLocalFallback / sourceTotal).toFixed(4)),
+                  }
                 : null,
             },
             latencyMs: {

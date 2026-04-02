@@ -21,6 +21,40 @@ describe("buildSystemPrompt", () => {
     expect(buildSystemPrompt()).toContain("ONLY with a JSON object");
   });
 
+  it("enforces structured canlii suggestion label requirements", () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toContain("label");
+    expect(prompt).toContain("issue + statutory anchor");
+    expect(prompt).toContain("charter detention - s. 9");
+  });
+
+  it("requires canlii term to include issue, statutory anchor, and doctrinal phrase", () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toContain("term");
+    expect(prompt).toContain("issue phrase");
+    expect(prompt).toContain("statutory anchor token");
+    expect(prompt).toContain("doctrinal phrase");
+    expect(prompt).toContain("reasonable grounds");
+    expect(prompt).toContain("informational duty");
+  });
+
+  it("includes anti-noise examples for weak suggestion terms", () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toContain("Avoid noisy/generic query fragments");
+    expect(prompt).toContain("what are my rights");
+    expect(prompt).toContain("criminal law case");
+  });
+
+  it("includes scenario-specific boolean templates for common categories", () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toContain("Impaired driving");
+    expect(prompt).toContain("Charter counsel");
+    expect(prompt).toContain("Drug trafficking");
+    expect(prompt).toContain("Assault with weapon");
+    expect(prompt).toContain('"CDSA s. 5"');
+    expect(prompt).toContain('"s. 267"');
+  });
+
   // ── Jurisdiction filter ────────────────────────────────────────────────────
 
   it("injects known jurisdiction with court codes", () => {

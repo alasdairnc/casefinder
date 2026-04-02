@@ -12,6 +12,7 @@ const METRIC_FIELDS = [
   "candidateCount",
   "verificationCalls",
   "verifiedCount",
+  "semanticFilterDropCount",
 ];
 
 function toNonNegativeInt(value) {
@@ -29,6 +30,20 @@ function toDurationMs(value) {
 function toReason(value) {
   if (typeof value !== "string") return "";
   return value.trim();
+}
+
+function toNullableFloat(value, decimals = 3) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return null;
+  return Number(num.toFixed(decimals));
+}
+
+function normalizeSourceMix(raw = {}) {
+  return {
+    ai: toNonNegativeInt(raw?.ai),
+    landmark: toNonNegativeInt(raw?.landmark),
+    localFallback: toNonNegativeInt(raw?.localFallback),
+  };
 }
 
 function inferReason({ reason, finalCaseLawCount, retrievalError }) {
@@ -62,6 +77,7 @@ export function buildRetrievalMetrics(input = {}) {
   } = input;
 
   const metrics = normalizeMetrics(retrievalMeta);
+  const sourceMix = normalizeSourceMix(retrievalMeta?.candidateSourceMix);
   const finalCount = toNonNegativeInt(
     finalCaseLawCount == null ? metrics.verifiedCount : finalCaseLawCount
   );
@@ -89,6 +105,11 @@ export function buildRetrievalMetrics(input = {}) {
     candidateCount: metrics.candidateCount,
     verificationCalls: metrics.verificationCalls,
     verifiedCount: metrics.verifiedCount,
+    relevanceScoreAvg: toNullableFloat(retrievalMeta?.relevanceScoreAvg),
+    fallbackPathUsed: retrievalMeta?.fallbackPathUsed === true,
+    fallbackReason: toReason(retrievalMeta?.fallbackReason) || null,
+    semanticFilterDropCount: metrics.semanticFilterDropCount,
+    candidateSourceMix: sourceMix,
     caseLawFilterEnabled: filters?.lawTypes?.case_law !== false,
     cacheHit: Boolean(cacheHit),
     retrievalError: isError,
