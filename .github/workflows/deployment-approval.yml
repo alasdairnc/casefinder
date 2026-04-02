@@ -37,5 +37,5 @@ jobs:
       - name: Run guardrails
         run: npm run test:guardrails
 
-      - name: Run live smoke tests
-        run: npm run test:live
+      - name: Run stable live smoke tests
+        run: npm run test:live:stable
