@@ -5,6 +5,7 @@ import {
   buildApiUrl,
   buildCaseUrl,
   buildSearchUrl,
+  buildCitationIdentityKey,
   partiesMatch,
   lookupCase,
 } from "../../src/lib/canlii.js";
@@ -81,6 +82,17 @@ describe("parseCitation", () => {
       });
     });
 
+    it("parses neutral citation with parties and no comma separator", () => {
+      const result = parseCitation("R v Jordan 2016 SCC 27");
+      expect(result).toMatchObject({
+        parties: "R v Jordan",
+        year: "2016",
+        courtCode: "SCC",
+        number: "27",
+        isLegacy: false,
+      });
+    });
+
     it("returns null apiDbId for unknown court", () => {
       const result = parseCitation("2020 ZZZZ 99");
       expect(result).not.toBeNull();
@@ -150,6 +162,29 @@ describe("parseCitation", () => {
         isLegacy: true,
       });
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildCitationIdentityKey
+// ---------------------------------------------------------------------------
+describe("buildCitationIdentityKey", () => {
+  it("normalizes neutral citation party variants to the same key", () => {
+    const a = buildCitationIdentityKey("R v Jordan, 2016 SCC 27");
+    const b = buildCitationIdentityKey("R. v. Jordan 2016 SCC 27");
+    expect(a).toBe(b);
+  });
+
+  it("normalizes CanLII neutral variants to the same key", () => {
+    const a = buildCitationIdentityKey("R v Oakes, 1988 CanLII 90 (SCC)");
+    const b = buildCitationIdentityKey("R. v. Oakes 1988 canlii 90 (scc)");
+    expect(a).toBe(b);
+  });
+
+  it("includes party key for non-number legacy forms", () => {
+    const a = buildCitationIdentityKey("R v Oakes, [1986] 1 SCR 103");
+    const b = buildCitationIdentityKey("R. v. Oakes [1986] 1 SCR 103");
+    expect(a).toBe(b);
   });
 });
 

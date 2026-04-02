@@ -108,6 +108,16 @@ export function buildSystemPrompt(filters = {}) {
 RULES:
 - Provide 1-3 items per category where applicable. Return empty arrays for categories that don't apply.${filterInstructions}${lawTypeInstructions}
 - For suggestions, provide 3-5 CANLII BOOLEAN QUERIES (type: "canlii"). Do NOT use natural language sentences. Use strictly boolean operators, exact phrase quotes, and core legal concepts (e.g., 'mens rea', 'actus reus'). Drop all stop words.
+- For each suggestion object:
+  1. \`label\` MUST include: issue + statutory anchor (examples: "charter detention - s. 9", "drug trafficking - CDSA s. 5").
+  2. \`term\` MUST include all of: one issue phrase, one statutory anchor token (such as "s. 9", "s. 10", "s. 267", "s. 271", "s. 343", "s. 322", "CDSA s. 5"), and one doctrinal phrase (examples: "reasonable grounds", "informational duty", "self-defence", "mens rea", "arbitrary detention").
+  3. Keep terms compact: 3-7 high-signal tokens/phrases joined by AND/OR.
+- Avoid noisy/generic query fragments such as: "what are my rights", "legal options", "possible charges", "criminal law case", "Canada law".
+- Prefer scenario-specific templates:
+  - Impaired driving: "charter" AND "s. 9" AND detention AND "reasonable suspicion" AND breath
+  - Charter counsel: "charter" AND "s. 10" AND counsel AND "informational duty" AND detention
+  - Drug trafficking: trafficking AND "CDSA s. 5" AND possession AND intent
+  - Assault with weapon: assault AND weapon AND "s. 267" AND intent AND "self-defence"
 - Criminal Code sections are verified against a full local Criminal Code database. Use real section numbers only (e.g., "s. 348(1)(b)").
 - For civil_law: cite specific statutes with section numbers.
 - For charter: use section number format like "s. 7", "s. 8", "s. 11(b)", "s. 24(2)".

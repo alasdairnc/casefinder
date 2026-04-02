@@ -114,6 +114,8 @@ export const RETRIEVAL_ALERT_THRESHOLDS = {
   noVerifiedRate1h: 0.70,
   p95LatencyMs1h: 2500,
   avgVerifiedPerRequestMin1h: 0.3,
+  fallbackPathRate1h: 0.65,
+  avgRelevanceScoreMin1h: 4.5,
   minSampleSize1h: MIN_SAMPLE_SIZE,
 };
 
@@ -219,6 +221,46 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
         RETRIEVAL_ALERT_THRESHOLDS.avgVerifiedPerRequestMin1h,
         `Average verified results/request is ${formatFloat(avgVerified)} over 1h (threshold ${formatFloat(
           RETRIEVAL_ALERT_THRESHOLDS.avgVerifiedPerRequestMin1h
+        )}).`
+      )
+    );
+  }
+
+  const fallbackPathRate = oneHour?.rates?.fallbackPathRate;
+  if (
+    operationalSamples >= RETRIEVAL_ALERT_THRESHOLDS.minSampleSize1h &&
+    fallbackPathRate != null &&
+    fallbackPathRate > RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h
+  ) {
+    alerts.push(
+      buildAlert(
+        "retrieval_fallback_path_rate_1h",
+        "fallbackPathRate",
+        "1h",
+        fallbackPathRate,
+        RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h,
+        `Fallback-path usage is ${formatPercent(fallbackPathRate)} over 1h (threshold ${formatPercent(
+          RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h
+        )}).`
+      )
+    );
+  }
+
+  const avgRelevanceScore = oneHour?.rates?.avgRelevanceScore;
+  if (
+    qualitySamples >= RETRIEVAL_ALERT_THRESHOLDS.minSampleSize1h &&
+    avgRelevanceScore != null &&
+    avgRelevanceScore < RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h
+  ) {
+    alerts.push(
+      buildAlert(
+        "retrieval_avg_relevance_score_1h",
+        "avgRelevanceScore",
+        "1h",
+        avgRelevanceScore,
+        RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h,
+        `Average relevance score is ${formatFloat(avgRelevanceScore)} over 1h (threshold ${formatFloat(
+          RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h
         )}).`
       )
     );

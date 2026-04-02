@@ -209,11 +209,26 @@ function WindowPanel({ label, windowStats, thresholds, t }) {
   const samples = windowStats.samples || {};
   const err = rates.errorRate ?? 0;
   const noV = rates.noVerifiedRate ?? 0;
+  const fallbackRate = rates.fallbackPathRate ?? 0;
   const p95 = latency.p95 ?? null;
-  const barMax = Math.max(0.5, err, noV, thresholds?.errorRate1h ?? 0.05, thresholds?.noVerifiedRate1h ?? 0.45);
+  const barMax = Math.max(
+    0.5,
+    err,
+    noV,
+    fallbackRate,
+    thresholds?.errorRate1h ?? 0.05,
+    thresholds?.noVerifiedRate1h ?? 0.45,
+    thresholds?.fallbackPathRate1h ?? 0.65
+  );
   const errBadge = severityForMetric(rates.errorRate, thresholds?.errorRate1h);
   const noVBadge = severityForMetric(rates.noVerifiedRate, thresholds?.noVerifiedRate1h);
+  const fallbackBadge = severityForMetric(rates.fallbackPathRate, thresholds?.fallbackPathRate1h);
   const p95Badge = severityForMetric(p95, thresholds?.p95LatencyMs1h);
+  const relevanceBadge = severityForMetric(
+    rates.avgRelevanceScore,
+    thresholds?.avgRelevanceScoreMin1h,
+    "below_is_bad"
+  );
 
   return (
     <div style={{ border: `1px solid ${t.borderLight}`, padding: 16, background: t.bg }}>
@@ -230,13 +245,33 @@ function WindowPanel({ label, windowStats, thresholds, t }) {
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
         <StatusChip badge={errBadge} />
         <StatusChip badge={noVBadge} />
+        <StatusChip badge={fallbackBadge} />
+        <StatusChip badge={relevanceBadge} />
         <StatusChip badge={p95Badge} />
       </div>
       <BarRow label={`Error rate (${pct(err)})`} value={err} max={barMax} t={t} color={errBadge.color} />
       <BarRow label={`No-verified rate (${pct(noV)})`} value={noV} max={barMax} t={t} color={noVBadge.color} />
+      <BarRow
+        label={`Fallback-path rate (${pct(fallbackRate)})`}
+        value={fallbackRate}
+        max={barMax}
+        t={t}
+        color={fallbackBadge.color}
+      />
       <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, marginTop: 12 }}>
         Avg verified / request: {num(rates.avgVerifiedPerRequest)}
       </div>
+      <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, marginTop: 4 }}>
+        Avg relevance score: {num(rates.avgRelevanceScore)}
+      </div>
+      <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, marginTop: 4 }}>
+        Avg semantic drops / request: {num(rates.avgSemanticFilterDrops)}
+      </div>
+      {rates.candidateSourceMix && (
+        <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, marginTop: 4 }}>
+          Source mix (AI/Landmark/Local): {pct(rates.candidateSourceMix.ai)} / {pct(rates.candidateSourceMix.landmark)} / {pct(rates.candidateSourceMix.localFallback)}
+        </div>
+      )}
       <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, marginTop: 4 }}>
         {latency.p95 != null
           ? `Latency avg / p95: ${num(latency.avg)} ms / ${num(latency.p95)} ms`
@@ -398,6 +433,8 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
             <MetricCard label="5m Operational" value={num(fiveMin?.samples?.operational)} hint="Requests eligible for quality checks" t={t} />
             <MetricCard label="1h Error Rate" value={pct(oneHour?.rates?.errorRate)} hint="Operational retrieval failures" badge={errorBadge} t={t} />
             <MetricCard label="1h No-Verified" value={pct(oneHour?.rates?.noVerifiedRate)} hint="Quality requests with 0 verified" badge={noVerifiedBadge} t={t} />
+            <MetricCard label="1h Fallback Rate" value={pct(oneHour?.rates?.fallbackPathRate)} hint="Requests using fallback retrieval paths" t={t} />
+            <MetricCard label="1h Relevance" value={num(oneHour?.rates?.avgRelevanceScore)} hint="Average retrieval relevance score" t={t} />
             <MetricCard label="1h p95 Latency" value={`${num(oneHour?.latencyMs?.p95)} ms`} hint="Tail latency for retrieval path" badge={p95Badge} t={t} />
           </div>
         )}
@@ -514,7 +551,7 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
         {data && (
           <>
             <p style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, margin: "0 0 16px 0" }}>
-              Generated {fmtDate(data.generatedAt)} · Stored events: {data.totalStoredEvents}
+              Generated {fmtDate(data.generatedAt)} · Stored events: {data.totalStoredEvents} · Snapshot source: {data.snapshotSource || "—"}
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 24 }}>
               <WindowPanel label="5 minute window" windowStats={data.windows?.["5m"]} thresholds={data.thresholds} t={t} />
@@ -560,6 +597,12 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
                 </div>
                 <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary }}>
                   p95 latency threshold: <strong style={{ color: t.text }}>{num(thresholds.p95LatencyMs1h)} ms</strong>
+                </div>
+                <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary }}>
+                  Fallback-path threshold: <strong style={{ color: t.text }}>{pct(thresholds.fallbackPathRate1h)}</strong>
+                </div>
+                <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary }}>
+                  Min relevance threshold: <strong style={{ color: t.text }}>{num(thresholds.avgRelevanceScoreMin1h)}</strong>
                 </div>
                 <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary }}>
                   Min sample size: <strong style={{ color: t.text }}>{num(thresholds.minSampleSize1h)}</strong>

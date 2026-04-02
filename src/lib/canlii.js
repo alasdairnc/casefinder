@@ -47,6 +47,44 @@ export const COURT_API_MAP = {
 // Keep COURT_DB_MAP as alias for backwards compat
 export const COURT_DB_MAP = COURT_API_MAP;
 
+function normalizeCitationInput(citation) {
+  return String(citation || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizePartiesKey(parties) {
+  const STOP_WORDS = new Set([
+    "r", "v", "the", "her", "his", "majesty", "queen", "king",
+    "attorney", "general", "and", "of", "in", "a", "an",
+    "ltd", "inc", "corp", "co", "et", "al",
+    "des", "du", "le", "la", "les",
+  ]);
+
+  return String(parties || "")
+    .toLowerCase()
+    .replace(/\br\./g, "r")
+    .replace(/\bv\./g, "v")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+    .join(" ");
+}
+
+export function buildCitationIdentityKey(citation) {
+  const parsed = parseCitation(citation);
+  if (!parsed) {
+    return normalizeCitationInput(citation).toLowerCase();
+  }
+
+  const base = `${parsed.year}|${parsed.courtCode}|${parsed.number || "na"}|${parsed.isLegacy ? "legacy" : "neutral"}`;
+  // For neutral/CanLII-neutral, dedupe on the neutral identity regardless of party formatting.
+  if (parsed.number) return base;
+
+  const partyKey = normalizePartiesKey(parsed.parties);
+  return partyKey ? `${base}|${partyKey}` : base;
+}
+
 /**
  * Parse a Canadian case citation.
  * Handles:
@@ -58,10 +96,10 @@ export const COURT_DB_MAP = COURT_API_MAP;
 export function parseCitation(citation) {
   if (!citation || typeof citation !== "string") return null;
 
-  const trimmed = citation.trim();
+  const trimmed = normalizeCitationInput(citation);
 
   // 1. Standard neutral citation: "Parties, YYYY COURT NUM" or bare "YYYY COURT NUM"
-  const neutral = trimmed.match(/^(?:(.+?),\s*)?(\d{4})\s+([A-Z]{2,8})\s+(\d+)$/);
+  const neutral = trimmed.match(/^(?:(.+?)(?:,\s*|\s+))?(\d{4})\s+([A-Z]{2,8})\s+(\d+)$/);
   if (neutral) {
     const [, parties, year, courtCode, number] = neutral;
     const upper = courtCode.toUpperCase();
@@ -77,7 +115,7 @@ export function parseCitation(citation) {
   }
 
   // 2. CanLII neutral citation: "Parties, YYYY CanLII NUM (COURT)" or bare "YYYY CanLII NUM (COURT)"
-  const canliiNeutral = trimmed.match(/^(?:(.+?),\s*)?(\d{4})\s+CanLII\s+(\d+)\s+\(([A-Z]{2,8})\)$/i);
+  const canliiNeutral = trimmed.match(/^(?:(.+?)(?:,\s*|\s+))?(\d{4})\s+CanLII\s+(\d+)\s+\(([A-Z]{2,8})\)$/i);
   if (canliiNeutral) {
     const [, parties, year, number, courtCode] = canliiNeutral;
     const upper = courtCode.toUpperCase();
@@ -93,7 +131,7 @@ export function parseCitation(citation) {
   }
 
   // 3. SCR citation: "Parties, [YYYY] N SCR NNN" or "YYYY N SCR NNN"
-  const scr = trimmed.match(/^(?:(.+?),\s*)?\[?(\d{4})\]?\s+\d+\s+SCR\s+\d+$/i);
+  const scr = trimmed.match(/^(?:(.+?)(?:,\s*|\s+))?\[?(\d{4})\]?\s+\d+\s+SCR\s+\d+$/i);
   if (scr) {
     const [, parties, year] = scr;
     return {

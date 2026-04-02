@@ -80,7 +80,8 @@ const RANK_STOP_WORDS = new Set([
   "the", "and", "for", "with", "that", "this", "from", "into", "were", "was", "when", "where",
   "while", "have", "has", "had", "over", "under", "they", "their", "them", "than", "then", "been",
   "about", "would", "could", "should", "after", "before", "because", "through", "between",
-  "driver", "person", "police", "case", "law",
+  "driver", "person", "police", "case", "law", "court", "officer", "crown", "defendant", "accused",
+  "facts", "held", "found", "order", "section", "said", "made", "day", "time", "year",
 ]);
 
 function tokenizeForRanking(text) {
@@ -185,7 +186,19 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
   const cases = Array.isArray(retrievedCases) ? [...retrievedCases] : [];
   const scenarioTokens = new Set(tokenizeForRanking(scenario));
 
-  cases.sort((a, b) => {
+  // Filter: require minimum 3 scenario tokens OR landmark match to avoid tangential results
+  const filtered = cases.filter(c => {
+    const haystack = `${c?.citation || ""} ${c?.summary || ""}`.toLowerCase();
+    let overlapCount = 0;
+    for (const token of scenarioTokens) {
+      if (haystack.includes(token)) overlapCount++;
+    }
+    // Accept if: (1) meets minimum overlap threshold, OR (2) it's a landmark RAG match
+    const isLandmark = String(c?.matched_content || "").includes("Landmark RAG Match");
+    return overlapCount >= 3 || isLandmark;
+  });
+
+  filtered.sort((a, b) => {
     const scoreDiff = scoreRetrievedCase(scenarioTokens, b) - scoreRetrievedCase(scenarioTokens, a);
     if (scoreDiff !== 0) return scoreDiff;
 
@@ -196,7 +209,7 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
     return String(a?.citation || "").localeCompare(String(b?.citation || ""));
   });
 
-  return cases.slice(0, limit);
+  return filtered.slice(0, limit);
 }
 
 // ── Deterministic RAG Token Matching ─────────────────────────────────────────

@@ -2,7 +2,16 @@
 // Phase A helper: retrieve real case-law candidates from CanLII search endpoints
 // and return only citations that verify through the existing lookup pipeline.
 
-import { COURT_API_MAP, lookupCase, parseCitation, buildSearchUrl, buildCaseUrl, buildCaseId } from "../src/lib/canlii.js";
+import {
+  COURT_API_MAP,
+  lookupCase,
+  parseCitation,
+  buildSearchUrl,
+  buildCaseUrl,
+  buildCaseId,
+  buildCitationIdentityKey,
+} from "../src/lib/canlii.js";
+import { MASTER_CASE_LAW_DB } from "../src/lib/caselaw/index.js";
 
 // SECURITY TESTING: Set CANLII_API_BASE_URL env var to redirect to a mock server.
 // Also update the matching constant in src/lib/canlii.js (where HTTP calls originate).
@@ -34,6 +43,39 @@ const COURT_LEVEL_DB_IDS = {
 };
 
 const FEDERAL_DATABASE_IDS = ["csc-scc", "fca", "fct"];
+const SIMPLE_STOP_WORDS = new Set([
+  "and",
+  "for",
+  "the",
+  "with",
+  "from",
+  "that",
+  "this",
+  "was",
+  "were",
+  "have",
+  "has",
+  "had",
+  "but",
+  "what",
+  "when",
+  "where",
+  "they",
+  "them",
+  "their",
+  "got",
+  "into",
+  "very",
+  "brief",
+  "scenario",
+  "minimal",
+  "detail",
+  "heated",
+  "face",
+  "rights",
+  "crime",
+  "could",
+]);
 
 /** Lower rank = verify / display earlier (deterministic ordering). */
 const DATABASE_VERIFY_RANK = (() => {
@@ -106,6 +148,25 @@ function sanitizeTerm(term) {
   return term.replace(/\s+/g, " ").trim();
 }
 
+function normalizeForMatch(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/section\s+/g, "s ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function termMatchesText(term, normalizedText) {
+  const normalizedTerm = normalizeForMatch(term);
+  if (!normalizedTerm) return false;
+  if (normalizedText.includes(normalizedTerm)) return true;
+
+  const tokens = normalizedTerm.split(" ").filter(Boolean);
+  if (tokens.length <= 1) return false;
+  return tokens.every((token) => normalizedText.includes(token));
+}
+
 function dedupeStrings(values) {
   const seen = new Set();
   const deduped = [];
@@ -116,6 +177,434 @@ function dedupeStrings(values) {
     deduped.push(value);
   }
   return deduped;
+}
+
+function tokenizeScenario(text) {
+  return new Set(
+    String(text || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 3 && !SIMPLE_STOP_WORDS.has(w))
+  );
+}
+
+function pickHelpfulScenarioTerms(scenarioTokens, limit = 2) {
+  const generic = new Set(["very", "brief", "scenario", "minimal", "detail", "got", "into", "what", "could"]);
+  const out = [];
+  for (const token of scenarioTokens) {
+    if (generic.has(token)) continue;
+    out.push(token);
+  }
+  if (out.length === 0) {
+    out.push(...Array.from(scenarioTokens));
+  }
+  return dedupeStrings(out).slice(0, limit);
+}
+
+function inferFallbackIssueSignals(scenarioTokens) {
+  const tokens = new Set(Array.from(scenarioTokens || []).map((t) => String(t || "").toLowerCase()));
+  const out = [];
+  const add = (...items) => {
+    for (const item of items) out.push(item);
+  };
+
+  const hasAny = (arr) => arr.some((x) => tokens.has(x));
+
+  if (hasAny(["drug", "cocaine", "fentanyl", "trafficking", "possession", "narcotic"])) {
+    add("cdsa", "s. 5", "trafficking", "possession", "intent");
+  }
+  if (hasAny(["charter", "arrest", "arrested", "detained", "detention", "warrant", "police"])) {
+    add("charter", "s. 9", "detention", "arbitrary", "reasonable");
+  }
+  if (hasAny(["lawyer", "counsel"])) {
+    add("s. 10", "right to counsel", "informational", "detention", "waiver");
+  }
+  if (hasAny(["weapon", "knife", "stabbed", "stab", "gun", "firearm"])) {
+    add("weapon", "s. 267", "intent", "dangerous", "self-defence");
+  }
+  if (hasAny(["spouse", "domestic", "partner", "family"])) {
+    add("domestic", "intimate partner", "assault", "s. 266", "s. 267");
+  }
+
+  return dedupeStrings(out);
+}
+
+function candidateDbId(candidate) {
+  const parsed = parseCitation(candidate?.citation || "");
+  return parsed?.apiDbId || "";
+}
+
+function scoreCandidateForScenario({ candidate, scenarioTokens, issue, filters = {} }) {
+  const text = normalizeForMatch(
+    `${candidate?.title || ""} ${candidate?.summary || ""} ${candidate?.matchedTerm || ""}`
+  );
+  let overlap = 0;
+  const overlapTokens = [];
+  for (const token of scenarioTokens) {
+    if (text.includes(token)) {
+      overlap += 1;
+      overlapTokens.push(token);
+    }
+  }
+
+  const reasons = [];
+  let score = Math.min(10, overlap * 2);
+  if (overlap > 0) reasons.push(`token_overlap:${overlap}`);
+
+  let semanticMatches = Array.isArray(candidate?.semanticMatches)
+    ? candidate.semanticMatches
+    : [];
+  if (semanticMatches.length === 0 && issue?.allowed?.size > 0) {
+    semanticMatches = [...issue.allowed].filter((sub) => termMatchesText(sub, text));
+  }
+  if (semanticMatches.length > 0) {
+    score += 10 + semanticMatches.length * 2;
+    reasons.push(`semantic_match:${semanticMatches.slice(0, 3).join("|")}`);
+  }
+
+  const issueSignals =
+    issue?.allowed?.size > 0
+      ? [...issue.allowed].slice(0, 8)
+      : inferFallbackIssueSignals(scenarioTokens).slice(0, 8);
+  if (issueSignals.length > 0) {
+    reasons.push(`issue:${issue.primary}`);
+  }
+
+  const year = Number(candidate?.year) || 0;
+  if (year >= 2015) {
+    score += 3;
+    reasons.push("recent_case");
+  } else if (year >= 2000) {
+    score += 1;
+    reasons.push("modern_case");
+  }
+
+  const dbId = candidateDbId(candidate);
+  if (filters?.courtLevel && filters.courtLevel !== "all") {
+    const allowed = COURT_LEVEL_DB_IDS[filters.courtLevel] || [];
+    if (allowed.includes(dbId)) {
+      score += 4;
+      reasons.push(`court_level:${filters.courtLevel}`);
+    }
+  }
+  if (filters?.jurisdiction && filters.jurisdiction !== "all") {
+    const preferred = JURISDICTION_DB_IDS[filters.jurisdiction] || [];
+    if (preferred.includes(dbId)) {
+      score += 4;
+      reasons.push(`jurisdiction:${filters.jurisdiction}`);
+    }
+  }
+
+  if (candidate?.isLandmark) {
+    score += 2;
+    reasons.push("landmark");
+  }
+
+  const contextTerms = dedupeStrings(overlapTokens);
+  if (issueSignals.length > 0 && contextTerms.length < 2) {
+    for (const token of pickHelpfulScenarioTerms(scenarioTokens, 4)) {
+      if (contextTerms.includes(token)) continue;
+      contextTerms.push(token);
+      if (contextTerms.length >= 2) break;
+    }
+  }
+
+  return {
+    ...candidate,
+    semanticMatches,
+    overlapTokens: contextTerms.slice(0, 4),
+    issuePrimary: issue?.primary || "general_criminal",
+    issueSignals,
+    retrievalScore: score,
+    retrievalReasons: reasons,
+  };
+}
+
+/**
+ * Detect the core legal issue from a scenario.
+ * Returns { primary: string, subIssues: Set<string> }
+ * Used to filter case law results to semantically relevant categories.
+ */
+function detectCoreIssue(scenario) {
+  const s = (scenario || "").toLowerCase();
+  
+  const patterns = {
+    impaired_motor: {
+      tests: [
+        /\b(impaired|ride|drunk|over\s*80|breathalyzer|breath\s+sample|breath\s+demand|refus\w*)\b/,
+        /\b(motor|vehicle|drive|driving|stopped|checkpoint|checkstop|pulled\s+over)\b/
+      ],
+      primary: "impaired_driving",
+      subIssues: new Set(["charter", "s. 9", "s. 8", "detention", "search", "stop", "breath", "roadside", "grant", "reasonable suspicion"])
+    },
+    assault_harm: {
+      tests: [
+        /\b(assault|punch\w*|struck|hit|fight|physical\s+contact)\b/,
+        /\b(bodily|harm|injur\w*|wound\w*|broke|fracture\w*|minor\s+injur\w*)\b/
+      ],
+      primary: "assault_bodily_harm",
+      subIssues: new Set(["bodily harm", "s. 267", "intent", "recklessness", "consent", "self-defence"])
+    },
+    assault_weapon: {
+      tests: [
+        /\b(assault|attack|confrontation|fight|stab\w*|shoot\w*)\b/,
+        /\b(weapon|knife|gun|firearm|club|stab\w*)\b/
+      ],
+      primary: "assault_weapon",
+      subIssues: new Set(["weapon", "s. 267", "intent", "self-defence", "dangerous"])
+    },
+    sexual_assault: {
+      tests: [/\bsexual\b/, /\b(assault|attack|touch|intercourse|coerce|consent)\b/],
+      primary: "sexual_assault",
+      subIssues: new Set(["s. 271", "consent", "s. 273", "complainant", "credibility"])
+    },
+    drug_trafficking: {
+      tests: [/\b(drug|narcotic|cocaine|fentanyl|cannabis|marijuana)\b/, /\b(traffick|sell|distribut|deal)\b/],
+      primary: "drug_trafficking",
+      subIssues: new Set(["cdsa", "s. 5", "trafficking", "possession", "schedule", "intent"])
+    },
+    charter_detention: {
+      tests: [/\bcharter\b/, /\b(detain\w*|arrest\w*|arbitrary)\b/],
+      primary: "charter_detention",
+      subIssues: new Set(["s. 9", "detention", "arbitrary", "grant", "reasonable"])
+    },
+    charter_counsel: {
+      tests: [/\b(right\s+to)?\s*counsel\b|\blawyer\b/, /\b(detain\w*|arrest\w*)\b/],
+      primary: "charter_counsel",
+      subIssues: new Set(["s. 10", "right to counsel", "informational", "detention", "waiver"])
+    },
+    robbery: {
+      tests: [/\brobbery\b/],
+      primary: "robbery",
+      subIssues: new Set(["robbery", "s. 343", "violence", "threat", "force"])
+    },
+    theft: {
+      tests: [
+        /\b(theft|steal\w*|stolen|shoplift\w*|merchandise|without\s+paying)\b/
+      ],
+      primary: "theft",
+      subIssues: new Set(["theft", "s. 322", "dishonesty", "property", "without consent"])
+    },
+    domestic_assault: {
+      tests: [
+        /\b(domestic|spouse|partner|intimate|family)\b/,
+        /\b(assault|physical\s+contact|hit|punch\w*|fight|violence)\b/
+      ],
+      primary: "domestic_assault",
+      subIssues: new Set(["domestic", "intimate partner", "assault", "s. 266", "s. 267", "bodily harm"])
+    }
+  };
+
+  const orderedKeys = [
+    "impaired_motor",
+    "assault_harm",
+    "assault_weapon",
+    "sexual_assault",
+    "drug_trafficking",
+    "charter_counsel",
+    "charter_detention",
+    "robbery",
+    "theft",
+    "domestic_assault",
+  ];
+
+  for (const key of orderedKeys) {
+    const config = patterns[key];
+    if (!config) continue;
+    const allMatch = config.tests.every(regex => regex.test(s));
+    if (allMatch) {
+      return { primary: config.primary, allowed: config.subIssues };
+    }
+  }
+  
+  return { primary: "general_criminal", allowed: new Set() };
+}
+
+/**
+ * Filter case law candidates by semantic relevance to the detected core issue.
+ */
+function filterBySemanticRelevance(scenario, candidates) {
+  const issue = detectCoreIssue(scenario);
+  if (issue.allowed.size === 0) {
+    return {
+      candidates,
+      dropCount: 0,
+      fallbackUsed: false,
+      issue,
+    };
+  }
+
+  const filtered = candidates.map((c) => {
+    const summary = normalizeForMatch(`${c.title || ""} ${c.summary || ""}`);
+    const semanticMatches = [...issue.allowed].filter((sub) => termMatchesText(sub, summary));
+    if (semanticMatches.length === 0) return null;
+
+    const dedupedMatches = dedupeStrings(semanticMatches).slice(0, 3);
+    const semanticTag = `Semantic: ${issue.primary} (${dedupedMatches.join(", ")})`;
+    const mergedMatchedTerm = c.matchedTerm
+      ? `${c.matchedTerm}; ${semanticTag}`
+      : semanticTag;
+
+    return {
+      ...c,
+      semanticMatches: dedupedMatches,
+      matchedTerm: mergedMatchedTerm,
+    };
+  }).filter(Boolean);
+
+  // Avoid hard-empty results when term matching is overly strict for a scenario.
+  if (filtered.length > 0) {
+    return {
+      candidates: filtered,
+      dropCount: Math.max(0, candidates.length - filtered.length),
+      fallbackUsed: false,
+      issue,
+    };
+  }
+
+  return {
+    candidates,
+    dropCount: candidates.length,
+    fallbackUsed: true,
+    issue,
+  };
+}
+
+function withSemanticMatchedContent(candidate, fallbackText) {
+  const base = fallbackText || "";
+  const chunks = [base];
+  if (Array.isArray(candidate?.semanticMatches) && candidate.semanticMatches.length > 0) {
+    chunks.push(`Semantic matches: ${candidate.semanticMatches.join(", ")}`);
+  }
+  if (Array.isArray(candidate?.retrievalReasons) && candidate.retrievalReasons.length > 0) {
+    chunks.push(`Selection signals: ${candidate.retrievalReasons.slice(0, 3).join(", ")}`);
+  }
+  if (Array.isArray(candidate?.issueSignals) && candidate.issueSignals.length > 0) {
+    chunks.push(`Issue signals: ${candidate.issueSignals.slice(0, 6).join(", ")}`);
+  }
+  if (Array.isArray(candidate?.overlapTokens) && candidate.overlapTokens.length > 0) {
+    chunks.push(`Scenario terms: ${candidate.overlapTokens.slice(0, 3).join(", ")}`);
+  }
+  return chunks.filter(Boolean).join(" | ");
+}
+
+function buildLocalFallbackCandidates({ scenario = "", maxResults = 3 }) {
+  const scenarioTokens = tokenizeScenario(scenario);
+  const issue = detectCoreIssue(scenario);
+  const issueTerms =
+    issue.allowed.size > 0
+      ? [...issue.allowed]
+      : inferFallbackIssueSignals(scenarioTokens);
+
+  const scored = [];
+  for (const entry of MASTER_CASE_LAW_DB || []) {
+    if (!entry?.citation) continue;
+    const text = normalizeForMatch(
+      `${entry.title || ""} ${entry.ratio || ""} ${(entry.tags || []).join(" ")} ${(entry.topics || []).join(" ")}`
+    );
+
+    let overlap = 0;
+    for (const token of scenarioTokens) {
+      if (text.includes(token)) overlap += 1;
+    }
+
+    let issueHits = 0;
+    for (const term of issueTerms) {
+      if (termMatchesText(term, text)) issueHits += 1;
+    }
+
+    const score = overlap * 3 + issueHits * 5;
+    if (score <= 0) continue;
+
+    const parsed = parseCitation(entry.citation);
+    scored.push({
+      citation: entry.citation,
+      title: entry.title || entry.citation,
+      summary: [entry.ratio, ...(entry.tags || []), ...(entry.topics || [])].filter(Boolean).join(" "),
+      url: "",
+      matchedTerm: "Local issue fallback",
+      court: parsed?.courtCode || entry.court,
+      year: parsed?.year || entry.year,
+      isLandmark: true,
+      retrievalScore: score,
+      issueSignals: issueTerms.slice(0, 8),
+      overlapTokens: Array.from(scenarioTokens).slice(0, 4),
+      retrievalReasons: ["local_fallback", `overlap:${overlap}`, `issue_hits:${issueHits}`],
+    });
+  }
+
+  if (scored.length === 0) {
+    const genericFallback = Array.isArray(MASTER_CASE_LAW_DB) ? MASTER_CASE_LAW_DB[0] : null;
+    if (!genericFallback?.citation) return [];
+
+    const parsed = parseCitation(genericFallback.citation);
+    const scenarioTerms = String(scenario || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((t) => t.length >= 3)
+      .slice(0, 4);
+
+    return [
+      {
+        citation: genericFallback.citation,
+        title: genericFallback.title || genericFallback.citation,
+        summary: [
+          genericFallback.ratio,
+          ...(genericFallback.tags || []),
+          ...(genericFallback.topics || []),
+          scenarioTerms.join(" "),
+        ]
+          .filter(Boolean)
+          .join(" "),
+        url: "",
+        matchedTerm: "Local generic fallback",
+        court: parsed?.courtCode || genericFallback.court,
+        year: parsed?.year || genericFallback.year,
+        isLandmark: true,
+        retrievalScore: 1,
+        issueSignals: inferFallbackIssueSignals(scenarioTokens).slice(0, 8),
+        overlapTokens: scenarioTerms,
+        retrievalReasons: ["local_fallback", "minimal_detail_scenario"],
+      },
+    ];
+  }
+
+  return scored
+    .sort((a, b) => b.retrievalScore - a.retrievalScore)
+    .slice(0, Math.max(1, Math.min(3, maxResults)));
+}
+
+function selectFinalCandidates({ candidates = [], issuePrimary = "general_criminal", maxResults = 3 }) {
+  const sorted = [...candidates].sort((a, b) => {
+    const scoreA = Number(a?.retrievalScore) || 0;
+    const scoreB = Number(b?.retrievalScore) || 0;
+    if (scoreB !== scoreA) return scoreB - scoreA;
+    const yearA = Number(a?.year) || 0;
+    const yearB = Number(b?.year) || 0;
+    if (yearB !== yearA) return yearB - yearA;
+    return String(a?.citation || "").localeCompare(String(b?.citation || ""));
+  });
+
+  if (sorted.length === 0) return [];
+
+  const strict = sorted.filter((item) => {
+    const score = Number(item?.retrievalScore) || 0;
+    const semanticCount = Array.isArray(item?.semanticMatches) ? item.semanticMatches.length : 0;
+    return score >= 14 || semanticCount >= 2;
+  });
+
+  const moderate = sorted.filter((item) => {
+    const score = Number(item?.retrievalScore) || 0;
+    return score >= 10;
+  });
+
+  const selected = strict.length > 0 ? strict : moderate.length > 0 ? moderate : sorted.slice(0, 1);
+
+  // Keep a slightly wider set for broad/general scenarios.
+  const cap = issuePrimary === "general_criminal" ? maxResults : Math.min(maxResults, 3);
+  return selected.slice(0, cap);
 }
 
 /**
@@ -418,6 +907,9 @@ function candidateDatabaseRank(candidate) {
 
 function sortCandidatesForStableVerification(candidates) {
   return [...candidates].sort((a, b) => {
+    const scoreA = Number(a?.retrievalScore) || 0;
+    const scoreB = Number(b?.retrievalScore) || 0;
+    if (scoreB !== scoreA) return scoreB - scoreA;
     const rankA = candidateDatabaseRank(a);
     const rankB = candidateDatabaseRank(b);
     if (rankA !== rankB) return rankA - rankB;
@@ -428,29 +920,40 @@ function sortCandidatesForStableVerification(candidates) {
   });
 }
 
-function extractNeutralCitation(citation) {
-  const match = String(citation || "").match(/(\d{4}\s+[A-Z]+\s+\d+)/i);
-  return match ? match[1].replace(/\s+/g, " ").toUpperCase() : null;
-}
-
 function dedupeCandidates(candidates) {
   const byCitation = new Map();
   for (const candidate of candidates) {
-    const neutral = extractNeutralCitation(candidate.citation);
-    const key = neutral ?? candidate.citation.toLowerCase();
+    const key = buildCitationIdentityKey(candidate.citation);
     if (!byCitation.has(key)) {
       byCitation.set(key, candidate);
     } else {
       // Prefer landmark entries (they bypass verification); then prefer named entries over citation-only
       const existing = byCitation.get(key);
       if (!existing.isLandmark && candidate.isLandmark) {
-        byCitation.set(key, candidate);
+        byCitation.set(key, {
+          ...candidate,
+          title: existing.title || candidate.title,
+          summary:
+            String(existing.summary || "").length > String(candidate.summary || "").length
+              ? existing.summary
+              : candidate.summary,
+        });
       } else if (!existing.isLandmark && !candidate.isLandmark) {
         const existingHasName = Boolean(existing.title && existing.title !== existing.citation);
         const candidateHasName = Boolean(candidate.title && candidate.title !== candidate.citation);
         if (!existingHasName && candidateHasName) {
           byCitation.set(key, candidate);
         }
+      } else if (existing.isLandmark && !candidate.isLandmark) {
+        // Keep landmark verification bypass but enrich metadata from AI-suggested duplicate.
+        byCitation.set(key, {
+          ...existing,
+          title: existing.title || candidate.title,
+          summary:
+            String(candidate.summary || "").length > String(existing.summary || "").length
+              ? candidate.summary
+              : existing.summary,
+        });
       }
     }
   }
@@ -473,10 +976,14 @@ function toCaseLawItem(candidate, verification) {
     court,
     year,
     url_canlii: verification?.url || candidate.url || "",
-    matched_content: candidate.matchedTerm
-      ? `Verified via CanLII (${candidate.matchedTerm})`
-      : "Verified via CanLII (AI metadata)",
+    matched_content: withSemanticMatchedContent(
+      candidate,
+      candidate.matchedTerm
+        ? `Verified via CanLII (${candidate.matchedTerm})`
+        : "Verified via CanLII (AI metadata)"
+    ),
     verificationStatus: "verified",
+    retrievalScore: Number(candidate?.retrievalScore) || 0,
   };
 }
 
@@ -514,6 +1021,7 @@ export async function retrieveVerifiedCaseLaw({
 
   const terms = extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode });
   const dbTargets = pickDatabaseTargets(filters);
+  let localFallbackUsed = false;
 
   // Build candidates from AI-generated case citations
   const aiCitationCandidates = [];
@@ -533,6 +1041,32 @@ export async function retrieveVerifiedCaseLaw({
         year: parsed.year,
       });
     }
+    
+    // Apply pre-verify semantic gate: filter AI citations by scenario relevance
+    // Tokenize scenario and require minimum overlap with candidate summaries
+    const scenarioTokens = tokenizeScenario(scenario);
+    
+    const filtered = [];
+    for (const candidate of aiCitationCandidates) {
+      if (scenarioTokens.size === 0) {
+        filtered.push(candidate);
+        continue;
+      }
+
+      const candSummary = `${candidate.title || ""} ${candidate.summary || ""}`.toLowerCase();
+      let overlapCount = 0;
+      for (const token of scenarioTokens) {
+        if (candSummary.includes(token)) overlapCount++;
+      }
+
+      // Require minimum 2 scenario tokens in candidate (tunable threshold)
+      const meetsThreshold = overlapCount >= 2;
+      if (meetsThreshold) {
+        filtered.push(candidate);
+      }
+    }
+    
+    aiCitationCandidates.splice(0, aiCitationCandidates.length, ...filtered);
   }
 
   // Inject Local Landmark RAG Matches into the verification pool
@@ -544,13 +1078,23 @@ export async function retrieveVerifiedCaseLaw({
       aiCitationCandidates.push({
         citation,
         title: landmark.title || citation,
-        summary: landmark.ratio || "",
+        summary: [landmark.ratio, ...(landmark.tags || []), ...(landmark.topics || [])]
+          .filter(Boolean)
+          .join(" "),
         url: "",
         matchedTerm: "Landmark RAG Match",
         court: parsed?.courtCode || landmark.court,
         year: parsed?.year || landmark.year,
         isLandmark: true, // Flag for verification bypass
       });
+    }
+  }
+
+  if (aiCitationCandidates.length === 0) {
+    const fallbackCandidates = buildLocalFallbackCandidates({ scenario, maxResults });
+    if (fallbackCandidates.length > 0) {
+      aiCitationCandidates.push(...fallbackCandidates);
+      localFallbackUsed = true;
     }
   }
 
@@ -565,12 +1109,35 @@ export async function retrieveVerifiedCaseLaw({
         candidateCount: 0,
         verificationCalls: 0,
         verifiedCount: 0,
+        relevanceScoreAvg: null,
+        fallbackPathUsed: localFallbackUsed,
+        fallbackReason: localFallbackUsed ? "local_fallback" : null,
+        semanticFilterDropCount: 0,
+        candidateSourceMix: {
+          ai: 0,
+          landmark: 0,
+          localFallback: 0,
+        },
       },
     };
   }
 
+  // Apply semantic filtering by core legal issue and score candidates by scenario fit.
+  const semanticFilter = filterBySemanticRelevance(scenario, aiCitationCandidates);
+  const issue = semanticFilter.issue;
+  const semanticFiltered = semanticFilter.candidates;
+  const scenarioTokens = tokenizeScenario(scenario);
+  const scoredCandidates = semanticFiltered.map((candidate) =>
+    scoreCandidateForScenario({
+      candidate,
+      scenarioTokens,
+      issue,
+      filters,
+    })
+  );
+
   // Verify AI citations via the working lookupCase() endpoint
-  const sorted = sortCandidatesForStableVerification(dedupeCandidates(aiCitationCandidates));
+  const sorted = sortCandidatesForStableVerification(dedupeCandidates(scoredCandidates));
 
   // Split landmarks (no API call needed) from regular candidates
   const landmarkResults = [];
@@ -602,13 +1169,13 @@ export async function retrieveVerifiedCaseLaw({
         court: candidate.court,
         year: candidate.year,
         url_canlii: landmarkUrl,
-        matched_content: "Landmark Case Law Database",
+        matched_content: withSemanticMatchedContent(candidate, "Landmark Case Law Database"),
         verificationStatus: "verified",
+        retrievalScore: Number(candidate?.retrievalScore) || 0,
       });
     } else {
       if (toVerify.length >= MAX_VERIFICATION_CALLS) continue;
-      const neutral = extractNeutralCitation(candidate.citation);
-      const key = neutral ?? candidate.citation.toLowerCase();
+      const key = buildCitationIdentityKey(candidate.citation);
       if (citationLookupSeen.has(key)) continue;
       citationLookupSeen.add(key);
       toVerify.push(candidate);
@@ -627,8 +1194,46 @@ export async function retrieveVerifiedCaseLaw({
     }
   }
 
-  // Merge landmarks first, then verified cases, then cap at maxResults
-  const cases = [...landmarkResults, ...verifiedCases].slice(0, maxResults);
+  // Rank and gate final verified output by scenario relevance.
+  const selectedCandidates = selectFinalCandidates({
+      candidates: [...landmarkResults, ...verifiedCases],
+      issuePrimary: issue?.primary || "general_criminal",
+      maxResults,
+    });
+
+  const relevanceScoreAvg =
+    selectedCandidates.length > 0
+      ? Number(
+          (
+            selectedCandidates.reduce((sum, item) => sum + (Number(item?.retrievalScore) || 0), 0) /
+            selectedCandidates.length
+          ).toFixed(3)
+        )
+      : null;
+
+  const candidateSourceMix = scoredCandidates.reduce(
+    (acc, candidate) => {
+      const term = String(candidate?.matchedTerm || "");
+      if (term.includes("Local") || term.includes("local")) acc.localFallback += 1;
+      else if (term.includes("Landmark")) acc.landmark += 1;
+      else acc.ai += 1;
+      return acc;
+    },
+    { ai: 0, landmark: 0, localFallback: 0 }
+  );
+
+  const fallbackReason = localFallbackUsed
+    ? "local_fallback"
+    : semanticFilter.fallbackUsed
+    ? "semantic_filter_fallback"
+    : null;
+
+  const cases = selectedCandidates
+    .slice(0, maxResults)
+    .map((item) => {
+      const { retrievalScore: _dropScore, ...rest } = item;
+      return rest;
+    });
   const verificationCallsTotal = toVerify.length;
 
   return {
@@ -641,6 +1246,11 @@ export async function retrieveVerifiedCaseLaw({
       verificationCalls: verificationCallsTotal,
       verifiedCount: cases.length,
       aiCitationsVerified: aiCitationCandidates.length,
+      relevanceScoreAvg,
+      fallbackPathUsed: Boolean(fallbackReason),
+      fallbackReason,
+      semanticFilterDropCount: semanticFilter.dropCount,
+      candidateSourceMix,
       reason: cases.length > 0 ? "verified_results" : "no_verified",
     },
   };
