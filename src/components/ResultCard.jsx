@@ -1,6 +1,20 @@
 import { useTheme } from "../lib/ThemeContext.jsx";
 import { isValidUrl } from "../lib/validateUrl.js";
 
+function sanitizeMatchedTextForDisplay(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return "";
+
+  const hiddenPrefixes = ["Selection signals:", "Issue signals:", "Scenario terms:"];
+  const keptParts = raw
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => !hiddenPrefixes.some((prefix) => part.startsWith(prefix)));
+
+  return keptParts.join(" | ").trim();
+}
+
 function VerificationBadge({ verification, item, t, type }) {
   if (!verification) return null;
   const { status, url, searchUrl } = verification;
@@ -133,7 +147,7 @@ function BookmarkIcon({ filled, color }) {
 
 export default function ResultCard({ item, type, verification, onCardClick, addBookmark, removeBookmark, isBookmarked }) {
   const t = useTheme();
-  const matchedText = item.matched_section || item.matched_content;
+  const matchedText = sanitizeMatchedTextForDisplay(item.matched_section || item.matched_content);
   const showCanLII = type === "case_law" || type === "criminal_code";
   const clickable = type === "case_law" && typeof onCardClick === "function";
   const citationId = item.citation || item.section || "";
