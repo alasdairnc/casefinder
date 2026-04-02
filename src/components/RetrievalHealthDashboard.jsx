@@ -20,6 +20,47 @@ function fmtDate(value) {
   return d.toLocaleString();
 }
 
+function clip(text, maxLen = 180) {
+  const raw = typeof text === "string" ? text.trim() : "";
+  if (!raw) return "—";
+  if (raw.length <= maxLen) return raw;
+  return `${raw.slice(0, maxLen)}...`;
+}
+
+function buildAgentFixPrompt(sample = {}) {
+  const lines = [
+    "Investigate and fix retrieval failure for this CaseDive scenario.",
+    "",
+    `Failure time: ${sample.ts || "unknown"}`,
+    `Endpoint: ${sample.endpoint || "unknown"}`,
+    `Reason: ${sample.reason || "unknown"}`,
+    `Retrieval error: ${sample.retrievalError ? "yes" : "no"}`,
+    `Final case-law count: ${sample.finalCaseLawCount ?? 0}`,
+    `Verified count: ${sample.verifiedCount ?? 0}`,
+    `Fallback used: ${sample.fallbackPathUsed ? "yes" : "no"}`,
+    `Latency (ms): ${sample.latencyMs ?? "n/a"}`,
+    `Semantic drops: ${sample.semanticFilterDropCount ?? 0}`,
+    "",
+    "Scenario:",
+    sample.scenarioSnippet || "(not captured)",
+  ];
+
+  if (sample.errorMessage) {
+    lines.push("", `Error message: ${sample.errorMessage}`);
+  }
+
+  lines.push(
+    "",
+    "Please:",
+    "1) identify likely root cause in retrieval pipeline,",
+    "2) propose minimal code fix,",
+    "3) add or update tests to guard against recurrence,",
+    "4) run relevant test commands and summarize results."
+  );
+
+  return lines.join("\n");
+}
+
 function severityForMetric(value, threshold, direction = "above_is_bad") {
   if (value == null || threshold == null) {
     return { label: "No data", color: "#8c8c8c", border: "#b3b3b3", level: "neutral" };
@@ -290,6 +331,7 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [copiedFailureKey, setCopiedFailureKey] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -345,6 +387,18 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
   const errorBadge = severityForMetric(oneHour?.rates?.errorRate, thresholds?.errorRate1h, "above_is_bad");
   const noVerifiedBadge = severityForMetric(oneHour?.rates?.noVerifiedRate, thresholds?.noVerifiedRate1h, "above_is_bad");
   const p95Badge = severityForMetric(oneHour?.latencyMs?.p95, thresholds?.p95LatencyMs1h, "above_is_bad");
+  const recentFailures = Array.isArray(data?.recentFailures) ? data.recentFailures : [];
+
+  const copyFixPrompt = async (sample, index) => {
+    const prompt = buildAgentFixPrompt(sample);
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopiedFailureKey(`${sample.ts || "unknown"}-${index}`);
+      setTimeout(() => setCopiedFailureKey(""), 1500);
+    } catch {
+      setCopiedFailureKey("");
+    }
+  };
 
   return (
     <div style={{ background: t.bg, minHeight: "100vh", color: t.text }}>
@@ -567,6 +621,66 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
                 <span style={{ color: t.textSecondary }}>- -</span> no-verified rate
               </div>
               <TrendlineChart trendline={data.trendline} t={t} />
+            </div>
+            <div style={{ border: `1px solid ${t.borderLight}`, padding: 16, marginBottom: 16 }}>
+              <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10, letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 8 }}>
+                Recent Failed Scenarios
+              </div>
+              <p style={{ margin: "0 0 12px 0", fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary }}>
+                Operational retrieval failures (errors or 0 verified case-law). Use Copy prompt to hand a concrete case to an agent.
+              </p>
+              {recentFailures.length > 0 ? (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {recentFailures.map((sample, index) => {
+                    const rowKey = `${sample.ts || "unknown"}-${index}`;
+                    return (
+                      <div key={rowKey} style={{ border: `1px solid ${t.borderLight}`, padding: 12, background: t.bg }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+                          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: t.text }}>
+                            {fmtDate(sample.ts)} · {sample.endpoint || "unknown"} · {sample.reason || "unknown"}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyFixPrompt(sample, index)}
+                            style={{
+                              padding: "6px 10px",
+                              border: `1px solid ${t.borderLight}`,
+                              background: "transparent",
+                              color: copiedFailureKey === rowKey ? t.accentGreen : t.textSecondary,
+                              cursor: "pointer",
+                              fontFamily: "'Helvetica Neue', sans-serif",
+                              fontSize: 10,
+                              letterSpacing: 1.2,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {copiedFailureKey === rowKey ? "Copied" : "Copy Fix Prompt"}
+                          </button>
+                        </div>
+                        <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textSecondary, lineHeight: 1.5, marginBottom: 8 }}>
+                          Scenario: {clip(sample.scenarioSnippet, 220)}
+                        </div>
+                        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11, color: t.textTertiary }}>
+                          <span>final: {num(sample.finalCaseLawCount)}</span>
+                          <span>verified: {num(sample.verifiedCount)}</span>
+                          <span>latency: {num(sample.latencyMs)} ms</span>
+                          <span>fallback: {sample.fallbackPathUsed ? "yes" : "no"}</span>
+                          <span>drops: {num(sample.semanticFilterDropCount)}</span>
+                        </div>
+                        {sample.errorMessage && (
+                          <div style={{ marginTop: 8, fontFamily: "'Courier New', monospace", fontSize: 11, color: t.textTertiary }}>
+                            {clip(sample.errorMessage, 180)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.textTertiary }}>
+                  No recent failed scenarios.
+                </p>
+              )}
             </div>
             <div style={{ border: `1px solid ${t.borderLight}`, padding: 16 }}>
               <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10, letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 12 }}>

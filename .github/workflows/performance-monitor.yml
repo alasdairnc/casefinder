@@ -1,0 +1,37 @@
+name: Performance Monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      retrieval_health_token:
+        description: Retrieval health bearer token
+        required: true
+        type: string
+      perf_health_url:
+        description: Retrieval health endpoint URL
+        required: false
+        default: https://casedive.ca/api/retrieval-health
+        type: string
+
+jobs:
+  retrieval-health-monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run performance monitor
+        env:
+          RETRIEVAL_HEALTH_TOKEN: ${{ inputs.retrieval_health_token }}
+          PERF_HEALTH_URL: ${{ inputs.perf_health_url }}
+        run: npm run perf:monitor

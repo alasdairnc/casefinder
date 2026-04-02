@@ -66,6 +66,7 @@ export default async function handler(req, res) {
       totalStoredEvents: snapshot.totalStoredEvents,
       windows: snapshot.windows,
       alltime: snapshot.alltime,
+      recentFailures: snapshot.recentFailures,
       trendline,
       thresholds: RETRIEVAL_ALERT_THRESHOLDS,
       alerts,

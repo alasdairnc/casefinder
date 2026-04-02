@@ -46,6 +46,13 @@ function normalizeSourceMix(raw = {}) {
   };
 }
 
+function toScenarioSnippet(value, maxLen = 280) {
+  if (typeof value !== "string") return null;
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  if (!cleaned) return null;
+  return cleaned.slice(0, maxLen);
+}
+
 function inferReason({ reason, finalCaseLawCount, retrievalError }) {
   const explicit = toReason(reason);
   if (explicit) return explicit;
@@ -74,6 +81,7 @@ export function buildRetrievalMetrics(input = {}) {
     cacheHit = false,
     filters = {},
     errorMessage = "",
+    scenario = "",
   } = input;
 
   const metrics = normalizeMetrics(retrievalMeta);
@@ -117,6 +125,7 @@ export function buildRetrievalMetrics(input = {}) {
     courtLevel: typeof filters?.courtLevel === "string" ? filters.courtLevel : "all",
     dateRange: typeof filters?.dateRange === "string" ? filters.dateRange : "all",
     errorMessage: isError ? String(errorMessage || "unknown").slice(0, 200) : null,
+    scenarioSnippet: toScenarioSnippet(scenario),
   };
 }
 

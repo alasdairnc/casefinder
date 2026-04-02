@@ -17,6 +17,10 @@ import {
   logError,
 } from "./_logging.js";
 
+function logRetrievalMetricsAsync(payload) {
+  logRetrievalMetrics(payload).catch(() => {});
+}
+
 function sanitizeUserInput(input) {
   if (typeof input !== "string") return "";
   return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>\s][^>]*)?>/g, "");
@@ -84,10 +88,11 @@ export default async function handler(req, res) {
   }
 
   if (!apiKey) {
-    await logRetrievalMetrics({
+    logRetrievalMetricsAsync({
       requestId,
       endpoint: "retrieve-caselaw",
       source: "retrieval",
+      scenario,
       filters,
       reason: "missing_api_key",
       retrievalLatencyMs: 0,
@@ -122,10 +127,11 @@ export default async function handler(req, res) {
       ...meta,
       casesReturned: cases.length,
     });
-    await logRetrievalMetrics({
+    logRetrievalMetricsAsync({
       requestId,
       endpoint: "retrieve-caselaw",
       source: "retrieval",
+      scenario,
       filters,
       reason: meta?.reason || (cases.length > 0 ? "verified_results" : "no_verified"),
       retrievalMeta: meta,
@@ -147,10 +153,11 @@ export default async function handler(req, res) {
   } catch (err) {
     Sentry.captureException(err);
     const retrievalDurationMs = Date.now() - retrievalStartMs;
-    await logRetrievalMetrics({
+    logRetrievalMetricsAsync({
       requestId,
       endpoint: "retrieve-caselaw",
       source: "retrieval",
+      scenario,
       filters,
       reason: "retrieval_error",
       retrievalLatencyMs: retrievalDurationMs,

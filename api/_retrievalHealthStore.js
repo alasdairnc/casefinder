@@ -47,6 +47,7 @@ function normalizeEvent(raw) {
 
   return {
     ts: Math.floor(ts),
+    endpoint: typeof event.endpoint === "string" ? event.endpoint : "unknown",
     source: typeof event.source === "string" ? event.source : "retrieval",
     reason: typeof event.reason === "string" ? event.reason : "unknown",
     retrievalError: Boolean(event.retrievalError),
@@ -67,12 +68,21 @@ function normalizeEvent(raw) {
       landmark: toNonNegativeInt(event?.candidateSourceMix?.landmark),
       localFallback: toNonNegativeInt(event?.candidateSourceMix?.localFallback),
     },
+    scenarioSnippet:
+      typeof event.scenarioSnippet === "string" && event.scenarioSnippet.trim().length > 0
+        ? event.scenarioSnippet.trim().slice(0, 280)
+        : null,
+    errorMessage:
+      typeof event.errorMessage === "string" && event.errorMessage.trim().length > 0
+        ? event.errorMessage.trim().slice(0, 200)
+        : null,
   };
 }
 
 function buildStoredEvent(metricsPayload = {}) {
   return normalizeEvent({
     ts: Date.now(),
+    endpoint: metricsPayload.endpoint,
     source: metricsPayload.source,
     reason: metricsPayload.reason,
     retrievalError:
@@ -88,7 +98,40 @@ function buildStoredEvent(metricsPayload = {}) {
     fallbackPathUsed: metricsPayload.fallbackPathUsed === true,
     semanticFilterDropCount: metricsPayload.semanticFilterDropCount,
     candidateSourceMix: metricsPayload.candidateSourceMix,
+    scenarioSnippet: metricsPayload.scenarioSnippet,
+    errorMessage: metricsPayload.errorMessage,
   });
+}
+
+function getRecentFailureScenarios(events = [], limit = 20) {
+  if (!Array.isArray(events) || events.length === 0) return [];
+
+  const failed = events.filter((event) => {
+    const isOperational =
+      event.source === "retrieval" &&
+      event.caseLawFilterEnabled &&
+      event.reason !== "filter_disabled";
+    if (!isOperational) return false;
+    return event.retrievalError || event.finalCaseLawCount === 0;
+  });
+
+  return failed
+    .slice()
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, limit)
+    .map((event) => ({
+      ts: new Date(event.ts).toISOString(),
+      endpoint: event.endpoint || "unknown",
+      reason: event.reason || "unknown",
+      retrievalError: Boolean(event.retrievalError),
+      finalCaseLawCount: toNonNegativeInt(event.finalCaseLawCount),
+      verifiedCount: toNonNegativeInt(event.verifiedCount),
+      fallbackPathUsed: event.fallbackPathUsed === true,
+      latencyMs: Number.isFinite(event.retrievalLatencyMs) ? event.retrievalLatencyMs : null,
+      semanticFilterDropCount: toNonNegativeInt(event.semanticFilterDropCount),
+      scenarioSnippet: event.scenarioSnippet || null,
+      errorMessage: event.errorMessage || null,
+    }));
 }
 
 function pruneMemory(nowMs = Date.now()) {
@@ -584,6 +627,7 @@ export async function getRetrievalHealthSnapshot({ nowMs = Date.now() } = {}) {
   }
 
   const alltime = await getAlltimeSnapshot(events);
+  const recentFailures = getRecentFailureScenarios(events);
 
   return {
     generatedAt: new Date(nowMs).toISOString(),
@@ -592,5 +636,6 @@ export async function getRetrievalHealthSnapshot({ nowMs = Date.now() } = {}) {
     totalStoredEvents,
     windows,
     alltime,
+    recentFailures,
   };
 }

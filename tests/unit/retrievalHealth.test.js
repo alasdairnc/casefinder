@@ -76,6 +76,14 @@ describe("retrieval-health handler", () => {
       retentionMs: 86_400_000,
       totalStoredEvents: 10,
       windows: { fiveMinutes: {}, oneHour: {} },
+      recentFailures: [
+        {
+          ts: new Date(1).toISOString(),
+          endpoint: "analyze",
+          reason: "no_verified",
+          scenarioSnippet: "sample scenario",
+        },
+      ],
     });
     mockGetTrendlineSnapshots.mockResolvedValue([{ ts: 1, errorRate: null, noVerifiedRate: null, avgLatencyMs: null }]);
     process.env.RETRIEVAL_HEALTH_TOKEN = "test-token";
@@ -156,6 +164,14 @@ describe("retrieval-health handler", () => {
       generatedAt: new Date(0).toISOString(),
       retentionMs: 86_400_000,
       totalStoredEvents: 10,
+      recentFailures: [
+        {
+          ts: new Date(1).toISOString(),
+          endpoint: "analyze",
+          reason: "no_verified",
+          scenarioSnippet: "sample scenario",
+        },
+      ],
       trendline: [{ ts: 1, errorRate: null, noVerifiedRate: null, avgLatencyMs: null }],
       alerts: [{ code: "high_error_rate" }],
       thresholds: {

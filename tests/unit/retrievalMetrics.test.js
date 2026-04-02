@@ -32,6 +32,7 @@ describe("buildRetrievalMetrics", () => {
         courtLevel: "appeal",
         dateRange: "10",
       },
+      scenario: "I was stopped at a RIDE checkpoint and refused the breath test after arrest.",
     });
 
     expect(payload.relevanceScoreAvg).toBe(6.238);
@@ -39,6 +40,7 @@ describe("buildRetrievalMetrics", () => {
     expect(payload.fallbackReason).toBe("semantic_filter_fallback");
     expect(payload.semanticFilterDropCount).toBe(5);
     expect(payload.candidateSourceMix).toEqual({ ai: 6, landmark: 4, localFallback: 2 });
+    expect(payload.scenarioSnippet).toBe("I was stopped at a RIDE checkpoint and refused the breath test after arrest.");
   });
 
   it("applies safe defaults for missing or invalid phase-4 fields", () => {
@@ -61,5 +63,15 @@ describe("buildRetrievalMetrics", () => {
     expect(payload.fallbackReason).toBeNull();
     expect(payload.semanticFilterDropCount).toBe(0);
     expect(payload.candidateSourceMix).toEqual({ ai: 0, landmark: 0, localFallback: 0 });
+    expect(payload.scenarioSnippet).toBeNull();
+  });
+
+  it("trims and truncates scenario snippets", () => {
+    const payload = buildRetrievalMetrics({
+      scenario: `  ${"x".repeat(400)}  `,
+    });
+
+    expect(payload.scenarioSnippet.length).toBe(280);
+    expect(payload.scenarioSnippet).toBe("x".repeat(280));
   });
 });

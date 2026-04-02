@@ -21,6 +21,10 @@ import {
   logError,
 } from "./_logging.js";
 
+function logRetrievalMetricsAsync(payload) {
+  logRetrievalMetrics(payload).catch(() => {});
+}
+
 // Strip XML-like tags from user input to prevent delimiter escape.
 // Uses [^>\s]* instead of [^>]* to avoid catastrophic backtracking (ReDoS).
 function sanitizeUserInput(input) {
@@ -383,7 +387,8 @@ export default async function handler(req, res) {
     if (redis) {
       try {
         const cacheKeyStr = cacheKey(scenario, filters);
-        const cached = await redis.get(cacheKeyStr);
+        const timeoutGet = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 500));
+        const cached = await Promise.race([redis.get(cacheKeyStr), timeoutGet]);
         if (cached) {
           const cachedResult = typeof cached === "string" ? JSON.parse(cached) : cached;
           if (filters.lawTypes.case_law !== false) {
@@ -393,10 +398,11 @@ export default async function handler(req, res) {
                 ? cachedResult.meta.case_law || {}
                 : {};
 
-            await logRetrievalMetrics({
+            logRetrievalMetricsAsync({
               requestId,
               endpoint: "analyze",
               source: "cache",
+              scenario,
               filters,
               reason:
                 typeof cachedCaseLawMeta.reason === "string"
@@ -455,10 +461,11 @@ export default async function handler(req, res) {
           verifiedCount: 0,
           reason: "missing_api_key",
         };
-        await logRetrievalMetrics({
+        logRetrievalMetricsAsync({
           requestId,
           endpoint: "analyze",
           source: "retrieval",
+          scenario,
           filters,
           reason: "missing_api_key",
           retrievalLatencyMs: 0,
@@ -507,10 +514,11 @@ export default async function handler(req, res) {
             termsTried: retrievalMeta.termsTried ?? 0,
           },
         };
-        await logRetrievalMetrics({
+        logRetrievalMetricsAsync({
           requestId,
           endpoint: "analyze",
           source: "retrieval",
+          scenario,
           filters,
           reason,
           retrievalMeta,
@@ -529,10 +537,11 @@ export default async function handler(req, res) {
         logError(requestId, "analyze-retrieval", retrievalErr, 500, Date.now() - retrievalStartMs);
 
         const retrievalDurationMs = Date.now() - retrievalStartMs;
-        await logRetrievalMetrics({
+        logRetrievalMetricsAsync({
           requestId,
           endpoint: "analyze",
           source: "retrieval",
+          scenario,
           filters,
           reason: retrievalReason,
           retrievalLatencyMs: retrievalDurationMs,
@@ -556,10 +565,11 @@ export default async function handler(req, res) {
         verifiedCount: 0,
         reason: "filter_disabled",
       };
-      await logRetrievalMetrics({
+      logRetrievalMetricsAsync({
         requestId,
         endpoint: "analyze",
         source: "retrieval",
+        scenario,
         filters,
         reason: "filter_disabled",
         retrievalLatencyMs: 0,
