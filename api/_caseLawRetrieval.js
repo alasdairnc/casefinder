@@ -257,7 +257,7 @@ function inferFallbackIssueSignals(scenarioTokens) {
     add("charter", "s. 9", "detention", "arbitrary", "reasonable");
   }
   if (hasAny(["lawyer", "counsel"])) {
-    add("s. 10", "right to counsel", "informational", "detention", "waiver");
+    add("s. 10", "s. 10(b)", "right to counsel", "informational", "detention", "waiver", "woods");
   }
   if (hasAny(["search", "searched", "searching", "seizure", "seized", "warrant", "warrantless", "privacy", "phone", "device", "records", "text", "computer", "digital"])) {
     add("charter", "s. 8", "search", "seizure", "warrant", "privacy");
@@ -267,6 +267,18 @@ function inferFallbackIssueSignals(scenarioTokens) {
   }
   if (hasAny(["spouse", "domestic", "partner", "family"])) {
     add("domestic", "intimate partner", "assault", "s. 266", "s. 267");
+  }
+  if (hasAny(["threat", "threats", "uttering", "harass", "harassment", "stalk", "stalking", "message", "messages", "text"])) {
+    add("uttering threats", "criminal harassment", "s. 264", "s. 264.1", "repeated communication");
+  }
+  if (hasAny(["dangerous", "careless", "speed", "racing", "stunt", "driving", "drive"])) {
+    add("dangerous driving", "s. 320.13", "criminal negligence", "motor vehicle");
+  }
+  if (hasAny(["peace", "bond", "recognizance", "810"])) {
+    add("peace bond", "recognizance", "s. 810");
+  }
+  if (hasAny(["break", "enter", "broke", "burglar", "house", "dwelling", "home"])) {
+    add("break and enter", "s. 348", "dwelling house", "intent");
   }
 
   return dedupeStrings(out);
@@ -424,6 +436,31 @@ function detectCoreIssue(scenario) {
       primary: "charter_counsel",
       subIssues: new Set(["s. 10", "right to counsel", "informational", "detention", "waiver"])
     },
+    uttering_threats: {
+      tests: [/\b(threat\w*|uttering)\b/],
+      primary: "uttering_threats",
+      subIssues: new Set(["uttering threats", "s. 264.1", "threatening", "communication"])
+    },
+    criminal_harassment: {
+      tests: [/\b(harass\w*|stalk\w*)\b/],
+      primary: "criminal_harassment",
+      subIssues: new Set(["criminal harassment", "s. 264", "repeated communication", "fear for safety"])
+    },
+    dangerous_driving: {
+      tests: [/\b(dangerous|careless|stunt|racing|high\s+speed)\b/, /\b(driv\w*|vehicle|car|motor)\b/],
+      primary: "dangerous_driving",
+      subIssues: new Set(["dangerous driving", "s. 320.13", "criminal negligence", "motor vehicle"])
+    },
+    peace_bond: {
+      tests: [/\b(peace\s+bond|recognizance|s\.?\s*810|\b810\b)\b/],
+      primary: "peace_bond",
+      subIssues: new Set(["peace bond", "recognizance", "s. 810", "fear of injury"])
+    },
+    break_and_enter: {
+      tests: [/\b(break\s+and\s+enter|broke\s+into|burglar\w*|dwelling\s+house)\b/],
+      primary: "break_and_enter",
+      subIssues: new Set(["break and enter", "s. 348", "dwelling house", "intent"])
+    },
     robbery: {
       tests: [/\brobbery\b/],
       primary: "robbery",
@@ -471,6 +508,11 @@ function detectCoreIssue(scenario) {
     "drug_trafficking",
     "charter_counsel",
     "charter_detention",
+    "uttering_threats",
+    "criminal_harassment",
+    "dangerous_driving",
+    "peace_bond",
+    "break_and_enter",
     "robbery",
     "theft",
     "domestic_assault",
@@ -582,7 +624,17 @@ function buildLocalFallbackCandidates({ scenario = "", maxResults = 3 }) {
       if (termMatchesText(term, text)) issueHits += 1;
     }
 
-    const score = overlap * 3 + issueHits * 5;
+    let score = overlap * 3 + issueHits * 5;
+
+    // Keep Oakes focused on section 1/proportionality contexts, not as a broad Charter fallback.
+    const isOakes = /\boakes\b/i.test(String(entry?.title || "")) || /\boakes\b/i.test(String(entry?.citation || ""));
+    const hasSectionOneSignal = /\b(oakes|section\s+1|s\.\s*1|proportionality|minimal\s+impairment|reasonable\s+limits|charter\s+justification)\b/i.test(
+      String(scenario || "")
+    );
+    if (isOakes && !hasSectionOneSignal) {
+      score -= 8;
+    }
+
     if (score <= 0) continue;
 
     const parsed = parseCitation(entry.citation);
@@ -797,7 +849,11 @@ function curatedTermsFromScenario(scenario) {
 
   // ── Charter s. 10(b) — right to counsel ───────────────────────────────────────
   if (/\blawyer\b|\bcounsel\b|\blegal\s+aid\b/.test(s) || (detention && /\bcharter\b/.test(s))) {
-    push("Charter section 10 right to counsel", "informational duty right to counsel detention");
+    push(
+      "Charter section 10 right to counsel",
+      "informational duty right to counsel detention",
+      "R. v. Woods 2005 SCC 42 right to counsel breath demand"
+    );
   }
 
   // ── Domestic violence ─────────────────────────────────────────────────────────

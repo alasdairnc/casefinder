@@ -143,4 +143,43 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
       meta.retrievalPass
     );
   });
+
+  it("prefers non-Oakes candidates for right-to-counsel detention scenarios", async () => {
+    const { cases } = await retrieveVerifiedCaseLaw({
+      apiKey: "test-key",
+      scenario: "i was arrested and not told i could call a lawyer",
+      aiCaseLaw: [],
+      landmarkMatches: [],
+      maxResults: 3,
+    });
+
+    expect(cases.length).toBeGreaterThan(0);
+    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(false);
+  });
+
+  it("returns threat/harassment-relevant cases without generic Charter fallback", async () => {
+    const { cases } = await retrieveVerifiedCaseLaw({
+      apiKey: "test-key",
+      scenario: "uttering threats over text messages",
+      aiCaseLaw: [],
+      landmarkMatches: [],
+      maxResults: 3,
+    });
+
+    expect(cases.length).toBeGreaterThan(0);
+    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(false);
+  });
+
+  it("returns dangerous-driving-relevant fallback without Oakes noise", async () => {
+    const { cases } = await retrieveVerifiedCaseLaw({
+      apiKey: "test-key",
+      scenario: "dangerous driving charge after high speed pursuit",
+      aiCaseLaw: [],
+      landmarkMatches: [],
+      maxResults: 3,
+    });
+
+    expect(cases.length).toBeGreaterThan(0);
+    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(false);
+  });
 });

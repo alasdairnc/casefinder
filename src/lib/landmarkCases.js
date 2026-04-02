@@ -31,13 +31,6 @@ const LANDMARK_CASES = [
     topics: ["charter 9", "detention", "arbitrary detention", "exclusion of evidence"],
   },
   {
-    citation: "R v Oakes, [1986] 1 SCR 103",
-    title: "R v Oakes",
-    summary:
-      "Establishes the Oakes test for Charter s. 1 justification of rights limits.",
-    topics: ["charter", "section 1", "oakes test", "proportionality"],
-  },
-  {
     citation: "Hunter v Southam Inc, [1984] 2 SCR 145",
     title: "Hunter v Southam Inc",
     summary:
@@ -52,11 +45,35 @@ const LANDMARK_CASES = [
     topics: ["disclosure", "crown", "criminal procedure"],
   },
   {
+    citation: "R. v. Woods, 2005 SCC 42",
+    title: "R. v. Woods",
+    summary:
+      "Clarifies the s. 10(b) right to counsel in roadside breath-demand contexts and when delays require renewed access.",
+    topics: ["charter 10(b)", "right to counsel", "roadside detention", "breath demand"],
+  },
+  {
     citation: "R v Gladue, [1999] 1 SCR 688",
     title: "R v Gladue",
     summary:
       "Landmark sentencing case on consideration of Indigenous circumstances under s. 718.2(e).",
     topics: ["sentencing", "indigenous", "gladue", "criminal code 718.2(e)"],
+  },
+  {
+    citation: "R v Oakes, [1986] 1 SCR 103",
+    title: "R v Oakes",
+    summary:
+      "Establishes the Oakes test for Charter s. 1 justification of rights limits.",
+    topics: ["charter", "section 1", "oakes test", "proportionality"],
+    mustMatchAny: [
+      "oakes",
+      "section 1",
+      "s. 1",
+      "proportionality",
+      "minimal impairment",
+      "charter justification",
+      "rights limit",
+      "reasonable limits",
+    ],
   },
 ];
 
@@ -89,12 +106,47 @@ function scoreLandmark(caseItem, haystack) {
   return score;
 }
 
+function hasStrongLandmarkSignal(caseItem, haystack, score) {
+  const haystackTokens = new Set(haystack.split(" ").filter(Boolean));
+  const matchesRequiredTerm = (term) => {
+    if (!term) return false;
+    const termTokens = term.split(" ").filter(Boolean);
+    if (termTokens.length === 0) return false;
+    if (termTokens.length === 1) return haystackTokens.has(termTokens[0]);
+
+    const escaped = termTokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const phrasePattern = new RegExp(`\\b${escaped.join("\\s+")}\\b`);
+    if (phrasePattern.test(haystack)) return true;
+
+    return termTokens.every((token) => haystackTokens.has(token));
+  };
+
+  const requiredTerms = Array.isArray(caseItem.mustMatchAny)
+    ? caseItem.mustMatchAny.map(norm).filter(Boolean)
+    : [];
+  if (requiredTerms.length > 0 && !requiredTerms.some((term) => matchesRequiredTerm(term))) {
+    return false;
+  }
+
+  const normalizedTitle = norm(caseItem.title);
+  const normalizedCitation = norm(caseItem.citation);
+  const titleOrCitationHit =
+    (normalizedTitle && haystack.includes(normalizedTitle)) ||
+    (normalizedCitation && haystack.includes(normalizedCitation));
+
+  if (titleOrCitationHit) return true;
+
+  // Topic-only matches need a higher bar to avoid broad false positives.
+  return score >= 6;
+}
+
 export function findLandmarkSeeds({ scenario = "", terms = [], limit = 3 } = {}) {
   const haystack = norm([scenario, ...(terms || [])].join(" "));
   if (!haystack) return [];
 
   const scored = LANDMARK_CASES.map((item) => ({ item, score: scoreLandmark(item, haystack) }))
     .filter((entry) => entry.score > 0)
+    .filter((entry) => hasStrongLandmarkSignal(entry.item, haystack, entry.score))
     .sort((a, b) => b.score - a.score)
     .slice(0, Math.max(1, limit))
     .map((entry) => ({
