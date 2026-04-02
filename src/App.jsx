@@ -270,10 +270,6 @@ function AppInner() {
         bookmarkCount={bookmarks.length}
         onOpenBookmarks={() => setBookmarksOpen(true)}
         onOpenCodeExplorer={() => setCodeExplorerOpen(true)}
-        onOpenRecommendations={() => {
-          window.history.pushState({}, "", "/internal/retrieval-recommendations");
-          setPathname("/internal/retrieval-recommendations");
-        }}
       />
 
       <FiltersPanel filters={filters} setFilters={setFilters} />
