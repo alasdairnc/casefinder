@@ -106,13 +106,33 @@ function buildStoredEvent(metricsPayload = {}) {
 function getRecentFailureScenarios(events = [], limit = 20) {
   if (!Array.isArray(events) || events.length === 0) return [];
 
+  const explicitFailureReasons = new Set([
+    "no_verified",
+    "retrieval_error",
+    "missing_api_key",
+    "retrieval_timeout",
+  ]);
+
   const failed = events.filter((event) => {
     const isOperational =
       event.source === "retrieval" &&
       event.caseLawFilterEnabled &&
       event.reason !== "filter_disabled";
     if (!isOperational) return false;
-    return event.retrievalError || event.finalCaseLawCount === 0;
+
+    const effectiveFinalCount = Math.max(
+      toNonNegativeInt(event.finalCaseLawCount),
+      toNonNegativeInt(event.verifiedCount)
+    );
+    const hasNoResults =
+      effectiveFinalCount === 0 &&
+      event.reason !== "verified_results";
+
+    return (
+      event.retrievalError ||
+      explicitFailureReasons.has(event.reason) ||
+      hasNoResults
+    );
   });
 
   return failed
@@ -124,7 +144,10 @@ function getRecentFailureScenarios(events = [], limit = 20) {
       endpoint: event.endpoint || "unknown",
       reason: event.reason || "unknown",
       retrievalError: Boolean(event.retrievalError),
-      finalCaseLawCount: toNonNegativeInt(event.finalCaseLawCount),
+      finalCaseLawCount: Math.max(
+        toNonNegativeInt(event.finalCaseLawCount),
+        toNonNegativeInt(event.verifiedCount)
+      ),
       verifiedCount: toNonNegativeInt(event.verifiedCount),
       fallbackPathUsed: event.fallbackPathUsed === true,
       latencyMs: Number.isFinite(event.retrievalLatencyMs) ? event.retrievalLatencyMs : null,
