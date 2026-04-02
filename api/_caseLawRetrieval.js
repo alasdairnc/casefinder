@@ -288,6 +288,9 @@ function inferFallbackIssueSignals(scenarioTokens) {
   if (hasAny(["break", "enter", "broke", "burglar", "house", "dwelling", "home"])) {
     add("break and enter", "s. 348", "dwelling house", "intent");
   }
+  if (hasAny(["assault", "assaulted", "punch", "punched", "smacked", "slapped", "struck", "attack", "attacked", "fight", "violence"])) {
+    add("assault", "s. 265", "s. 266", "s. 267", "bodily harm", "consent", "self-defence");
+  }
 
   return dedupeStrings(out);
 }
@@ -410,8 +413,8 @@ function detectCoreIssue(scenario) {
     },
     assault_harm: {
       tests: [
-        /\b(assault|punch\w*|struck|hit|fight|physical\s+contact)\b/,
-        /\b(bodily|harm|injur\w*|wound\w*|broke|fracture\w*|minor\s+injur\w*)\b/
+        /\b(assault\w*|punch\w*|smack\w*|slap\w*|struck|hit|fight|physical\s+contact)\b/,
+        /\b(bodily|harm|injur\w*|wound\w*|broke\w*|fracture\w*|hospital|treatment|minor\s+injur\w*)\b/
       ],
       primary: "assault_bodily_harm",
       subIssues: new Set(["bodily harm", "s. 267", "intent", "recklessness", "consent", "self-defence"])
@@ -801,7 +804,7 @@ function curatedTermsFromScenario(scenario) {
   }
 
   // ── Assault ─────────────────────────────────────────────────────────────────
-  const assault = /\bassault\w*\b|\bstruck\b|\bhit\b|\bbatter\w*\b|\bbeat\w*\b|\bphysical\s+force\b/.test(s);
+  const assault = /\bassault\w*\b|\bstruck\b|\bhit\b|\bsmack\w*\b|\bslap\w*\b|\bpunch\w*\b|\bbatter\w*\b|\bbeat\w*\b|\bphysical\s+force\b/.test(s);
   const weapon = /\bweapon\b|\bknife\b|\bgun\b|\bfirearm\b|\bclub\b|\bstab\w*\b/.test(s);
   if (assault && weapon) {
     push("assault with weapon Criminal Code section 267", "R v assault weapon bodily harm");
