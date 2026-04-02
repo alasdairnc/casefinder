@@ -1,7 +1,7 @@
 import { useTheme } from "../lib/ThemeContext.jsx";
 import { isValidUrl } from "../lib/validateUrl.js";
 
-function sanitizeMatchedTextForDisplay(text) {
+export function sanitizeMatchedTextForDisplay(text) {
   const raw = String(text || "").trim();
   if (!raw) return "";
 
