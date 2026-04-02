@@ -1,6 +1,11 @@
 import { useTheme, useThemeActions } from "../lib/ThemeContext.jsx";
 
-export default function Header({ bookmarkCount = 0, onOpenBookmarks, onOpenCodeExplorer }) {
+export default function Header({
+  bookmarkCount = 0,
+  onOpenBookmarks,
+  onOpenCodeExplorer,
+  onOpenRecommendations,
+}) {
   const t = useTheme();
   const { isDark, toggleTheme } = useThemeActions();
 
@@ -72,6 +77,17 @@ export default function Header({ bookmarkCount = 0, onOpenBookmarks, onOpenCodeE
               >
                 <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12 }}>§</span>
                 &thinsp;Code
+              </button>
+            )}
+            {onOpenRecommendations && (
+              <button
+                onClick={onOpenRecommendations}
+                aria-label="Retrieval recommendations dashboard"
+                style={navItem}
+                onMouseEnter={hover}
+                onMouseLeave={leave}
+              >
+                Recs
               </button>
             )}
             <a
