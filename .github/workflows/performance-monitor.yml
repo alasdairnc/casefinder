@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -51,6 +51,8 @@ jobs:
           # Normalize operator-provided values to avoid hidden whitespace/newline auth failures.
           RETRIEVAL_HEALTH_TOKEN="$(printf '%s' "$RETRIEVAL_HEALTH_TOKEN" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
           PERF_HEALTH_URL="$(printf '%s' "$PERF_HEALTH_URL" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')"
+          # Allow either raw token or accidental "Bearer <token>" input.
+          RETRIEVAL_HEALTH_TOKEN="$(printf '%s' "$RETRIEVAL_HEALTH_TOKEN" | sed -E 's/^[Bb][Ee][Aa][Rr][Ee][Rr][[:space:]]+//')"
 
           # Canonicalize apex domain to www to avoid redirect/auth header loss.
           if [[ "$PERF_HEALTH_URL" == https://casedive.ca/* ]]; then
@@ -64,7 +66,9 @@ jobs:
 
           echo "Using PERF_HEALTH_URL=$PERF_HEALTH_URL"
 
-          status=$(curl -s -o /tmp/retrieval-health.json -w "%{http_code}" \
+          status=$(curl -sS -o /tmp/retrieval-health.json -w "%{http_code}" \
+            --retry 2 --retry-delay 2 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
             -H "Authorization: Bearer $RETRIEVAL_HEALTH_TOKEN" \
             "$PERF_HEALTH_URL")
           echo "retrieval-health HTTP status: $status"
@@ -73,6 +77,13 @@ jobs:
             echo "retrieval-health preflight failed; response preview:"
             head -c 300 /tmp/retrieval-health.json || true
             echo
+            if [ "$status" = "401" ]; then
+              echo "Hint: token mismatch. Ensure GitHub secret RETRIEVAL_HEALTH_TOKEN matches Vercel env RETRIEVAL_HEALTH_TOKEN exactly (token only, no 'Bearer ' prefix)."
+            elif [ "$status" = "429" ]; then
+              echo "Hint: retrieval-health endpoint rate limited this runner. Re-run, or increase retrieval-health bucket limits."
+            elif [ "${status#5}" != "$status" ]; then
+              echo "Hint: upstream retrieval-health endpoint returned a server error (5xx)."
+            fi
             exit 2
           fi
 
