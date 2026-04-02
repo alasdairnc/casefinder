@@ -15,6 +15,16 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function fail(code, message) {
+  const text = `[perf-monitor] ${message}`;
+  console.error(text);
+  if (process.env.GITHUB_ACTIONS === "true") {
+    // Surface a clear annotation in Actions instead of only "exit code N".
+    console.log(`::error::${message}`);
+  }
+  process.exit(code);
+}
+
 function evaluateLocalBreaches(oneHour, thresholds) {
   const breaches = [];
   if (!oneHour || !thresholds) return breaches;
@@ -66,20 +76,33 @@ async function run() {
   const outputFormat = (process.env.PERF_MONITOR_OUTPUT || "text").toLowerCase();
 
   if (!token) {
-    console.error("[perf-monitor] RETRIEVAL_HEALTH_TOKEN is required.");
-    process.exit(2);
+    fail(3, "RETRIEVAL_HEALTH_TOKEN is required.");
   }
 
-  const res = await fetch(endpoint, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  let res;
+  try {
+    res = await fetch(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (err) {
+    fail(6, `Network/TLS error fetching retrieval-health endpoint: ${err?.message || String(err)}`);
+  }
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    console.error(`[perf-monitor] Request failed (${res.status}): ${body?.error || "unknown error"}`);
-    process.exit(2);
+    const details = body?.error || "unknown error";
+    if (res.status === 401) {
+      fail(4, `Unauthorized (401) from retrieval-health endpoint: ${details}`);
+    }
+    if (res.status === 429) {
+      fail(5, `Rate limited (429) by retrieval-health endpoint: ${details}`);
+    }
+    if (res.status >= 500) {
+      fail(6, `Server error (${res.status}) from retrieval-health endpoint: ${details}`);
+    }
+    fail(2, `Request failed (${res.status}) from retrieval-health endpoint: ${details}`);
   }
 
   const oneHour = body?.windows?.["1h"] || {};
@@ -165,6 +188,9 @@ async function run() {
 
   if (hasIssues) {
     console.error("[perf-monitor] Performance gate failed.");
+    if (process.env.GITHUB_ACTIONS === "true") {
+      console.log("::error::Performance threshold breach detected (quality issue). Review alerts/recentFailures in log output.");
+    }
     process.exit(1);
   }
 
@@ -174,6 +200,5 @@ async function run() {
 }
 
 run().catch((err) => {
-  console.error(`[perf-monitor] Unexpected failure: ${err?.message || String(err)}`);
-  process.exit(2);
+  fail(2, `Unexpected failure: ${err?.message || String(err)}`);
 });

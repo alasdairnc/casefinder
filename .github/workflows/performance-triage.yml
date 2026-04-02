@@ -37,12 +37,21 @@ jobs:
         run: |
           set +e
           node scripts/performance-monitor.js > perf-monitor.json
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
           cat perf-monitor.json
           set -e
 
+      - name: Skip non-quality failures
+        if: ${{ steps.monitor.outputs.exit_code != '1' }}
+        run: |
+          echo "Skipping scenario triage issue creation."
+          echo "performance-monitor exit code: ${{ steps.monitor.outputs.exit_code }}"
+          echo "Only exit code 1 (quality threshold breach) opens no-caselaw triage issues."
+
       - name: Create triage issue
         id: create_issue
+        if: ${{ steps.monitor.outputs.exit_code == '1' }}
         uses: actions/github-script@v7
         with:
           result-encoding: string
@@ -91,6 +100,7 @@ jobs:
 
       - name: Assign Copilot
         id: assign_copilot
+        if: ${{ steps.monitor.outputs.exit_code == '1' }}
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ steps.create_issue.outputs.result }}

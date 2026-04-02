@@ -66,37 +66,4 @@ jobs:
 
           echo "Using PERF_HEALTH_URL=$PERF_HEALTH_URL"
 
-          set +e
-          status=$(curl -sS -o /tmp/retrieval-health.json -w "%{http_code}" \
-            --retry 2 --retry-delay 2 --retry-all-errors \
-            --connect-timeout 10 --max-time 30 \
-            -H "Authorization: Bearer $RETRIEVAL_HEALTH_TOKEN" \
-            "$PERF_HEALTH_URL")
-          curl_exit=$?
-          set -e
-
-          if [ "$curl_exit" -ne 0 ]; then
-            echo "retrieval-health preflight transport failure (curl exit $curl_exit)."
-            echo "Hint: check URL/DNS/TLS/network reachability from GitHub runner."
-            head -c 300 /tmp/retrieval-health.json || true
-            echo
-            exit 2
-          fi
-
-          echo "retrieval-health HTTP status: $status"
-
-          if [ "$status" != "200" ]; then
-            echo "retrieval-health preflight failed; response preview:"
-            head -c 300 /tmp/retrieval-health.json || true
-            echo
-            if [ "$status" = "401" ]; then
-              echo "Hint: token mismatch. Ensure GitHub secret RETRIEVAL_HEALTH_TOKEN matches Vercel env RETRIEVAL_HEALTH_TOKEN exactly (token only, no 'Bearer ' prefix)."
-            elif [ "$status" = "429" ]; then
-              echo "Hint: retrieval-health endpoint rate limited this runner. Re-run, or increase retrieval-health bucket limits."
-            elif [ "${status#5}" != "$status" ]; then
-              echo "Hint: upstream retrieval-health endpoint returned a server error (5xx)."
-            fi
-            exit 2
-          fi
-
           npm run perf:monitor
