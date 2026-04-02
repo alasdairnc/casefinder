@@ -17,10 +17,13 @@ function sanitizeMatchedTextForDisplay(text) {
     .replace(/\|\s*(court_level:[^|,\s]+|jurisdiction:[^|,\s]+)[^|]*/gi, "")
     .replace(/\|\s*(overlap:\d+|issue_hits:\d+)[^|]*/gi, "");
 
+  const debugTokenPattern = /(token_overlap:|semantic_match:|\bissue:|court_level:|jurisdiction:|overlap:\d+|issue_hits:\d+|local_fallback|minimal_detail_scenario)/i;
+
   return scrubbed
     .split("|")
     .map((part) => part.trim())
     .filter(Boolean)
+    .filter((part) => !debugTokenPattern.test(part))
     .join(" | ");
 }
 
