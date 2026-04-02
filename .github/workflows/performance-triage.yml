@@ -51,6 +51,7 @@ jobs:
             const payload = JSON.parse(fs.readFileSync('perf-monitor.json', 'utf8'));
             const failures = Array.isArray(payload.recentFailures) ? payload.recentFailures : [];
             const top = failures.slice(0, 5);
+            const improvements = Array.isArray(payload.improvements) ? payload.improvements.slice(0, 5) : [];
             const issueBody = [
               'Automated retrieval-health triage',
               '',
@@ -68,8 +69,15 @@ jobs:
               'Top failed scenarios:',
               ...top.map((f, i) => `1. ${f.ts || 'n/a'} | ${f.endpoint || 'unknown'} | ${f.reason || 'unknown'} | ${f.scenarioSnippet || '(missing scenario)'}`),
               '',
+              'Top suggested improvements:',
+              ...(improvements.length > 0
+                ? improvements.map((item) => `1. ${item.classId || 'general'} | ${item.failureCount || 0}x | ${item.scenarioSnippet || '(missing scenario)'} | ${(item.suggestedTerms || []).slice(0, 3).join(' | ') || 'no suggested terms'}`)
+                : ['1. none']),
+              '',
+              'Specialized agent to use: CaseDive Retrieval Health (.github/agents/retrieval-health.agent.md)',
+              '',
               'Agent prompt:',
-              'Investigate and fix the root cause for the failed retrieval scenario(s). Use the retrieval-health dashboard and recent failure payloads to identify the smallest safe code change. Add or update regression tests and report the test results.',
+              'Investigate and fix no-case-law retrieval failures from the listed scenarios. Prioritize the smallest safe patch in retrieval telemetry or case-law retrieval logic, add/extend regressions for each fixed scenario class, run relevant tests, and report before/after monitor metrics.',
             ].join('\n');
 
             const issue = await github.rest.issues.create({

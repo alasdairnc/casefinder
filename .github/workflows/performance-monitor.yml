@@ -10,7 +10,7 @@ on:
       perf_health_url:
         description: Retrieval health endpoint URL
         required: false
-        default: https://casedive.ca/api/retrieval-health
+        default: https://www.casedive.ca/api/retrieval-health
         type: string
   schedule:
     - cron: "*/30 * * * *"
