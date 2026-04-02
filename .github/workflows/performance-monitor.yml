@@ -39,12 +39,28 @@ jobs:
           INPUT_PERF_HEALTH_URL: ${{ inputs.perf_health_url }}
           SECRET_PERF_HEALTH_URL: ${{ vars.PERF_HEALTH_URL }}
         run: |
+          set -euo pipefail
+
           export RETRIEVAL_HEALTH_TOKEN="${INPUT_RETRIEVAL_HEALTH_TOKEN:-$SECRET_RETRIEVAL_HEALTH_TOKEN}"
-          export PERF_HEALTH_URL="${INPUT_PERF_HEALTH_URL:-$SECRET_PERF_HEALTH_URL}"
+          export PERF_HEALTH_URL="${INPUT_PERF_HEALTH_URL:-${SECRET_PERF_HEALTH_URL:-https://www.casedive.ca/api/retrieval-health}}"
 
           if [ -z "$RETRIEVAL_HEALTH_TOKEN" ]; then
             echo "Missing RETRIEVAL_HEALTH_TOKEN"
             exit 1
+          fi
+
+          echo "Using PERF_HEALTH_URL=$PERF_HEALTH_URL"
+
+          status=$(curl -s -o /tmp/retrieval-health.json -w "%{http_code}" \
+            -H "Authorization: Bearer $RETRIEVAL_HEALTH_TOKEN" \
+            "$PERF_HEALTH_URL")
+          echo "retrieval-health HTTP status: $status"
+
+          if [ "$status" != "200" ]; then
+            echo "retrieval-health preflight failed; response preview:"
+            head -c 300 /tmp/retrieval-health.json || true
+            echo
+            exit 2
           fi
 
           npm run perf:monitor
