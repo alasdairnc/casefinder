@@ -18,7 +18,8 @@
     "test:live": "playwright test --config=playwright.live.config.js",
     "test:filter": "node scripts/tune-filters.js --report",
     "test:filter:baseline": "node scripts/tune-filters.js --baseline",
-    "test:filter:compare": "node scripts/tune-filters.js --compare"
+    "test:filter:compare": "node scripts/tune-filters.js --compare",
+    "test:guardrails": "vitest run tests/unit/resultCardSanitizer.test.js && npm run test:filter"
   },
   "dependencies": {
     "@sentry/node": "^10.46.0",

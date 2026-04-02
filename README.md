@@ -1,5 +1,15 @@
 # CaseDive Skills Collection
 
+## Quality Guardrails
+
+- Local pre-PR check: run `npm run test:guardrails`
+- What it runs:
+    - `tests/unit/resultCardSanitizer.test.js`
+    - `npm run test:filter`
+- CI workflow: `.github/workflows/quality-guardrails.yml` runs on pull requests and pushes to `main`
+
+Use this gate before merging to prevent regressions in matched-text sanitization and retrieval quality.
+
 **Ready to use on Sunday!** All 4 skills are drafted and ready to go.
 
 ## What You Have
