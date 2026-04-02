@@ -5,14 +5,23 @@ function sanitizeMatchedTextForDisplay(text) {
   const raw = String(text || "").trim();
   if (!raw) return "";
 
-  const hiddenPrefixes = ["Selection signals:", "Issue signals:", "Scenario terms:"];
-  const keptParts = raw
+  // Strip debug-only telemetry fragments while preserving human-readable legal rationale.
+  const scrubbed = raw
+    .replace(/\|\s*Selection signals:[^|]*/gi, "")
+    .replace(/\|\s*Issue signals:[^|]*/gi, "")
+    .replace(/\|\s*Scenario terms:[^|]*/gi, "")
+    .replace(/\|\s*token_overlap:\d+[^|]*/gi, "")
+    .replace(/\|\s*semantic_match:[^|]*/gi, "")
+    .replace(/\|\s*issue:[a-z_]+[^|]*/gi, "")
+    .replace(/\|\s*(recent_case|modern_case|landmark|local_fallback|minimal_detail_scenario)[^|]*/gi, "")
+    .replace(/\|\s*(court_level:[^|,\s]+|jurisdiction:[^|,\s]+)[^|]*/gi, "")
+    .replace(/\|\s*(overlap:\d+|issue_hits:\d+)[^|]*/gi, "");
+
+  return scrubbed
     .split("|")
     .map((part) => part.trim())
     .filter(Boolean)
-    .filter((part) => !hiddenPrefixes.some((prefix) => part.startsWith(prefix)));
-
-  return keptParts.join(" | ").trim();
+    .join(" | ");
 }
 
 function VerificationBadge({ verification, item, t, type }) {
