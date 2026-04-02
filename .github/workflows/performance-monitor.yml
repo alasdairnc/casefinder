@@ -5,7 +5,7 @@ on:
     inputs:
       retrieval_health_token:
         description: Retrieval health bearer token
-        required: true
+        required: false
         type: string
       perf_health_url:
         description: Retrieval health endpoint URL
@@ -41,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          export RETRIEVAL_HEALTH_TOKEN="${INPUT_RETRIEVAL_HEALTH_TOKEN:-$SECRET_RETRIEVAL_HEALTH_TOKEN}"
+          export RETRIEVAL_HEALTH_TOKEN="${SECRET_RETRIEVAL_HEALTH_TOKEN:-$INPUT_RETRIEVAL_HEALTH_TOKEN}"
           export PERF_HEALTH_URL="${INPUT_PERF_HEALTH_URL:-${SECRET_PERF_HEALTH_URL:-https://www.casedive.ca/api/retrieval-health}}"
 
           if [ -z "$RETRIEVAL_HEALTH_TOKEN" ]; then
