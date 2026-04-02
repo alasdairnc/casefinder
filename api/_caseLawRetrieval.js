@@ -260,7 +260,7 @@ function scoreCandidateForScenario({ candidate, scenarioTokens, issue, filters =
   }
   if (semanticMatches.length > 0) {
     score += 10 + semanticMatches.length * 2;
-    reasons.push(`semantic_match:${semanticMatches.slice(0, 3).join("|")}`);
+    reasons.push(`semantic_match:${semanticMatches.slice(0, 3).join(",")}`);
   }
 
   const issueSignals =
