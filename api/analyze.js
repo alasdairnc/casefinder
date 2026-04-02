@@ -25,6 +25,12 @@ function logRetrievalMetricsAsync(payload) {
   Promise.resolve(logRetrievalMetrics(payload)).catch(() => {});
 }
 
+function computeTelemetryReason({ retrievalError = false, reason = "", finalCaseLawCount = 0 }) {
+  if (retrievalError === true) return "retrieval_error";
+  if (reason === "missing_api_key") return "missing_api_key";
+  return finalCaseLawCount > 0 ? "verified_results" : "no_verified";
+}
+
 // Strip XML-like tags from user input to prevent delimiter escape.
 // Uses [^>\s]* instead of [^>]* to avoid catastrophic backtracking (ReDoS).
 function sanitizeUserInput(input) {
@@ -467,12 +473,10 @@ export default async function handler(req, res) {
               source: "cache",
               scenario,
               filters,
-              reason:
-                typeof cachedCaseLawMeta.reason === "string"
-                  ? cachedCaseLawMeta.reason
-                  : cachedCaseLaw.length > 0
-                  ? "verified_results"
-                  : "no_verified",
+              reason: computeTelemetryReason({
+                reason: typeof cachedCaseLawMeta.reason === "string" ? cachedCaseLawMeta.reason : "",
+                finalCaseLawCount: cachedCaseLaw.length,
+              }),
               retrievalLatencyMs: 0,
               finalCaseLawCount: cachedCaseLaw.length,
               retrievalMeta: {
@@ -564,7 +568,10 @@ export default async function handler(req, res) {
 
         result.case_law = selectTopRetrievedCases(scenario, retrievedCases, 3);
 
-        const reason = retrievalMeta.reason || (result.case_law.length > 0 ? "verified_results" : "no_verified");
+        const reason = computeTelemetryReason({
+          reason: retrievalMeta.reason,
+          finalCaseLawCount: result.case_law.length,
+        });
         meta.case_law = {
           source: "retrieval_ranked",
           verifiedCount: result.case_law.length,
@@ -606,7 +613,11 @@ export default async function handler(req, res) {
           source: "retrieval",
           scenario,
           filters,
-          reason: retrievalReason,
+          reason: computeTelemetryReason({
+            retrievalError: true,
+            reason: retrievalReason,
+            finalCaseLawCount: 0,
+          }),
           retrievalLatencyMs: retrievalDurationMs,
           finalCaseLawCount: 0,
           retrievalError: true,

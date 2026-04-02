@@ -8,9 +8,13 @@ const mockRateLimitHeaders = vi.fn(() => ({}));
 const mockApplyCorsHeaders = vi.fn();
 const mockCaptureException = vi.fn();
 const mockRetrieveVerifiedCaseLaw = vi.fn();
+const mockLogRetrievalMetrics = vi.fn();
+let mockRedis = null;
 
 vi.mock("../../api/_rateLimit.js", () => ({
-  redis: null,
+  get redis() {
+    return mockRedis;
+  },
   checkRateLimit: mockCheckRateLimit,
   getClientIp: mockGetClientIp,
   rateLimitHeaders: mockRateLimitHeaders,
@@ -32,7 +36,7 @@ vi.mock("../../api/_logging.js", () => ({
 }));
 
 vi.mock("../../api/_retrievalMetrics.js", () => ({
-  logRetrievalMetrics: vi.fn(),
+  logRetrievalMetrics: mockLogRetrievalMetrics,
 }));
 
 vi.mock("../../api/_sentry.js", () => ({
@@ -115,6 +119,7 @@ const originalCanliiKey = process.env.CANLII_API_KEY;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockRedis = null;
   mockCheckRateLimit.mockResolvedValue({ allowed: true, limit: 60, remaining: 59, reset: 999 });
   process.env.ANTHROPIC_API_KEY = "test-anthropic-key";
   process.env.CANLII_API_KEY = "test-canlii-key";
@@ -500,5 +505,78 @@ describe("CanLII retrieval timeout", () => {
     expect(res.body.case_law).toHaveLength(1);
     expect(res.body.case_law[0].citation).toBe("R v Grant, 2009 SCC 32");
     expect(res.body.meta.case_law.source).toBe("retrieval_ranked");
+  });
+
+  it("logs no_verified telemetry when retrieval meta reason is verified_results but ranked final case_law is empty", async () => {
+    mockAnthropicSuccess();
+
+    mockRetrieveVerifiedCaseLaw.mockResolvedValue({
+      cases: [
+        {
+          citation: "R v TotallyDifferent, 2001 SCC 1",
+          title: "R v TotallyDifferent",
+          summary: "Tax accounting dispute about corporate records",
+          url_canlii: "https://www.canlii.org/en/ca/scc/doc/2001/2001scc1/2001scc1.html",
+          year: 2001,
+        },
+      ],
+      meta: { reason: "verified_results", searchCalls: 1, verificationCalls: 1 },
+    });
+
+    const req = createReq({ body: { scenario: "i was arrested and couldnt call my lawyer" } });
+    const res = createRes();
+    await handler(req, res);
+
+    const retrievalMetricCall = mockLogRetrievalMetrics.mock.calls.find(
+      ([payload]) => payload?.source === "retrieval"
+    );
+
+    expect(retrievalMetricCall).toBeDefined();
+    expect(retrievalMetricCall[0]).toMatchObject({
+      source: "retrieval",
+      finalCaseLawCount: 0,
+      reason: "no_verified",
+    });
+  });
+
+  it("logs no_verified telemetry for cache hit when cached meta reason is verified_results but final case_law is empty", async () => {
+    const cachedPayload = {
+      summary: "Cached summary",
+      criminal_code: [],
+      case_law: [],
+      civil_law: [],
+      charter: [],
+      analysis: "Cached analysis",
+      suggestions: [],
+      meta: {
+        case_law: {
+          source: "retrieval_ranked",
+          verifiedCount: 2,
+          reason: "verified_results",
+        },
+      },
+    };
+
+    mockRedis = {
+      get: vi.fn().mockResolvedValue(JSON.stringify(cachedPayload)),
+      setex: vi.fn().mockResolvedValue("OK"),
+    };
+
+    const req = createReq({ body: { scenario: "i was arrested and couldnt call my lawyer" } });
+    const res = createRes();
+    await handler(req, res);
+
+    const cacheMetricCall = mockLogRetrievalMetrics.mock.calls.find(
+      ([payload]) => payload?.source === "cache"
+    );
+
+    expect(cacheMetricCall).toBeDefined();
+    expect(cacheMetricCall[0]).toMatchObject({
+      source: "cache",
+      finalCaseLawCount: 0,
+      reason: "no_verified",
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.case_law).toEqual([]);
   });
 });
