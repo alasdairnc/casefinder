@@ -67,4 +67,48 @@ describe("buildRetrievalImprovements", () => {
       expect.arrayContaining(["theft", "assault", "drug_offence"]),
     );
   });
+
+  it("classifies 'punched the victim causing a broken nose' as assault (not general_criminal)", () => {
+    const improvements = buildRetrievalImprovements([
+      {
+        reason: "no_verified",
+        scenarioSnippet:
+          "During an argument, the accused punched the victim several times causing a broken nose and requiring hospital treatment.",
+      },
+    ]);
+
+    expect(improvements).toHaveLength(1);
+    expect(improvements[0].classId).toBe("assault");
+    expect(
+      improvements[0].suggestedTerms.some((t) => t.includes("assault")),
+    ).toBe(true);
+  });
+
+  it("classifies 'got smacked in the back of the head' as assault (not general_criminal)", () => {
+    const improvements = buildRetrievalImprovements([
+      {
+        reason: "no_verified",
+        scenarioSnippet: "got smacked in the back of the head with a coffee cup",
+      },
+    ]);
+
+    expect(improvements).toHaveLength(1);
+    expect(improvements[0].classId).toBe("assault");
+    expect(
+      improvements[0].suggestedTerms.some((t) => t.includes("assault")),
+    ).toBe(true);
+  });
+
+  it("classifies 'broke into a residential home and stole jewelry' as theft or break_enter (not general_criminal)", () => {
+    const improvements = buildRetrievalImprovements([
+      {
+        reason: "no_verified",
+        scenarioSnippet:
+          "A person broke into a residential home at night through a back window and stole jewelry and electronics.",
+      },
+    ]);
+
+    expect(improvements).toHaveLength(1);
+    expect(["theft", "break_enter"]).toContain(improvements[0].classId);
+  });
 });
