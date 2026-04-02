@@ -18,7 +18,8 @@ function toNumber(value) {
 function fail(code, message) {
   const text = `[perf-monitor] ${message}`;
   console.error(text);
-  if (process.env.GITHUB_ACTIONS === "true") {
+  const outputFormat = (process.env.PERF_MONITOR_OUTPUT || "text").toLowerCase();
+  if (process.env.GITHUB_ACTIONS === "true" && outputFormat !== "json") {
     // Surface a clear annotation in Actions instead of only "exit code N".
     console.log(`::error::${message}`);
   }
@@ -265,7 +266,7 @@ async function run() {
 
   if (hasIssues) {
     console.error("[perf-monitor] Performance gate failed.");
-    if (process.env.GITHUB_ACTIONS === "true") {
+    if (process.env.GITHUB_ACTIONS === "true" && outputFormat !== "json") {
       console.log(
         "::error::Performance threshold breach detected (quality issue). Review alerts/recentFailures in log output.",
       );
