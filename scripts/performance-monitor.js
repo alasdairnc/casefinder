@@ -90,9 +90,16 @@ async function run() {
     fail(6, `Network/TLS error fetching retrieval-health endpoint: ${err?.message || String(err)}`);
   }
 
-  const body = await res.json().catch(() => ({}));
+  const rawText = await res.text();
+  let body = {};
+  try {
+    body = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    body = {};
+  }
   if (!res.ok) {
-    const details = body?.error || "unknown error";
+    const rawPreview = typeof rawText === "string" ? rawText.replace(/\s+/g, " ").trim().slice(0, 220) : "";
+    const details = body?.error || rawPreview || "unknown error";
     if (res.status === 401) {
       fail(4, `Unauthorized (401) from retrieval-health endpoint: ${details}`);
     }
