@@ -165,7 +165,15 @@ function termMatchesText(term, normalizedText) {
 
   const tokens = normalizedTerm.split(" ").filter(Boolean);
   if (tokens.length <= 1) return false;
-  return tokens.every((token) => normalizedText.includes(token));
+  
+  // Check if all tokens appear in the text (strict match)
+  if (tokens.every((token) => normalizedText.includes(token))) return true;
+  
+  // Also accept if most tokens appear (70% match for compound terms) — covers "breaking and entering" vs "break and enter"
+  const tokenMatches = tokens.filter((token) => normalizedText.includes(token)).length;
+  if (tokenMatches >= Math.ceil(tokens.length * 0.7)) return true;
+  
+  return false;
 }
 
 function dedupeStrings(values) {
@@ -457,9 +465,17 @@ function detectCoreIssue(scenario) {
       subIssues: new Set(["peace bond", "recognizance", "s. 810", "fear of injury"])
     },
     break_and_enter: {
-      tests: [/\b(break\s+and\s+enter|broke\s+into|burglar\w*|dwelling\s+house)\b/],
+      tests: [/\b(break\s+and\s+enter|break-in|breaking\s+in|broke\s+into|burglar\w*|dwelling\s+house|residential\s+home|occupied\s+house|home\s+invasion)\b/],
       primary: "break_and_enter",
-      subIssues: new Set(["break and enter", "s. 348", "dwelling house", "intent"])
+      subIssues: new Set([
+        "break and enter", "breaking and entering", "break-in", "breaking in",
+        "s. 348", "section 348", "348",
+        "dwelling house", "dwelling-house", "occupied dwelling", "occupied house", "residential home",
+        "intent", "dishonestly", "housebreaking",
+        "stolen", "theft", "electronics", "property", "robbery",
+        "burglar", "burglary", "burglarious intent",
+        "night", "person found", "articles", "valuables"
+      ])
     },
     robbery: {
       tests: [/\brobbery\b/],

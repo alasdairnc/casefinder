@@ -182,4 +182,27 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     expect(cases.length).toBeGreaterThan(0);
     expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(false);
   });
+
+  it("retrieves break-and-enter cases for break-in with theft scenario", async () => {
+    const { cases, meta } = await retrieveVerifiedCaseLaw({
+      apiKey: "test-key",
+      scenario:
+        "A person was found inside an occupied house at 2 a.m. with stolen electronics. The homeowner was home during the break-in and called 911.",
+      aiCaseLaw: [],
+      landmarkMatches: [],
+      maxResults: 5,
+    });
+
+    expect(cases.length).toBeGreaterThan(0);
+    // Verify semantic filtering isn't overly aggressive (should drop < 3 for initial candidates)
+    expect(meta.semanticFilterDropCount).toBeLessThanOrEqual(2);
+    // At least some cases should mention relevant keywords
+    expect(
+      cases.some((c) =>
+        /break|enter|theft|stolen|home|house|intent|s\.|348|s\s+348/i.test(
+          String((c.summary || "") + (c.title || ""))
+        )
+      )
+    ).toBe(true);
+  });
 });
