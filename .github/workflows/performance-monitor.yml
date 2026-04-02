@@ -41,7 +41,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          export RETRIEVAL_HEALTH_TOKEN="${SECRET_RETRIEVAL_HEALTH_TOKEN:-$INPUT_RETRIEVAL_HEALTH_TOKEN}"
+          if [ -n "${INPUT_RETRIEVAL_HEALTH_TOKEN:-}" ]; then
+            export RETRIEVAL_HEALTH_TOKEN="$INPUT_RETRIEVAL_HEALTH_TOKEN"
+          else
+            export RETRIEVAL_HEALTH_TOKEN="$SECRET_RETRIEVAL_HEALTH_TOKEN"
+          fi
           export PERF_HEALTH_URL="${INPUT_PERF_HEALTH_URL:-${SECRET_PERF_HEALTH_URL:-https://www.casedive.ca/api/retrieval-health}}"
 
           if [ -z "$RETRIEVAL_HEALTH_TOKEN" ]; then
