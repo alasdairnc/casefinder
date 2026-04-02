@@ -84,6 +84,7 @@ async function run() {
     res = await fetch(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
+        "X-CaseDive-Monitor": "retrieval-health",
       },
     });
   } catch (err) {
