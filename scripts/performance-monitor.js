@@ -63,6 +63,7 @@ function evaluateLocalBreaches(oneHour, thresholds) {
 async function run() {
   const endpoint = process.env.PERF_HEALTH_URL || "https://casedive.ca/api/retrieval-health";
   const token = process.env.RETRIEVAL_HEALTH_TOKEN || "";
+  const outputFormat = (process.env.PERF_MONITOR_OUTPUT || "text").toLowerCase();
 
   if (!token) {
     console.error("[perf-monitor] RETRIEVAL_HEALTH_TOKEN is required.");
@@ -86,21 +87,23 @@ async function run() {
   const thresholds = body?.thresholds || {};
   const failures = Array.isArray(body?.recentFailures) ? body.recentFailures : [];
 
-  console.log("[perf-monitor] Retrieval health snapshot");
-  console.log(`generatedAt: ${body?.generatedAt || "n/a"}`);
-  console.log(`snapshotSource: ${body?.snapshotSource || "n/a"}`);
-  console.log(`storedEvents: ${num(body?.totalStoredEvents)}`);
-  console.log(`1h operational samples: ${num(oneHour?.samples?.operational)}`);
-  console.log(`1h quality samples: ${num(oneHour?.samples?.quality)}`);
-  console.log(`1h error rate: ${pct(oneHour?.rates?.errorRate)}`);
-  console.log(`1h no-verified rate: ${pct(oneHour?.rates?.noVerifiedRate)}`);
-  console.log(`1h fallback rate: ${pct(oneHour?.rates?.fallbackPathRate)}`);
-  console.log(`1h avg relevance: ${num(oneHour?.rates?.avgRelevanceScore)}`);
-  console.log(`1h p95 latency: ${num(oneHour?.latencyMs?.p95)} ms`);
-  console.log(`active alerts: ${alerts.length}`);
+  if (outputFormat !== "json") {
+    console.log("[perf-monitor] Retrieval health snapshot");
+    console.log(`generatedAt: ${body?.generatedAt || "n/a"}`);
+    console.log(`snapshotSource: ${body?.snapshotSource || "n/a"}`);
+    console.log(`storedEvents: ${num(body?.totalStoredEvents)}`);
+    console.log(`1h operational samples: ${num(oneHour?.samples?.operational)}`);
+    console.log(`1h quality samples: ${num(oneHour?.samples?.quality)}`);
+    console.log(`1h error rate: ${pct(oneHour?.rates?.errorRate)}`);
+    console.log(`1h no-verified rate: ${pct(oneHour?.rates?.noVerifiedRate)}`);
+    console.log(`1h fallback rate: ${pct(oneHour?.rates?.fallbackPathRate)}`);
+    console.log(`1h avg relevance: ${num(oneHour?.rates?.avgRelevanceScore)}`);
+    console.log(`1h p95 latency: ${num(oneHour?.latencyMs?.p95)} ms`);
+    console.log(`active alerts: ${alerts.length}`);
+  }
 
   const topFailures = failures.slice(0, 3);
-  if (topFailures.length > 0) {
+  if (outputFormat !== "json" && topFailures.length > 0) {
     console.log("[perf-monitor] Recent failures (top 3):");
     for (const f of topFailures) {
       const scenario = (f?.scenarioSnippet || "(missing scenario)").replace(/\s+/g, " ").slice(0, 140);
@@ -111,7 +114,29 @@ async function run() {
   const localBreaches = evaluateLocalBreaches(oneHour, thresholds);
   const hasIssues = alerts.length > 0 || localBreaches.length > 0;
 
-  if (localBreaches.length > 0) {
+  const payload = {
+    generatedAt: body?.generatedAt || null,
+    snapshotSource: body?.snapshotSource || null,
+    storedEvents: toNumber(body?.totalStoredEvents),
+    oneHour: {
+      errorRate: oneHour?.rates?.errorRate ?? null,
+      noVerifiedRate: oneHour?.rates?.noVerifiedRate ?? null,
+      fallbackRate: oneHour?.rates?.fallbackPathRate ?? null,
+      avgRelevance: oneHour?.rates?.avgRelevanceScore ?? null,
+      p95LatencyMs: oneHour?.latencyMs?.p95 ?? null,
+    },
+    alerts,
+    thresholds,
+    recentFailures: failures,
+    localBreaches,
+    hasIssues,
+  };
+
+  if (outputFormat === "json") {
+    console.log(JSON.stringify(payload, null, 2));
+  }
+
+  if (outputFormat !== "json" && localBreaches.length > 0) {
     console.log("[perf-monitor] Threshold breaches:");
     for (const breach of localBreaches) {
       console.log(`- ${breach}`);
@@ -123,7 +148,9 @@ async function run() {
     process.exit(1);
   }
 
-  console.log("[perf-monitor] OK: no active performance breaches.");
+  if (outputFormat !== "json") {
+    console.log("[perf-monitor] OK: no active performance breaches.");
+  }
 }
 
 run().catch((err) => {

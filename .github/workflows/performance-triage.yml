@@ -1,0 +1,94 @@
+name: Performance Triage
+
+on:
+  workflow_run:
+    workflows: [Performance Monitor]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create-triage-issue:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch monitor payload
+        id: monitor
+        env:
+          RETRIEVAL_HEALTH_TOKEN: ${{ secrets.RETRIEVAL_HEALTH_TOKEN }}
+          PERF_HEALTH_URL: ${{ vars.PERF_HEALTH_URL }}
+          PERF_MONITOR_OUTPUT: json
+        run: |
+          set +e
+          node scripts/performance-monitor.js > perf-monitor.json
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat perf-monitor.json
+          set -e
+
+      - name: Create triage issue
+        id: create_issue
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const fs = require('fs');
+            const payload = JSON.parse(fs.readFileSync('perf-monitor.json', 'utf8'));
+            const failures = Array.isArray(payload.recentFailures) ? payload.recentFailures : [];
+            const top = failures.slice(0, 5);
+            const issueBody = [
+              'Automated retrieval-health triage',
+              '',
+              `Workflow run: ${context.payload.workflow_run.html_url}`,
+              `Conclusion: ${context.payload.workflow_run.conclusion}`,
+              `Generated at: ${payload.generatedAt || 'n/a'}`,
+              '',
+              'Current snapshot:',
+              `- errorRate: ${payload.oneHour?.errorRate ?? 'n/a'}`,
+              `- noVerifiedRate: ${payload.oneHour?.noVerifiedRate ?? 'n/a'}`,
+              `- fallbackRate: ${payload.oneHour?.fallbackRate ?? 'n/a'}`,
+              `- avgRelevance: ${payload.oneHour?.avgRelevance ?? 'n/a'}`,
+              `- p95LatencyMs: ${payload.oneHour?.p95LatencyMs ?? 'n/a'}`,
+              '',
+              'Top failed scenarios:',
+              ...top.map((f, i) => `1. ${f.ts || 'n/a'} | ${f.endpoint || 'unknown'} | ${f.reason || 'unknown'} | ${f.scenarioSnippet || '(missing scenario)'}`),
+              '',
+              'Agent prompt:',
+              'Investigate and fix the root cause for the failed retrieval scenario(s). Use the retrieval-health dashboard and recent failure payloads to identify the smallest safe code change. Add or update regression tests and report the test results.',
+            ].join('\n');
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Retrieval health regression detected (${payload.oneHour?.noVerifiedRate ?? 'n/a'} no-verified)`,
+              body: issueBody,
+              labels: ['retrieval-health', 'performance', 'triage'],
+            });
+            return String(issue.data.number);
+
+      - name: Assign Copilot
+        id: assign_copilot
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.create_issue.outputs.result }}
+        run: |
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "Missing issue number"
+            exit 1
+          fi
+          gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-assignee "@copilot"

@@ -12,6 +12,8 @@ on:
         required: false
         default: https://casedive.ca/api/retrieval-health
         type: string
+  schedule:
+    - cron: "*/30 * * * *"
 
 jobs:
   retrieval-health-monitor:
@@ -32,6 +34,17 @@ jobs:
 
       - name: Run performance monitor
         env:
-          RETRIEVAL_HEALTH_TOKEN: ${{ inputs.retrieval_health_token }}
-          PERF_HEALTH_URL: ${{ inputs.perf_health_url }}
-        run: npm run perf:monitor
+          INPUT_RETRIEVAL_HEALTH_TOKEN: ${{ inputs.retrieval_health_token }}
+          SECRET_RETRIEVAL_HEALTH_TOKEN: ${{ secrets.RETRIEVAL_HEALTH_TOKEN }}
+          INPUT_PERF_HEALTH_URL: ${{ inputs.perf_health_url }}
+          SECRET_PERF_HEALTH_URL: ${{ vars.PERF_HEALTH_URL }}
+        run: |
+          export RETRIEVAL_HEALTH_TOKEN="${INPUT_RETRIEVAL_HEALTH_TOKEN:-$SECRET_RETRIEVAL_HEALTH_TOKEN}"
+          export PERF_HEALTH_URL="${INPUT_PERF_HEALTH_URL:-$SECRET_PERF_HEALTH_URL}"
+
+          if [ -z "$RETRIEVAL_HEALTH_TOKEN" ]; then
+            echo "Missing RETRIEVAL_HEALTH_TOKEN"
+            exit 1
+          fi
+
+          npm run perf:monitor
