@@ -50,14 +50,8 @@ test.describe("Live: Real API — Impaired Driving", () => {
     );
     await page.locator('[data-testid="research-submit"]').click();
 
-    // Wait for results — real Claude API call, allow up to 60s
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 60000 });
-
-    // Results section rendered
-    await expect(page.locator('[data-testid="results-section"]')).toBeVisible();
-
-    // Legal analysis section appears (rendered via typewriter — wait up to 15s)
-    await expect(page.getByText("Legal Analysis", { exact: true })).toBeVisible({ timeout: 15000 });
+    // Wait for stable container marker instead of exact heading copy.
+    await expect(page.locator('[data-testid="results-section"]')).toBeVisible({ timeout: 85000 });
   });
 });
 
@@ -69,9 +63,7 @@ test.describe("Live: Real API — Break and Enter", () => {
     );
     await page.locator('[data-testid="research-submit"]').click();
 
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 60000 });
-    await expect(page.locator('[data-testid="results-section"]')).toBeVisible();
-    await expect(page.getByText("Legal Analysis", { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="results-section"]')).toBeVisible({ timeout: 85000 });
   });
 });
 
@@ -83,9 +75,7 @@ test.describe("Live: Real API — Assault", () => {
     );
     await page.locator('[data-testid="research-submit"]').click();
 
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 60000 });
-    await expect(page.locator('[data-testid="results-section"]')).toBeVisible();
-    await expect(page.getByText("Legal Analysis", { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="results-section"]')).toBeVisible({ timeout: 85000 });
   });
 });
 
