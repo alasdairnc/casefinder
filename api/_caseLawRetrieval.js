@@ -521,13 +521,64 @@ function detectCandidateDomains(candidate) {
   if (/\b(break\s+and\s+enter|break-in|s\.?\s*348|dwelling\s+house)\b/.test(haystack)) out.add("break_and_enter");
   if (/\b(criminal\s+harassment|stalk|s\.?\s*264)\b/.test(haystack)) out.add("criminal_harassment");
   if (/\b(uttering\s+threats|threatening|s\.?\s*264\.1)\b/.test(haystack)) out.add("uttering_threats");
+  if (/\b(copyright|royalt(?:y|ies)|socan|intellectual\s+property|making\s+a\s+work\s+available|digital\s+copyright)\b/.test(haystack)) out.add("ip_copyright");
+  if (/\b(constitution|federalism|secession|senate\s+reform|amending\s+formula|same-sex\s+marriage|impact\s+assessment|trade\s+and\s+commerce)\b/.test(haystack)) out.add("constitutional_general");
+  if (/\b(administrative\s+law|judicial\s+review|procedural\s+fairness|standard\s+of\s+review|tribunal\s+decision)\b/.test(haystack)) out.add("administrative_general");
+  if (/\b(indigenous|aboriginal\s+title|treaty\s+rights|duty\s+to\s+consult|first\s+nation)\b/.test(haystack)) out.add("indigenous_general");
 
   return out;
 }
 
 function isCandidateCompatibleWithIssue(issuePrimary, candidateDomains) {
-  if (!issuePrimary || issuePrimary === "general_criminal") return true;
-  if (!(candidateDomains instanceof Set) || candidateDomains.size === 0) return true;
+  if (!issuePrimary) return true;
+  const hasDomains = candidateDomains instanceof Set && candidateDomains.size > 0;
+
+  const criminalDomains = new Set([
+    "trial_delay",
+    "charter_section1",
+    "charter_counsel",
+    "charter_search_seizure",
+    "charter_detention",
+    "impaired_driving",
+    "robbery",
+    "theft",
+    "assault",
+    "drug",
+    "domestic",
+    "sexual_assault",
+    "peace_bond",
+    "break_and_enter",
+    "criminal_harassment",
+    "uttering_threats",
+  ]);
+  const clearlyNonCriminal = new Set([
+    "ip_copyright",
+    "constitutional_general",
+    "administrative_general",
+    "indigenous_general",
+  ]);
+
+  if (issuePrimary === "general_criminal") {
+    if (!hasDomains) return true;
+    let hasCriminalSignal = false;
+    let hasOnlyNonCriminalSignals = true;
+    for (const domain of candidateDomains) {
+      if (criminalDomains.has(domain)) {
+        hasCriminalSignal = true;
+        hasOnlyNonCriminalSignals = false;
+      } else if (!clearlyNonCriminal.has(domain)) {
+        hasOnlyNonCriminalSignals = false;
+      }
+    }
+    if (hasCriminalSignal) return true;
+    return !hasOnlyNonCriminalSignals;
+  }
+
+  // For specific issues, keep strictness where broad landmark leakage is common.
+  if (!hasDomains) {
+    const strictUnknownDomainIssues = new Set(["theft", "robbery", "trial_delay"]);
+    return !strictUnknownDomainIssues.has(issuePrimary);
+  }
 
   const compatibility = {
     charter_search_seizure: new Set(["charter_search_seizure", "charter_detention", "impaired_driving"]),
@@ -562,8 +613,8 @@ function isCandidateCompatibleWithIssue(issuePrimary, candidateDomains) {
 
 function issueExpansionHints(issuePrimary) {
   const map = {
-    robbery: ["robbery", "s. 343", "violence", "threat", "force", "property"],
-    theft: ["theft", "s. 322", "dishonesty", "property", "without consent"],
+    robbery: ["robbery", "s. 343", "violence", "threat", "force", "stolen"],
+    theft: ["theft", "s. 322", "dishonesty", "without consent", "stolen", "taking"],
     charter_search_seizure: ["charter", "s. 8", "search", "seizure", "warrant", "privacy"],
     charter_counsel: ["charter", "s. 10", "right to counsel", "lawyer", "detention"],
     charter_detention: ["charter", "s. 9", "detention", "arbitrary"],

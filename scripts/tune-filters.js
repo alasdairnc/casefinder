@@ -115,8 +115,18 @@ function scoreLandmarkCase(scenario, caseLaw) {
   return score;
 }
 
+function isCriminalOrCharterCase(caseLaw) {
+  const haystack = `${caseLaw?.title || ""} ${caseLaw?.facts || ""} ${caseLaw?.ratio || ""} ${(caseLaw?.topics || []).join(" ")} ${(caseLaw?.tags || []).join(" ")}`.toLowerCase();
+  const positive = /\b(criminal|charter|detention|search|seizure|warrant|counsel|11\(b\)|trial\s+delay|robbery|theft|assault|sexual\s+assault|drug|cdsa|impaired|breath|domestic|peace\s+bond|break\s+and\s+enter|uttering\s+threats|harassment)\b/;
+  const negative = /\b(copyright|royalt(?:y|ies)|socan|intellectual\s+property|secession|senate|same-sex\s+marriage|impact\s+assessment|trade\s+and\s+commerce|administrative\s+law|tribunal|first\s+nation|aboriginal\s+title|treaty\s+rights)\b/;
+
+  if (negative.test(haystack)) return false;
+  return positive.test(haystack);
+}
+
 function buildLandmarkMatches(scenario, limit = 3) {
-  return [...MASTER_CASE_LAW_DB]
+  const scopedCases = [...MASTER_CASE_LAW_DB].filter((caseLaw) => isCriminalOrCharterCase(caseLaw));
+  return scopedCases
     .map((caseLaw) => ({ caseLaw, score: scoreLandmarkCase(scenario, caseLaw) }))
     .filter((item) => item.score >= 3)
     .sort((a, b) => b.score - a.score)
@@ -127,32 +137,13 @@ function buildLandmarkMatches(scenario, limit = 3) {
 async function realRetrievalFn(scenario, testCase = {}) {
   const apiKey = getCanliiApiKey();
   const landmarkMatches = buildLandmarkMatches(scenario, testCase.maxResults || 3);
-  const aiCaseLaw = landmarkMatches.map((caseLaw) => ({
-    citation: caseLaw.citation,
-    title: caseLaw.title,
-    summary: [caseLaw.ratio, ...(caseLaw.tags || []), ...(caseLaw.topics || [])].filter(Boolean).join(" "),
-  }));
+  const aiCaseLaw = [];
 
   if (!apiKey) {
-    if (aiCaseLaw.length === 0) {
-      return {
-        cases: [],
-        skip: true,
-        skipReason: "no_local_landmark_coverage",
-      };
-    }
-
     return {
-      cases: aiCaseLaw.map((candidate) => ({
-      citation: candidate.citation,
-      title: candidate.title,
-      summary: candidate.summary,
-      court: "",
-      year: "",
-      url_canlii: "",
-      matched_content: "Local landmark fallback",
-      verificationStatus: "verified",
-      })),
+      cases: [],
+      skip: true,
+      skipReason: "missing_canlii_api_key",
     };
   }
 
