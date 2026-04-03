@@ -27,6 +27,16 @@ export const TEST_SCENARIOS = [
     minResults: 1,
     maxResults: 4,
   },
+  {
+    id: "impaired_03",
+    scenario: "Roadside stop at a checkpoint, officer demanded a breath test and held me there. What Charter issues apply?",
+    expectedPrimary: "impaired_driving",
+    shouldInclude: ["Charter", "detention", "breath"],
+    shouldExclude: ["theft", "sexual assault"],
+    expectedKeywords: ["detention", "breath", "s. 9", "reasonable"],
+    minResults: 1,
+    maxResults: 5,
+  },
   
   // ── Assault with Bodily Harm ──────────────────────────────────────────────
   {
@@ -107,6 +117,16 @@ export const TEST_SCENARIOS = [
     minResults: 1,
     maxResults: 4,
   },
+  {
+    id: "charter_s9_02",
+    scenario: "I was detained on the street with no clear grounds and not told why. Is that arbitrary detention under section 9?",
+    expectedPrimary: "charter_detention",
+    shouldInclude: ["s. 9", "detention", "arbitrary"],
+    shouldExclude: ["theft", "fraud"],
+    expectedKeywords: ["s. 9", "detention", "arbitrary", "grant"],
+    minResults: 1,
+    maxResults: 4,
+  },
 
   // ── Charter Section 10(b) – Right to Counsel ──────────────────────────────
   {
@@ -116,6 +136,16 @@ export const TEST_SCENARIOS = [
     shouldInclude: ["s. 10", "counsel", "informational duty"],
     shouldExclude: ["fraud", "mischief"],
     expectedKeywords: ["s. 10", "counsel", "informational"],
+    minResults: 1,
+    maxResults: 4,
+  },
+  {
+    id: "charter_10b_02",
+    scenario: "After arrest, officers questioned me and delayed my chance to contact counsel. Does section 10(b) apply right away?",
+    expectedPrimary: "charter_counsel",
+    shouldInclude: ["s. 10", "counsel", "detention"],
+    shouldExclude: ["fraud", "mischief"],
+    expectedKeywords: ["s. 10", "counsel", "informational", "detention"],
     minResults: 1,
     maxResults: 4,
   },
@@ -164,5 +194,25 @@ export const TEST_SCENARIOS = [
     expectedKeywords: [],
     minResults: 0,
     maxResults: 3,
+  },
+  {
+    id: "edge_02_noncriminal_copyright",
+    scenario: "I need advice on copyright royalties and digital music licensing terms.",
+    expectedPrimary: "general_criminal",
+    shouldInclude: [],
+    shouldExclude: ["robbery", "theft", "assault", "charter"],
+    expectedKeywords: [],
+    minResults: 0,
+    maxResults: 2,
+  },
+  {
+    id: "edge_03_noncriminal_admin",
+    scenario: "I am appealing an administrative tribunal decision on professional licensing fairness.",
+    expectedPrimary: "general_criminal",
+    shouldInclude: [],
+    shouldExclude: ["robbery", "theft", "assault", "charter"],
+    expectedKeywords: [],
+    minResults: 0,
+    maxResults: 2,
   },
 ];

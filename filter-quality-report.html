@@ -31,7 +31,7 @@
 <body>
   <div class="header">
     <h1>CaseDive Filter Quality Report</h1>
-    <div class="timestamp">Generated 2026-04-03T03:52:00.041Z</div>
+    <div class="timestamp">Generated 2026-04-03T03:58:15.690Z</div>
     <div class="timestamp">Mode: keyed-canlii</div>
   </div>
 
@@ -41,15 +41,15 @@
       <div class="metric-label">Pass Rate</div>
     </div>
     <div class="metric">
-      <div class="metric-value">14/14</div>
+      <div class="metric-value">19/19</div>
       <div class="metric-label">Tests Passed</div>
     </div>
     <div class="metric">
-      <div class="metric-value">7.14</div>
+      <div class="metric-value">6.63</div>
       <div class="metric-label">Avg Relevance (0-10)</div>
     </div>
     <div class="metric">
-      <div class="metric-value">0.93</div>
+      <div class="metric-value">0.84</div>
       <div class="metric-label">Avg Precision</div>
     </div>
   </div>
@@ -79,6 +79,14 @@
       <td>Drunk driving conviction. I refused the breathalyzer. What defences exist?</td>
       <td>1.00</td>
       <td>7.00</td>
+      <td>2</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>Roadside stop at a checkpoint, officer demanded a breath test and held me there.</td>
+      <td>1.00</td>
+      <td>9.00</td>
       <td>2</td>
       <td>✓ PASS</td>
     </tr>
@@ -140,10 +148,26 @@
     </tr>
   
     <tr class="pass">
+      <td>I was detained on the street with no clear grounds and not told why. Is that arb</td>
+      <td>1.00</td>
+      <td>9.00</td>
+      <td>2</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
       <td>I was arrested and detained, but police didn't let me call a lawyer for hours. W</td>
       <td>1.00</td>
       <td>10.00</td>
       <td>1</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>After arrest, officers questioned me and delayed my chance to contact counsel. D</td>
+      <td>1.00</td>
+      <td>8.00</td>
+      <td>2</td>
       <td>✓ PASS</td>
     </tr>
   
@@ -179,6 +203,22 @@
       <td>✓ PASS</td>
     </tr>
   
+    <tr class="pass">
+      <td>I need advice on copyright royalties and digital music licensing terms.</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I am appealing an administrative tribunal decision on professional licensing fai</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0</td>
+      <td>✓ PASS</td>
+    </tr>
+  
     </tbody>
   </table>
 
@@ -186,7 +226,7 @@
   <p style="color: #666;">✓ All tests passing – no improvements needed at this time.</p>
 
   <div style="margin-top: 30px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 12px; color: #666;">
-    This report evaluates filter effectiveness across 14 test scenarios.
+    This report evaluates filter effectiveness across 19 test scenarios.
     Results are ranked by relevance and precision. Adjust thresholds in <code>api/_filterConfig.js</code> based on suggestions above.
   </div>
 </body>

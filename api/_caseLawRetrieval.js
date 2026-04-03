@@ -564,6 +564,37 @@ function detectCandidateDomains(candidate) {
   return out;
 }
 
+function isClearlyNonCriminalScenario(scenario) {
+  const scenarioDomainHints = detectCandidateDomains({ summary: scenario });
+  const nonCriminalScenarioDomains = [
+    "ip_copyright",
+    "administrative_general",
+    "constitutional_general",
+    "indigenous_general",
+  ];
+  const criminalScenarioDomains = [
+    "trial_delay",
+    "charter_section1",
+    "charter_counsel",
+    "charter_search_seizure",
+    "charter_detention",
+    "impaired_driving",
+    "robbery",
+    "theft",
+    "assault",
+    "drug",
+    "domestic",
+    "sexual_assault",
+    "peace_bond",
+    "break_and_enter",
+    "criminal_harassment",
+    "uttering_threats",
+  ];
+  const scenarioHasNonCriminalDomain = nonCriminalScenarioDomains.some((d) => scenarioDomainHints.has(d));
+  const scenarioHasCriminalDomain = criminalScenarioDomains.some((d) => scenarioDomainHints.has(d));
+  return scenarioHasNonCriminalDomain && !scenarioHasCriminalDomain;
+}
+
 function isCandidateCompatibleWithIssue(issuePrimary, candidateDomains) {
   if (!issuePrimary) return true;
   const hasDomains = candidateDomains instanceof Set && candidateDomains.size > 0;
@@ -675,6 +706,14 @@ function filterBySemanticRelevance(scenario, candidates) {
   const issue = detectCoreIssue(scenario);
   const scenarioTokens = tokenizeScenario(scenario);
   const scenarioConcepts = extractLegalConcepts(scenario);
+  if (isClearlyNonCriminalScenario(scenario)) {
+    return {
+      candidates: [],
+      dropCount: Array.isArray(candidates) ? candidates.length : 0,
+      fallbackUsed: false,
+      issue,
+    };
+  }
   const scenarioDelaySignal = /\b(delay|delayed|adjourned|adjournment|postponed|backlog|waited|11\(b\)|reasonable\s+time|crown\s+delay)\b/i.test(
     String(scenario || "")
   );
@@ -862,6 +901,8 @@ function withSemanticMatchedContent(candidate, fallbackText) {
 }
 
 function buildLocalFallbackCandidates({ scenario = "", maxResults = 3 }) {
+  if (isClearlyNonCriminalScenario(scenario)) return [];
+
   const scenarioTokens = tokenizeScenario(scenario);
   const issue = detectCoreIssue(scenario);
   const issueTerms =
