@@ -215,4 +215,33 @@ describe("RetrievalHealthDashboard all-time issue trends", () => {
       expect(order).toHaveLength(2);
     });
   });
+
+  it("renders compact issue alert summary when issue-level alerts are present", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () =>
+          makeHealthResponse({
+            alerts: [
+              {
+                id: "retrieval_issue_no_verified_rate_1h_robbery",
+                metric: "issueNoVerifiedRate",
+                issuePrimary: "robbery",
+                requests: 8,
+                value: 0.9,
+                threshold: 0.85,
+                message: "Issue robbery is degraded.",
+              },
+            ],
+          }),
+      })
+    );
+
+    renderDashboard();
+
+    await screen.findByText("Issue Alert Summary");
+    expect(screen.getByText("robbery · 8 requests")).toBeTruthy();
+    expect(screen.getByText("No-verified at 90.0% (threshold 85.0%)")).toBeTruthy();
+  });
 });

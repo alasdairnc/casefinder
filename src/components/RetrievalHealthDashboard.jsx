@@ -174,6 +174,14 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
       Number(b?.requests || 0) - Number(a?.requests || 0)
     );
   });
+  const issueAlerts = Array.isArray(data?.alerts)
+    ? data.alerts.filter(
+        (a) =>
+          typeof a?.id === "string" &&
+          (a.id.startsWith("retrieval_issue_no_verified_rate_1h_") ||
+            a.id.startsWith("retrieval_issue_error_rate_1h_"))
+      )
+    : [];
 
   const copyFixPrompt = async (sample, index) => {
     const prompt = buildAgentFixPrompt(sample);
@@ -319,6 +327,26 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
             <MetricCard label="1h Fallback Rate" value={pct(oneHour?.rates?.fallbackPathRate)} hint="Requests using fallback retrieval paths" t={t} />
             <MetricCard label="1h Relevance" value={num(oneHour?.rates?.avgRelevanceScore)} hint="Average retrieval relevance score" t={t} />
             <MetricCard label="1h p95 Latency" value={`${num(oneHour?.latencyMs?.p95)} ms`} hint="Tail latency for retrieval path" badge={p95Badge} t={t} />
+          </div>
+        )}
+
+        {data && issueAlerts.length > 0 && (
+          <div style={{ border: `1px solid ${t.borderLight}`, padding: 16, marginBottom: 20, background: t.bg }}>
+            <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 10, letterSpacing: 3.5, textTransform: "uppercase", color: t.textTertiary, marginBottom: 10 }}>
+              Issue Alert Summary
+            </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {issueAlerts.slice(0, 5).map((alert) => (
+                <div key={alert.id} style={{ border: `1px solid ${t.borderLight}`, padding: 10, background: t.bg }}>
+                  <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 12, color: t.text, marginBottom: 4 }}>
+                    {alert.issuePrimary || "unknown"} · {num(alert.requests)} requests
+                  </div>
+                  <div style={{ fontFamily: "'Helvetica Neue', sans-serif", fontSize: 11, color: t.textSecondary }}>
+                    {alert.metric === "issueNoVerifiedRate" ? "No-verified" : "Error"} at {pct(alert.value)} (threshold {pct(alert.threshold)})
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
