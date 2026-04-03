@@ -214,6 +214,17 @@ function inferFallbackIssueSignals(scenarioTokens) {
   return dedupeStrings(out);
 }
 
+function isMinorTrafficStopScenario(scenario) {
+  const s = String(scenario || "").toLowerCase();
+  if (!s) return false;
+
+  const hasTrafficStopContext = /\b(pulled\s+over|traffic\s+stop|roadside|speed\s+limit|speeding|ticket|citation|fine)\b/.test(s);
+  const hasMinorSpeedContext = /\b(\d+\s*km\/h|km\/h|over\s*the\s*limit|over\s*\d+\s*km\/h)\b/.test(s);
+  const hasSeriousCharterOrCriminalContext = /\b(charter|detain\w*|arrest\w*|search\w*|seiz\w*|counsel|warrant|impaired|breath|drunk|dangerous|careless)\b/.test(s);
+
+  return (hasTrafficStopContext && hasMinorSpeedContext) || (hasTrafficStopContext && !hasSeriousCharterOrCriminalContext && /\bspeed\s+limit\b/.test(s));
+}
+
 function candidateDbId(candidate) {
   const parsed = parseCitation(candidate?.citation || "");
   return parsed?.apiDbId || "";
@@ -312,6 +323,13 @@ function scoreCandidateForScenario({ candidate, scenarioTokens, issue, filters =
  */
 function detectCoreIssue(scenario) {
   const s = (scenario || "").toLowerCase();
+
+  if (isMinorTrafficStopScenario(s)) {
+    return {
+      primary: "minor_traffic_stop",
+      allowed: new Set(["speed limit", "speeding ticket", "traffic stop", "roadside stop", "motor vehicle"]),
+    };
+  }
   
   const patterns = {
     search_seizure: {
@@ -365,6 +383,14 @@ function detectCoreIssue(scenario) {
       tests: [/\b(right\s+to)?\s*counsel\b|\blawyer\b/, /\b(detain\w*|arrest\w*)\b/],
       primary: "charter_counsel",
       subIssues: new Set(["s. 10", "right to counsel", "informational", "detention", "waiver"])
+    },
+    minor_traffic_stop: {
+      tests: [
+        /\b(pulled\s+over|traffic\s+stop|roadside)\b/,
+        /\b(speed\s+limit|speeding|km\/h|over\s*\d+\s*km\/h|over\s+the\s+limit)\b/,
+      ],
+      primary: "minor_traffic_stop",
+      subIssues: new Set(["speed limit", "speeding ticket", "traffic stop", "roadside stop", "motor vehicle"]),
     },
     uttering_threats: {
       tests: [/\b(threat\w*|uttering)\b/],
@@ -445,6 +471,7 @@ function detectCoreIssue(scenario) {
     "sexual_assault",
     "drug_trafficking",
     "charter_counsel",
+    "minor_traffic_stop",
     "charter_detention",
     "uttering_threats",
     "criminal_harassment",
@@ -648,13 +675,21 @@ function selectFinalCandidates({ candidates = [], issuePrimary = "general_crimin
   if (sorted.length === 0) return [];
 
   const broadIssue = new Set(["general_criminal", "charter_search_seizure"]);
-  const strictScoreThreshold = broadIssue.has(issuePrimary) ? 12 : 14;
-  const strictSemanticThreshold = broadIssue.has(issuePrimary) ? 1 : 2;
-  const moderateScoreThreshold = broadIssue.has(issuePrimary) ? 9 : 10;
+  const narrowTrafficIssue = new Set(["minor_traffic_stop"]);
+  const strictScoreThreshold = narrowTrafficIssue.has(issuePrimary) ? 16 : broadIssue.has(issuePrimary) ? 12 : 10;
+  const strictSemanticThreshold = narrowTrafficIssue.has(issuePrimary) ? 2 : broadIssue.has(issuePrimary) ? 1 : 2;
+  const moderateScoreThreshold = narrowTrafficIssue.has(issuePrimary) ? 14 : broadIssue.has(issuePrimary) ? 9 : 8;
 
   const strict = sorted.filter((item) => {
     const score = Number(item?.retrievalScore) || 0;
     const semanticCount = Array.isArray(item?.semanticMatches) ? item.semanticMatches.length : 0;
+    const retrievalReasons = Array.isArray(item?.retrievalReasons) ? item.retrievalReasons : [];
+    const isBroadLandmark =
+      String(item?.matchedTerm || "").includes("Landmark RAG Match") ||
+      retrievalReasons.includes("landmark_seed");
+    if (item?.isLandmark && isBroadLandmark) {
+      return score >= strictScoreThreshold && (semanticCount >= strictSemanticThreshold || score >= strictScoreThreshold + 2);
+    }
     return score >= strictScoreThreshold || semanticCount >= strictSemanticThreshold;
   });
 
@@ -1091,6 +1126,7 @@ export async function retrieveVerifiedCaseLaw({
       cases: [],
       meta: {
         reason: "missing_api_key",
+        issuePrimary: detectCoreIssue(scenario).primary,
         termsTried: 0,
         databasesTried: 0,
         searchCalls: 0,
@@ -1103,6 +1139,7 @@ export async function retrieveVerifiedCaseLaw({
 
   const terms = extractCaseLawSearchTerms({ scenario, aiSuggestions, criminalCode });
   const dbTargets = pickDatabaseTargets(filters);
+  const detectedIssue = detectCoreIssue(scenario);
   let localFallbackUsed = false;
 
   // Build candidates from AI-generated case citations
@@ -1196,6 +1233,7 @@ export async function retrieveVerifiedCaseLaw({
       cases: [],
       meta: {
         reason: terms.length === 0 ? "no_terms_or_databases" : "no_verified",
+        issuePrimary: detectedIssue.primary,
         termsTried: terms.length,
         databasesTried: dbTargets.length,
         searchCalls: 0,
@@ -1363,6 +1401,7 @@ export async function retrieveVerifiedCaseLaw({
   return {
     cases,
     meta: {
+      issuePrimary: issue?.primary || "general_criminal",
       termsTried: terms.length,
       databasesTried: dbTargets.length,
       searchCalls: 0,

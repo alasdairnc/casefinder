@@ -507,6 +507,34 @@ describe("CanLII retrieval timeout", () => {
     expect(res.body.meta.case_law.source).toBe("retrieval_ranked");
   });
 
+  it("filters out loosely related landmark cases for a minor speeding stop", async () => {
+    mockAnthropicSuccess();
+
+    mockRetrieveVerifiedCaseLaw.mockResolvedValue({
+      cases: [
+        {
+          citation: "R v Hape, 2007 SCC 26",
+          title: "R v Hape",
+          summary: "Charter extraterritoriality doctrine and foreign investigations",
+          matched_content: "Landmark RAG Match",
+          url_canlii: "https://www.canlii.org/en/ca/scc/doc/2007/2007scc26/2007scc26.html",
+          year: 2007,
+          isLandmark: true,
+          retrievalScore: 24,
+        },
+      ],
+      meta: { reason: "verified_results", searchCalls: 1, verificationCalls: 1 },
+    });
+
+    const req = createReq({ body: { scenario: "I was pulled over for going 1 km/h over the speed limit" } });
+    const res = createRes();
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.case_law).toEqual([]);
+    expect(res.body.meta.case_law.reason).toBe("no_verified");
+  });
+
   it("logs no_verified telemetry when retrieval meta reason is verified_results but ranked final case_law is empty", async () => {
     mockAnthropicSuccess();
 

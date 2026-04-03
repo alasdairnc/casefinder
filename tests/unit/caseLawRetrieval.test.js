@@ -144,6 +144,29 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     );
   });
 
+  it("classifies minor traffic stop scenarios and avoids broad case-law fallbacks", async () => {
+    const { MASTER_CASE_LAW_DB } = await import("../../src/lib/caselaw/index.js");
+    const originalCases = [...MASTER_CASE_LAW_DB];
+    MASTER_CASE_LAW_DB.length = 0;
+
+    try {
+      const { cases, meta } = await retrieveVerifiedCaseLaw({
+        apiKey: "test-key",
+        scenario: "I was pulled over for going 1 km/h over the speed limit",
+        aiCaseLaw: [],
+        landmarkMatches: [],
+        maxResults: 3,
+      });
+
+      expect(cases).toEqual([]);
+      expect(meta.issuePrimary).toBe("minor_traffic_stop");
+      expect(meta.reason).toBe("no_verified");
+      expect(meta.fallbackReason).toBeNull();
+    } finally {
+      MASTER_CASE_LAW_DB.splice(0, MASTER_CASE_LAW_DB.length, ...originalCases);
+    }
+  });
+
   it("prefers non-Oakes candidates for right-to-counsel detention scenarios", async () => {
     const { cases } = await retrieveVerifiedCaseLaw({
       apiKey: "test-key",

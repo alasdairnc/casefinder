@@ -63,6 +63,8 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
   const [pdfState, setPdfState] = useState("idle");
   const pdfErrorTimer = useRef(null);
   const caseLawMeta = data?.meta?.case_law;
+  const retrievalMeta = caseLawMeta?.retrieval || {};
+  const issuePrimary = retrievalMeta.issuePrimary || null;
   const showCaseLawEmptyState =
     CASE_LAW_EMPTY_SOURCES.has(caseLawMeta?.source) &&
     caseLawMeta?.reason !== "filter_disabled" &&
@@ -75,7 +77,30 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
         ? "Case law retrieval is unavailable (CanLII not configured)."
         : caseLawMeta?.reason === "no_terms_or_databases"
           ? "No search terms could be formed from this scenario."
-          : "No verified Supreme Court or Appellate cases perfectly matched this scenario.";
+          : issuePrimary === "minor_traffic_stop"
+            ? "This looks like a routine traffic-stop fact pattern. Broader landmark cases were filtered out because they were not close enough to the facts."
+            : "No directly on-point verified case law was found. Broader landmark cases were filtered out because they were not close enough to the facts.";
+
+  const caseLawEmptyGuidance =
+    caseLawMeta?.reason === "no_terms_or_databases"
+      ? [
+          "Add the specific legal issue you want researched.",
+          "Include the trigger facts, like search, detention, counsel, or delay.",
+          "If you want a broader doctrine answer, name the Charter section or offence provision.",
+        ]
+      : caseLawMeta?.reason === "missing_api_key"
+        ? []
+        : issuePrimary === "minor_traffic_stop"
+          ? [
+              "Add a real legal issue, like detention, search, counsel, or delay.",
+              "If the only fact is a tiny speed overage, no case-law result is the better answer.",
+              "Add the specific Charter section or offence provision only if there is an actual issue to analyze.",
+            ]
+        : [
+            "Add the specific legal issue you want researched.",
+            "Use the exact fact pattern that matters, not just a nearby topic.",
+            "For routine traffic stops or low-detail facts, no case-law result can be the correct answer.",
+          ];
 
   const canliiSearchUrl = scenario
     ? `https://www.canlii.org/en/#search/text=${encodeURIComponent(scenario.slice(0, 200))}`
@@ -282,7 +307,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
                   color: t.textTertiary,
                   lineHeight: 1.5,
                 }}>
-                  No case law citations could be verified.
+                  None of the suggested case law citations were verified on CanLII.
                 </div>
               </div>
             );
@@ -362,7 +387,7 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
               {caseLawEmptyMessage}
             </div>
 
-            {(caseLawMeta?.reason === "no_verified" || caseLawMeta?.reason === "no_terms_or_databases" || !caseLawMeta?.reason) && (
+            {caseLawEmptyGuidance.length > 0 && (
               <ul style={{
                 fontFamily: "'Helvetica Neue', sans-serif",
                 fontSize: 12,
@@ -371,9 +396,9 @@ export default function Results({ data, scenario, addBookmark, removeBookmark, i
                 margin: "12px 0 0",
                 paddingLeft: 16,
               }}>
-                <li>Specify the offence type (e.g. &quot;assault causing bodily harm&quot;)</li>
-                <li>Include a jurisdiction (e.g. &quot;in Ontario&quot;)</li>
-                <li>Mention a specific legal issue (e.g. &quot;Charter s. 8 search&quot;)</li>
+                {caseLawEmptyGuidance.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
             )}
 

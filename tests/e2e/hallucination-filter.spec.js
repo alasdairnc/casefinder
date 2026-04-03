@@ -54,7 +54,7 @@ test.describe("Hallucination filtering", () => {
     await page.waitForTimeout(500);
 
     await expect(page.getByText("R v Fake, 2099 ONCA 999", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("No case law citations could be verified")).toBeVisible();
+    await expect(page.getByText(/None of the suggested case law citations were verified on CanLII/i)).toBeVisible();
   });
 
   test("shows verified citation and green banner", async ({ page }) => {

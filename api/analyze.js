@@ -218,10 +218,8 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
     for (const token of scenarioTokens) {
       if (haystack.includes(token)) overlapCount++;
     }
-    // Accept if: (1) meets minimum overlap threshold, OR (2) it's a landmark RAG match
-    const isLandmark = String(c?.matched_content || "").includes("Landmark RAG Match");
     const strongScore = scoreRetrievedCase(scenarioTokens, c) >= 10;
-    return overlapCount >= minOverlap || isLandmark || strongScore;
+    return overlapCount >= minOverlap || strongScore;
   });
 
   filtered.sort((a, b) => {
@@ -516,6 +514,9 @@ export default async function handler(req, res) {
           reason,
           retrieval: {
             fallbackSearchUsed: Boolean(retrievalMeta.fallbackSearchUsed),
+            fallbackReason: retrievalMeta.fallbackReason || null,
+            retrievalPass: retrievalMeta.retrievalPass || null,
+            issuePrimary: retrievalMeta.issuePrimary || null,
             searchCalls: retrievalMeta.searchCalls ?? 0,
             verificationCalls: retrievalMeta.verificationCalls ?? 0,
             candidateCount: retrievalMeta.candidateCount ?? 0,
