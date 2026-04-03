@@ -118,6 +118,9 @@ export const RETRIEVAL_ALERT_THRESHOLDS = {
   fallbackPathRate1h: 0.65,
   avgRelevanceScoreMin1h: 4.5,
   minSampleSize1h: MIN_SAMPLE_SIZE,
+  issueMinRequests1h: 5,
+  issueNoVerifiedRate1h: 0.85,
+  issueErrorRate1h: 0.25,
 };
 
 function formatPercent(value) {
@@ -138,6 +141,15 @@ function buildAlert(id, metric, window, value, threshold, message) {
     message,
     evaluatedAt: new Date().toISOString(),
   };
+}
+
+function toIssueAlertId(issuePrimary = "unknown") {
+  const normalized = String(issuePrimary)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return normalized || "unknown";
 }
 
 export function evaluateRetrievalAlerts(healthSnapshot = {}) {
@@ -265,6 +277,52 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
         )}).`
       )
     );
+  }
+
+  const byIssueRows = Array.isArray(oneHour?.breakdowns?.byIssue) ? oneHour.breakdowns.byIssue : [];
+  for (const row of byIssueRows) {
+    const issuePrimary = row?.issuePrimary || "unknown";
+    const issueRequests = Number(row?.requests || 0);
+    if (issueRequests < RETRIEVAL_ALERT_THRESHOLDS.issueMinRequests1h) continue;
+
+    const issueNoVerifiedRate = row?.noVerifiedRate;
+    if (
+      issueNoVerifiedRate != null &&
+      issueNoVerifiedRate > RETRIEVAL_ALERT_THRESHOLDS.issueNoVerifiedRate1h
+    ) {
+      alerts.push({
+        ...buildAlert(
+          `retrieval_issue_no_verified_rate_1h_${toIssueAlertId(issuePrimary)}`,
+          "issueNoVerifiedRate",
+          "1h",
+          issueNoVerifiedRate,
+          RETRIEVAL_ALERT_THRESHOLDS.issueNoVerifiedRate1h,
+          `Issue ${issuePrimary} has no-verified rate ${formatPercent(issueNoVerifiedRate)} over 1h (${issueRequests} requests; threshold ${formatPercent(
+            RETRIEVAL_ALERT_THRESHOLDS.issueNoVerifiedRate1h
+          )}).`
+        ),
+        issuePrimary,
+        requests: issueRequests,
+      });
+    }
+
+    const issueErrorRate = row?.errorRate;
+    if (issueErrorRate != null && issueErrorRate > RETRIEVAL_ALERT_THRESHOLDS.issueErrorRate1h) {
+      alerts.push({
+        ...buildAlert(
+          `retrieval_issue_error_rate_1h_${toIssueAlertId(issuePrimary)}`,
+          "issueErrorRate",
+          "1h",
+          issueErrorRate,
+          RETRIEVAL_ALERT_THRESHOLDS.issueErrorRate1h,
+          `Issue ${issuePrimary} has error rate ${formatPercent(issueErrorRate)} over 1h (${issueRequests} requests; threshold ${formatPercent(
+            RETRIEVAL_ALERT_THRESHOLDS.issueErrorRate1h
+          )}).`
+        ),
+        issuePrimary,
+        requests: issueRequests,
+      });
+    }
   }
 
   return alerts;

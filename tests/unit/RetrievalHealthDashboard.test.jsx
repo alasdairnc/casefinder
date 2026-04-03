@@ -157,4 +157,62 @@ describe("RetrievalHealthDashboard all-time issue trends", () => {
       expect(order).not.toContain("charter_search_seizure");
     });
   });
+
+  it("falls back to showing all issue rows when every issue is below min sample threshold", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () =>
+          makeHealthResponse({
+            alltime: {
+              samples: { total: 6, operational: 6, quality: 6, latency: 6 },
+              rates: {
+                errorRate: 0.1,
+                noVerifiedRate: 0.3,
+                fallbackPathRate: 0.5,
+                avgVerifiedPerRequest: 0.9,
+                avgRelevanceScore: 5.8,
+                avgSemanticFilterDrops: 1.2,
+                avgConceptRescues: 0.4,
+              },
+              latencyMs: { avg: 180, p95: null },
+              breakdowns: {
+                byIssue: [
+                  {
+                    issuePrimary: "theft",
+                    requests: 2,
+                    fallbackPathRate: 0.2,
+                    noVerifiedRate: 0.1,
+                    errorRate: 0,
+                    avgVerifiedPerRequest: 1.3,
+                  },
+                  {
+                    issuePrimary: "robbery",
+                    requests: 1,
+                    fallbackPathRate: 0.6,
+                    noVerifiedRate: 0.9,
+                    errorRate: 0.2,
+                    avgVerifiedPerRequest: 0.2,
+                  },
+                ],
+              },
+              firstEventAt: new Date(Date.now() - 3600000).toISOString(),
+              lastEventAt: new Date().toISOString(),
+            },
+          }),
+      })
+    );
+
+    const { container } = renderDashboard();
+
+    await screen.findByText("All-time by issue trend");
+
+    await waitFor(() => {
+      const order = extractIssueOrder(container);
+      expect(order).toContain("theft");
+      expect(order).toContain("robbery");
+      expect(order).toHaveLength(2);
+    });
+  });
 });
