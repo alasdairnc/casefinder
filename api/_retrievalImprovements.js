@@ -40,7 +40,7 @@ function classifyScenario(snippet) {
   }
 
   if (
-    /\b(assault\w*|choke\w*|punch\w*|smack\w*|slap\w*|struck|hit\s+me|wound\w*|bodily\s+harm|threaten\w*)\b/.test(
+    /\b(assault|choke|punch|hit\s+me|wound|bodily\s+harm|threaten|threatened)\b/.test(
       s,
     )
   ) {
