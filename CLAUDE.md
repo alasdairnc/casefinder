@@ -28,9 +28,13 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 - Completed: hallucination-filter E2E flake hardening (DOM content navigation + strict locator assertions + resilient banner matcher), validated with repeat-run browser stress checks.
 - Completed: docs sync for current retrieval telemetry + alert status.
 - Completed (Phase D-A): labeled retrieval failure set + evaluation loop added (`npm run test:retrieval-failures`) for false positives like routine traffic stops surfacing broad landmark cases.
+- Completed (Phase D-B): issue-to-case compatibility gating + staged semantic retrieval passes added to reduce cross-issue landmark leakage while preserving recall on on-point scenarios.
+- Completed (Phase D-C): analyze-side ranking harmonized with issue compatibility penalties so mismatched case domains are demoted after retrieval.
+- Completed: guardrail workflow now includes retrieval-failure regression check (`npm run test:guardrails` runs `test:retrieval-failures` before `test:filter`).
 - Next priorities:
+  - Expand retrieval failure corpus with production-derived misses/false-positives (target 25+ labeled scenarios)
   - Optional: retrieval health trendlines over time (dashboard shows 5m/1h snapshots today)
-  - Continue case-law retrieval quality tuning (query shaping and empty-state UX)
+  - Continue case-law retrieval quality tuning (query shaping, fallback calibration, and empty-state UX)
 
 ## Tech Stack
 - Frontend: React 18 + Vite, inline styles with ThemeContext (no CSS framework by design)

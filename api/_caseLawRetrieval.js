@@ -210,6 +210,9 @@ function inferFallbackIssueSignals(scenarioTokens) {
   if (hasAny(["break", "enter", "broke", "burglar", "house", "dwelling", "home"])) {
     add("break and enter", "s. 348", "dwelling house", "intent");
   }
+  if (hasAny(["robbery", "robbed", "mugged", "mugging", "theft", "stolen", "steal", "shoplift", "shoplifting"])) {
+    add("robbery", "theft", "s. 343", "s. 322", "property", "force", "threat");
+  }
 
   return dedupeStrings(out);
 }
@@ -426,7 +429,7 @@ function detectCoreIssue(scenario) {
       ])
     },
     robbery: {
-      tests: [/\b(robbery|robbed|mugg(?:ed|ing)?)\b/],
+      tests: [/\b(robbery|robbed|mugg(?:ed|ing)?)\b|\b(took|take|stole|steal|grabbed|snatched)\b.*\b(wallet|cash|money|property|phone|bag|purse)\b.*\b(force|threat|threatened|violence|violent)\b|\b(force|threat|threatened|violence|violent)\b.*\b(took|take|stole|steal|grabbed|snatched)\b.*\b(wallet|cash|money|property|phone|bag|purse)\b/],
       primary: "robbery",
       subIssues: new Set(["robbery", "robbed", "mugging", "s. 343", "violence", "threat", "force"])
     },
@@ -473,13 +476,13 @@ function detectCoreIssue(scenario) {
     "charter_counsel",
     "minor_traffic_stop",
     "charter_detention",
+    "break_and_enter",
+    "robbery",
+    "theft",
     "uttering_threats",
     "criminal_harassment",
     "dangerous_driving",
     "peace_bond",
-    "break_and_enter",
-    "robbery",
-    "theft",
     "domestic_assault",
     "trial_delay",
   ];
@@ -496,11 +499,95 @@ function detectCoreIssue(scenario) {
   return { primary: "general_criminal", allowed: new Set() };
 }
 
+function detectCandidateDomains(candidate) {
+  const haystack = normalizeForMatch(
+    `${candidate?.citation || ""} ${candidate?.title || ""} ${candidate?.summary || ""} ${candidate?.matchedTerm || ""}`
+  );
+  const out = new Set();
+
+  if (/\b(jordan|cody|11\s*b|11\(b\)|trial\s+delay|reasonable\s+time|crown\s+delay|adjournment)\b/.test(haystack)) out.add("trial_delay");
+  if (/\b(oakes|section\s+1|s\.?\s*1|proportionality|minimal\s+impairment|reasonable\s+limits)\b/.test(haystack)) out.add("charter_section1");
+  if (/\b(counsel|lawyer|10\s*b|10\(b\)|informational\s+duty|woods)\b/.test(haystack)) out.add("charter_counsel");
+  if (/\b(search|seizure|warrant|privacy|hunter|marakah|vu|8\s*\)|s\.?\s*8)\b/.test(haystack)) out.add("charter_search_seizure");
+  if (/\b(detention|detained|arbitrary|grant|s\.?\s*9|9\s*\))\b/.test(haystack)) out.add("charter_detention");
+  if (/\b(impaired|breath|breathalyzer|over\s*80|roadside|checkstop|drunk\s+driving)\b/.test(haystack)) out.add("impaired_driving");
+  if (/\b(robbery|robbed|mugging|mugged|s\.?\s*343)\b/.test(haystack)) out.add("robbery");
+  if (/\b(theft|stolen|steal|shoplift|s\.?\s*322)\b/.test(haystack)) out.add("theft");
+  if (/\b(assault|bodily\s+harm|weapon|self\s*defence|self-defence|s\.?\s*267)\b/.test(haystack)) out.add("assault");
+  if (/\b(cdsa|trafficking|drug|narcotic|possession|s\.?\s*5)\b/.test(haystack)) out.add("drug");
+  if (/\b(domestic|intimate\s+partner|family\s+violence|spouse)\b/.test(haystack)) out.add("domestic");
+  if (/\b(sexual\s+assault|consent|complainant|s\.?\s*271)\b/.test(haystack)) out.add("sexual_assault");
+  if (/\b(peace\s+bond|recognizance|s\.?\s*810)\b/.test(haystack)) out.add("peace_bond");
+  if (/\b(break\s+and\s+enter|break-in|s\.?\s*348|dwelling\s+house)\b/.test(haystack)) out.add("break_and_enter");
+  if (/\b(criminal\s+harassment|stalk|s\.?\s*264)\b/.test(haystack)) out.add("criminal_harassment");
+  if (/\b(uttering\s+threats|threatening|s\.?\s*264\.1)\b/.test(haystack)) out.add("uttering_threats");
+
+  return out;
+}
+
+function isCandidateCompatibleWithIssue(issuePrimary, candidateDomains) {
+  if (!issuePrimary || issuePrimary === "general_criminal") return true;
+  if (!(candidateDomains instanceof Set) || candidateDomains.size === 0) return true;
+
+  const compatibility = {
+    charter_search_seizure: new Set(["charter_search_seizure", "charter_detention", "impaired_driving"]),
+    impaired_driving: new Set(["impaired_driving", "charter_search_seizure", "charter_detention", "charter_counsel"]),
+    charter_detention: new Set(["charter_detention", "charter_search_seizure", "charter_counsel", "impaired_driving"]),
+    charter_counsel: new Set(["charter_counsel", "charter_detention", "impaired_driving"]),
+    minor_traffic_stop: new Set(["minor_traffic_stop", "impaired_driving"]),
+    trial_delay: new Set(["trial_delay"]),
+    charter_section1: new Set(["charter_section1"]),
+    robbery: new Set(["robbery", "theft", "assault"]),
+    theft: new Set(["theft", "robbery"]),
+    assault_bodily_harm: new Set(["assault", "domestic"]),
+    assault_weapon: new Set(["assault", "domestic"]),
+    domestic_assault: new Set(["domestic", "assault"]),
+    drug_trafficking: new Set(["drug"]),
+    sexual_assault: new Set(["sexual_assault"]),
+    break_and_enter: new Set(["break_and_enter", "theft"]),
+    peace_bond: new Set(["peace_bond", "criminal_harassment", "uttering_threats"]),
+    criminal_harassment: new Set(["criminal_harassment", "uttering_threats", "peace_bond"]),
+    uttering_threats: new Set(["uttering_threats", "criminal_harassment", "peace_bond"]),
+    dangerous_driving: new Set(["impaired_driving"]),
+  };
+
+  const allowed = compatibility[issuePrimary];
+  if (!allowed) return true;
+
+  for (const domain of candidateDomains) {
+    if (allowed.has(domain)) return true;
+  }
+  return false;
+}
+
+function issueExpansionHints(issuePrimary) {
+  const map = {
+    robbery: ["robbery", "s. 343", "violence", "threat", "force", "property"],
+    theft: ["theft", "s. 322", "dishonesty", "property", "without consent"],
+    charter_search_seizure: ["charter", "s. 8", "search", "seizure", "warrant", "privacy"],
+    charter_counsel: ["charter", "s. 10", "right to counsel", "lawyer", "detention"],
+    charter_detention: ["charter", "s. 9", "detention", "arbitrary"],
+    trial_delay: ["charter", "s. 11(b)", "trial delay", "reasonable time", "jordan", "cody"],
+    impaired_driving: ["impaired", "breath", "roadside", "detention", "reasonable suspicion"],
+    break_and_enter: ["break and enter", "s. 348", "dwelling", "intent"],
+    domestic_assault: ["domestic", "intimate partner", "assault", "s. 266", "s. 267"],
+    assault_bodily_harm: ["assault", "bodily harm", "s. 267", "intent"],
+    assault_weapon: ["assault", "weapon", "s. 267", "dangerous"],
+    drug_trafficking: ["cdsa", "s. 5", "trafficking", "possession", "intent"],
+    sexual_assault: ["sexual assault", "s. 271", "consent", "complainant"],
+    criminal_harassment: ["criminal harassment", "s. 264", "repeated communication"],
+    uttering_threats: ["uttering threats", "s. 264.1", "threat"],
+    peace_bond: ["peace bond", "recognizance", "s. 810"],
+  };
+  return map[issuePrimary] || [];
+}
+
 /**
  * Filter case law candidates by semantic relevance to the detected core issue.
  */
 function filterBySemanticRelevance(scenario, candidates) {
   const issue = detectCoreIssue(scenario);
+  const scenarioTokens = tokenizeScenario(scenario);
   const scenarioDelaySignal = /\b(delay|delayed|adjourned|adjournment|postponed|backlog|waited|11\(b\)|reasonable\s+time|crown\s+delay)\b/i.test(
     String(scenario || "")
   );
@@ -519,16 +606,21 @@ function filterBySemanticRelevance(scenario, candidates) {
       })
     : [];
 
+  const compatibilityFiltered = withoutDelayLeaks.filter((candidate) => {
+    const domains = detectCandidateDomains(candidate);
+    return isCandidateCompatibleWithIssue(issue.primary, domains);
+  });
+
   if (issue.allowed.size === 0) {
     return {
-      candidates: withoutDelayLeaks,
-      dropCount: Math.max(0, (candidates || []).length - withoutDelayLeaks.length),
+      candidates: compatibilityFiltered,
+      dropCount: Math.max(0, (candidates || []).length - compatibilityFiltered.length),
       fallbackUsed: false,
       issue,
     };
   }
 
-  const filtered = withoutDelayLeaks.map((c) => {
+  const filtered = compatibilityFiltered.map((c) => {
     const summary = normalizeForMatch(`${c.title || ""} ${c.summary || ""}`);
     const semanticMatches = [...issue.allowed].filter((sub) => termMatchesText(sub, summary));
     if (semanticMatches.length === 0) return null;
@@ -550,15 +642,58 @@ function filterBySemanticRelevance(scenario, candidates) {
   if (filtered.length > 0) {
     return {
       candidates: filtered,
-      dropCount: Math.max(0, withoutDelayLeaks.length - filtered.length) + Math.max(0, (candidates || []).length - withoutDelayLeaks.length),
+      dropCount: Math.max(0, compatibilityFiltered.length - filtered.length) + Math.max(0, (candidates || []).length - compatibilityFiltered.length),
       fallbackUsed: false,
       issue,
     };
   }
 
+  // Controlled expansion pass: widen terms, but still require a semantic match and some scenario overlap.
+  const expandedTermSet = new Set([
+    ...issue.allowed,
+    ...inferFallbackIssueSignals(scenarioTokens),
+    ...issueExpansionHints(issue.primary),
+  ]);
+
+  const expandedTerms = [...expandedTermSet].filter(Boolean);
+  const expanded = compatibilityFiltered
+    .map((candidate) => {
+      const summary = normalizeForMatch(`${candidate.title || ""} ${candidate.summary || ""}`);
+      const semanticMatches = expandedTerms.filter((sub) => termMatchesText(sub, summary));
+      if (semanticMatches.length === 0) return null;
+
+      let tokenOverlap = 0;
+      for (const token of scenarioTokens) {
+        if (summary.includes(token)) tokenOverlap += 1;
+      }
+      if (tokenOverlap === 0 && semanticMatches.length < 2) return null;
+
+      const dedupedMatches = dedupeStrings(semanticMatches).slice(0, 3);
+      const semanticTag = `Semantic-expanded: ${issue.primary} (${dedupedMatches.join(", ")})`;
+      const mergedMatchedTerm = candidate.matchedTerm
+        ? `${candidate.matchedTerm}; ${semanticTag}`
+        : semanticTag;
+
+      return {
+        ...candidate,
+        semanticMatches: dedupedMatches,
+        matchedTerm: mergedMatchedTerm,
+      };
+    })
+    .filter(Boolean);
+
+  if (expanded.length > 0) {
+    return {
+      candidates: expanded,
+      dropCount: Math.max(0, compatibilityFiltered.length - expanded.length) + Math.max(0, (candidates || []).length - compatibilityFiltered.length),
+      fallbackUsed: true,
+      issue,
+    };
+  }
+
   return {
-    candidates: withoutDelayLeaks,
-    dropCount: Math.max(0, (candidates || []).length - withoutDelayLeaks.length),
+    candidates: [],
+    dropCount: Math.max(0, (candidates || []).length),
     fallbackUsed: true,
     issue,
   };

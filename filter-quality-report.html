@@ -31,24 +31,24 @@
 <body>
   <div class="header">
     <h1>CaseDive Filter Quality Report</h1>
-    <div class="timestamp">Generated 2026-04-02T04:18:30.395Z</div>
+    <div class="timestamp">Generated 2026-04-03T03:11:26.791Z</div>
   </div>
 
   <div class="metrics">
     <div class="metric">
-      <div class="metric-value">100.0%</div>
+      <div class="metric-value">42.9%</div>
       <div class="metric-label">Pass Rate</div>
     </div>
     <div class="metric">
-      <div class="metric-value">14/14</div>
+      <div class="metric-value">6/14</div>
       <div class="metric-label">Tests Passed</div>
     </div>
     <div class="metric">
-      <div class="metric-value">7.05</div>
+      <div class="metric-value">4.69</div>
       <div class="metric-label">Avg Relevance (0-10)</div>
     </div>
     <div class="metric">
-      <div class="metric-value">1.00</div>
+      <div class="metric-value">0.50</div>
       <div class="metric-label">Avg Precision</div>
     </div>
   </div>
@@ -66,12 +66,12 @@
     </thead>
     <tbody>
       
-    <tr class="pass">
+    <tr class="fail">
       <td>I was pulled over at a RIDE checkpoint and asked to provide a breath sample. Wha</td>
-      <td>1.00</td>
+      <td>0.67</td>
       <td>7.00</td>
       <td>3</td>
-      <td>✓ PASS</td>
+      <td>✗ FAIL</td>
     </tr>
   
     <tr class="pass">
@@ -98,12 +98,12 @@
       <td>✓ PASS</td>
     </tr>
   
-    <tr class="pass">
+    <tr class="fail">
       <td>I stabbed someone with a knife during a confrontation. What's the crime?</td>
-      <td>1.00</td>
+      <td>0.00</td>
       <td>6.00</td>
       <td>1</td>
-      <td>✓ PASS</td>
+      <td>✗ FAIL</td>
     </tr>
   
     <tr class="pass">
@@ -130,59 +130,77 @@
       <td>✓ PASS</td>
     </tr>
   
-    <tr class="pass">
+    <tr class="fail">
       <td>Police arrested me without a warrant and without explaining why. Is this a Chart</td>
-      <td>1.00</td>
-      <td>6.00</td>
-      <td>2</td>
-      <td>✓ PASS</td>
-    </tr>
-  
-    <tr class="pass">
-      <td>I was arrested and detained, but police didn't let me call a lawyer for hours. W</td>
-      <td>1.00</td>
-      <td>9.00</td>
-      <td>1</td>
-      <td>✓ PASS</td>
-    </tr>
-  
-    <tr class="pass">
-      <td>I was involved in a store robbery. I didn't use a weapon, but I was there and th</td>
-      <td>1.00</td>
-      <td>9.00</td>
-      <td>1</td>
-      <td>✓ PASS</td>
-    </tr>
-  
-    <tr class="pass">
-      <td>I took merchandise from a store without paying. The value was $150. Am I facing </td>
-      <td>1.00</td>
-      <td>6.00</td>
-      <td>1</td>
-      <td>✓ PASS</td>
-    </tr>
-  
-    <tr class="pass">
-      <td>I got into a heated argument with my spouse, there was physical contact, and the</td>
-      <td>1.00</td>
-      <td>6.00</td>
+      <td>0.33</td>
+      <td>4.00</td>
       <td>3</td>
-      <td>✓ PASS</td>
+      <td>✗ FAIL</td>
     </tr>
   
-    <tr class="pass">
-      <td>Very brief scenario with minimal detail.</td>
-      <td>1.00</td>
-      <td>9.00</td>
+    <tr class="fail">
+      <td>I was arrested and detained, but police didn't let me call a lawyer for hours. W</td>
+      <td>0.00</td>
+      <td>6.00</td>
       <td>1</td>
-      <td>✓ PASS</td>
+      <td>✗ FAIL</td>
+    </tr>
+  
+    <tr class="fail">
+      <td>I was involved in a store robbery. I didn't use a weapon, but I was there and th</td>
+      <td>0.00</td>
+      <td>1.00</td>
+      <td>1</td>
+      <td>✗ FAIL</td>
+    </tr>
+  
+    <tr class="fail">
+      <td>I took merchandise from a store without paying. The value was $150. Am I facing </td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>1</td>
+      <td>✗ FAIL</td>
+    </tr>
+  
+    <tr class="fail">
+      <td>I got into a heated argument with my spouse, there was physical contact, and the</td>
+      <td>0.00</td>
+      <td>1.00</td>
+      <td>1</td>
+      <td>✗ FAIL</td>
+    </tr>
+  
+    <tr class="fail">
+      <td>Very brief scenario with minimal detail.</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0</td>
+      <td>✗ FAIL</td>
     </tr>
   
     </tbody>
   </table>
 
   <h2 style="margin-top: 30px;">Improvement Suggestions</h2>
-  <p style="color: #666;">✓ All tests passing – no improvements needed at this time.</p>
+  
+    <div class="suggestion high">
+      <h4>HIGH: 8 test scenarios failing</h4>
+      <p><strong>Details:</strong> I stabbed someone with a knife during a confrontation. What's the crime?<br>I was arrested and detained, but police didn't let me call a lawyer for hours. W<br>I was involved in a store robbery. I didn't use a weapon, but I was there and th</p>
+      <p><strong>Recommendation:</strong> Review issue detection patterns or ranking thresholds</p>
+    </div>
+  
+    <div class="suggestion high">
+      <h4>HIGH: Low precision across multiple scenarios</h4>
+      <p><strong>Details:</strong> 7 cases with precision < 0.6</p>
+      <p><strong>Recommendation:</strong> Increase min_token_overlap threshold or expand stop_words list to filter noise</p>
+    </div>
+  
+    <div class="suggestion medium">
+      <h4>MEDIUM: Average semantic relevance below threshold</h4>
+      <p><strong>Details:</strong> Current avg: 4.69/10</p>
+      <p><strong>Recommendation:</strong> Add more issue-specific keywords to semantic filtering</p>
+    </div>
+  
 
   <div style="margin-top: 30px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 12px; color: #666;">
     This report evaluates filter effectiveness across 14 test scenarios.

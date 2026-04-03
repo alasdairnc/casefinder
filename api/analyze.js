@@ -107,7 +107,67 @@ function tokenizeForRanking(text) {
   });
 }
 
-function scoreRetrievedCase(scenarioTokens, item) {
+function detectScenarioIssueForRanking(scenarioTokens) {
+  const has = (token) => scenarioTokens.has(token);
+  const hasAny = (tokens) => tokens.some((t) => has(t));
+
+  if (hasAny(["delay", "adjourned", "adjournment", "backlog", "11b", "jordan", "cody"])) return "trial_delay";
+  if (hasAny(["counsel", "lawyer"]) && hasAny(["detained", "detention", "arrested", "arrest"])) return "charter_counsel";
+  if (hasAny(["search", "seizure", "warrant", "privacy", "phone", "device"])) return "charter_search_seizure";
+  if (hasAny(["detained", "detention", "arbitrary", "arrested", "arrest"])) return "charter_detention";
+  if (hasAny(["impaired", "drunk", "breath", "breathalyzer", "ride", "over80"])) return "impaired_driving";
+  if (hasAny(["robbery", "robbed", "mugged", "mugging"])) return "robbery";
+  if (hasAny(["theft", "steal", "stolen", "shoplifting", "shoplift"])) return "theft";
+  if (hasAny(["drug", "cocaine", "fentanyl", "trafficking", "cdsa"])) return "drug_trafficking";
+  if (hasAny(["sexual", "rape", "consent"])) return "sexual_assault";
+  if (hasAny(["assault", "punch", "stab", "weapon", "knife", "fight"])) return "assault";
+  return "general_criminal";
+}
+
+function detectCaseDomainsForRanking(item) {
+  const text = `${item?.citation || ""} ${item?.summary || ""} ${item?.matched_content || ""}`.toLowerCase();
+  const out = new Set();
+
+  if (/\b(jordan|cody|11\(b\)|11b|trial\s+delay|reasonable\s+time|adjournment)\b/.test(text)) out.add("trial_delay");
+  if (/\b(counsel|lawyer|10\(b\)|right\s+to\s+counsel|informational\s+duty|woods)\b/.test(text)) out.add("charter_counsel");
+  if (/\b(search|seizure|warrant|privacy|hunter|marakah|vu|s\.\s*8|section\s*8)\b/.test(text)) out.add("charter_search_seizure");
+  if (/\b(detention|arbitrary|grant|s\.\s*9|section\s*9)\b/.test(text)) out.add("charter_detention");
+  if (/\b(impaired|breath|breathalyzer|roadside|over\s*80)\b/.test(text)) out.add("impaired_driving");
+  if (/\b(robbery|robbed|mugging|mugged|s\.\s*343)\b/.test(text)) out.add("robbery");
+  if (/\b(theft|stolen|shoplift|s\.\s*322)\b/.test(text)) out.add("theft");
+  if (/\b(cdsa|trafficking|drug|narcotic|possession|s\.\s*5)\b/.test(text)) out.add("drug_trafficking");
+  if (/\b(sexual\s+assault|consent|complainant|s\.\s*271)\b/.test(text)) out.add("sexual_assault");
+  if (/\b(assault|bodily\s+harm|weapon|self-defence|self\s*defence|s\.\s*267)\b/.test(text)) out.add("assault");
+
+  return out;
+}
+
+function caseCompatibleWithScenarioIssue(issue, caseDomains) {
+  if (issue === "general_criminal") return true;
+  if (!(caseDomains instanceof Set) || caseDomains.size === 0) return true;
+
+  const compatibility = {
+    trial_delay: new Set(["trial_delay"]),
+    charter_counsel: new Set(["charter_counsel", "charter_detention", "impaired_driving"]),
+    charter_search_seizure: new Set(["charter_search_seizure", "charter_detention", "impaired_driving"]),
+    charter_detention: new Set(["charter_detention", "charter_search_seizure", "charter_counsel", "impaired_driving"]),
+    impaired_driving: new Set(["impaired_driving", "charter_detention", "charter_counsel", "charter_search_seizure"]),
+    robbery: new Set(["robbery", "theft", "assault"]),
+    theft: new Set(["theft", "robbery"]),
+    drug_trafficking: new Set(["drug_trafficking"]),
+    sexual_assault: new Set(["sexual_assault"]),
+    assault: new Set(["assault", "robbery"]),
+  };
+
+  const allowed = compatibility[issue];
+  if (!allowed) return true;
+  for (const domain of caseDomains) {
+    if (allowed.has(domain)) return true;
+  }
+  return false;
+}
+
+function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   const haystack = `${item?.citation || ""} ${item?.summary || ""} ${item?.matched_content || ""}`.toLowerCase();
   const haystackTokens = new Set(tokenizeForRanking(haystack));
 
@@ -117,6 +177,10 @@ function scoreRetrievedCase(scenarioTokens, item) {
   }
 
   let score = overlap * 4;
+
+  const caseDomains = detectCaseDomainsForRanking(item);
+  const compatible = caseCompatibleWithScenarioIssue(scenarioIssue, caseDomains);
+  if (!compatible) score -= 10;
 
   // Domain-specific boosts for common impaired-driving / search-and-seizure scenarios.
   const impairedScenario = scenarioTokens.has("ride") || scenarioTokens.has("breath") || scenarioTokens.has("breathalyzer") || scenarioTokens.has("impaired") || scenarioTokens.has("drunk");
@@ -200,7 +264,7 @@ function scoreRetrievedCase(scenarioTokens, item) {
   if (Number.isFinite(yearNum) && yearNum >= 2000) score += 0.4;
 
   if (String(item?.matched_content || "").includes("Landmark RAG Match")) {
-    score += 8; // Massive boost to ensure landmarks surface if they are relevant
+    score += compatible ? 8 : 1;
   }
 
   return score;
@@ -209,6 +273,7 @@ function scoreRetrievedCase(scenarioTokens, item) {
 function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
   const cases = Array.isArray(retrievedCases) ? [...retrievedCases] : [];
   const scenarioTokens = new Set(tokenizeForRanking(scenario));
+  const scenarioIssue = detectScenarioIssueForRanking(scenarioTokens);
   const minOverlap = scenarioTokens.size >= 8 ? 3 : scenarioTokens.size >= 4 ? 2 : 1;
 
   // Filter: allow a dynamic overlap threshold or strong ranked score to avoid overly strict misses.
@@ -218,12 +283,12 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
     for (const token of scenarioTokens) {
       if (haystack.includes(token)) overlapCount++;
     }
-    const strongScore = scoreRetrievedCase(scenarioTokens, c) >= 10;
+    const strongScore = scoreRetrievedCase(scenarioTokens, scenarioIssue, c) >= 10;
     return overlapCount >= minOverlap || strongScore;
   });
 
   filtered.sort((a, b) => {
-    const scoreDiff = scoreRetrievedCase(scenarioTokens, b) - scoreRetrievedCase(scenarioTokens, a);
+    const scoreDiff = scoreRetrievedCase(scenarioTokens, scenarioIssue, b) - scoreRetrievedCase(scenarioTokens, scenarioIssue, a);
     if (scoreDiff !== 0) return scoreDiff;
 
     const yearA = Number(a?.year) || 0;

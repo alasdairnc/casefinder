@@ -37,16 +37,17 @@ describe("retrieval failure set", () => {
           expect(meta.reason).toBe("no_verified");
         } else {
           expect(cases.length).toBeGreaterThanOrEqual(testCase.minResults);
-          expect(cases.some((c) => String(c.citation || "").includes("Woods"))).toBe(true);
+          const caseText = JSON.stringify(cases);
+          for (const included of testCase.shouldInclude || []) {
+            expect(caseText).toContain(included);
+          }
         }
 
         for (const excluded of testCase.shouldExclude || []) {
           expect(JSON.stringify(cases)).not.toContain(excluded);
         }
 
-        for (const included of testCase.shouldInclude || []) {
-          expect(JSON.stringify(cases)).toContain(included);
-        }
+        
       }
     } finally {
       MASTER_CASE_LAW_DB.splice(0, MASTER_CASE_LAW_DB.length, ...originalCases);

@@ -122,6 +122,12 @@ RULES:
 - For civil_law: cite specific statutes with section numbers.
 - For charter: use section number format like "s. 7", "s. 8", "s. 11(b)", "s. 24(2)".
 - For case_law: provide 1-3 real Canadian case citations only when they are directly on point. Prefer landmark SCC cases only if the facts truly fit; do NOT use broad landmark cases as substitutes for weak factual matches. If no case is clearly on point, return an empty array.
+- Issue-fit guardrails for case_law:
+  - Only include trial-delay cases (e.g., Jordan, Cody, Askov) when the scenario explicitly mentions delay signals like trial delay, adjournments, backlog, or Charter s. 11(b).
+  - Only include search/seizure cases (e.g., Hunter, Marakah, Vu) when facts mention a search, seizure, warrant, privacy, phone/device records, or police evidence-taking.
+  - Only include right-to-counsel cases (e.g., Woods) when facts mention detention/arrest and inability or delay in speaking to counsel.
+  - For theft/robbery scenarios, prioritize property + force/threat principles; do NOT substitute unrelated Charter doctrine cases.
+  - If the case relevance depends on assumptions not present in the facts, exclude that case and return an empty array instead.
 - CITATION FORMATS: 
   1. For post-2000 cases: use neutral citation format (e.g., "2016 SCC 27"). Including party names (e.g., "R v Jordan, 2016 SCC 27") is optional but preferred for extra verification.
   2. For pre-2000 cases: use neutral citation format if known (e.g., "1988 SCC 30"). For retroactive CanLII citations, use format "1988 CanLII 90 (SCC)".
