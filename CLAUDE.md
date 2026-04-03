@@ -29,7 +29,6 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 - Completed: docs sync for current retrieval telemetry + alert status.
 - Completed (Phase D-A): labeled retrieval failure set + evaluation loop added (`npm run test:retrieval-failures`) for false positives like routine traffic stops surfacing broad landmark cases.
 - Next priorities:
-  - Build a labeled retrieval failure set + evaluation loop, starting with false positives like routine traffic stops surfacing broad landmark cases
   - Optional: retrieval health trendlines over time (dashboard shows 5m/1h snapshots today)
   - Continue case-law retrieval quality tuning (query shaping and empty-state UX)
 
