@@ -3,8 +3,12 @@
 // Degrades gracefully when CANLII_API_KEY is not set.
 
 import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
-import { applyCorsHeaders } from "./_cors.js";
 import { randomUUID, createHash } from "crypto";
+import {
+  applyStandardApiHeaders,
+  handleOptionsAndMethod,
+  validateJsonRequest,
+} from "./_apiCommon.js";
 import {
   parseCitation,
   buildCaseId,
@@ -16,6 +20,7 @@ import {
 import { lookupSection, normalizeSection } from "../src/lib/criminalCodeData.js";
 import { lookupCharterSection } from "../src/lib/charterData.js";
 import { lookupCivilLawSection } from "../src/lib/civilLawData.js";
+import { API_REDIS_TIMEOUT_MS } from "./_constants.js";
 import {
   logRequestStart,
   logRateLimitCheck,
@@ -42,27 +47,16 @@ export default async function handler(req, res) {
   const requestId = req.headers['x-vercel-id'] || randomUUID();
   const startMs = Date.now();
   logRequestStart(req, "verify", requestId);
-  applyCorsHeaders(req, res, "POST, OPTIONS", "Content-Type");
+  applyStandardApiHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Content-Security-Policy", "default-src 'none'");
-  res.setHeader("Cache-Control", "no-store");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const ct = req.headers["content-type"] || "";
-  if (!ct.includes("application/json")) {
-    logValidationError(requestId, "verify", "Invalid Content-Type", "content-type");
-    return res.status(415).json({ error: "Content-Type must be application/json" });
-  }
-
-  const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-  if (contentLength > 50_000) {
-    logValidationError(requestId, "verify", "Request body too large", "content-length");
-    return res.status(413).json({ error: "Request body too large" });
+  if (handleOptionsAndMethod(req, res, "POST")) return;
+  if (!validateJsonRequest(req, res, {
+    requestId,
+    endpoint: "verify",
+    maxBytes: 50_000,
+    logValidationError,
+  })) {
+    return;
   }
 
   const rlResult = await checkRateLimit(getClientIp(req), "verify");
@@ -87,7 +81,9 @@ export default async function handler(req, res) {
   const cacheKey = `cache:verify:${createHash("sha256").update(JSON.stringify(citations)).digest("hex")}`;
   if (redis) {
     try {
-      const timeoutGet = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 500));
+      const timeoutGet = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+      );
       const cached = await Promise.race([redis.get(cacheKey), timeoutGet]);
       if (cached) {
         logSuccess(requestId, "verify", 200, Date.now() - startMs, rlResult, { cached: true, citationsProcessed: citations.length });
@@ -323,7 +319,9 @@ export default async function handler(req, res) {
 
   if (redis) {
     try {
-      const timeoutSet = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 500));
+      const timeoutSet = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+      );
       await Promise.race([redis.setex(cacheKey, 7 * 24 * 60 * 60, JSON.stringify(results)), timeoutSet]);
     } catch (err) {}
   }

@@ -15,7 +15,7 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
-    "test:live": "playwright test --config=playwright.live.config.js",
+    "test:live": "PLAYWRIGHT_MODE=live playwright test",
     "test:filter": "node scripts/tune-filters.js --report",
     "test:filter:baseline": "node scripts/tune-filters.js --baseline",
     "test:filter:compare": "node scripts/tune-filters.js --compare",

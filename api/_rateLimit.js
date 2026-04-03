@@ -4,10 +4,11 @@
 // Falls back to in-memory state if UPSTASH_REDIS_REST_URL is not configured.
 
 import { Redis } from "@upstash/redis";
+import { RATE_LIMIT_REDIS_TIMEOUT_MS } from "./_constants.js";
 
 const MAX_REQUESTS = 5;
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const REDIS_TIMEOUT_MS = 500;
+const REDIS_TIMEOUT_MS = RATE_LIMIT_REDIS_TIMEOUT_MS;
 const RETRIEVAL_HEALTH_MAX_REQUESTS = 100; // Higher limit for internal monitoring
 
 export let redis = null;

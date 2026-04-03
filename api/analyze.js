@@ -7,9 +7,22 @@ initSentry();
 import { buildSystemPrompt } from "../src/lib/prompts.js";
 import { MASTER_CASE_LAW_DB } from "../src/lib/caselaw/index.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders, redis } from "./_rateLimit.js";
-import { applyCorsHeaders } from "./_cors.js";
-import { retrieveVerifiedCaseLaw } from "./_caseLawRetrieval.js";
+import { runCaseLawRetrieval } from "./_retrievalOrchestrator.js";
 import { logRetrievalMetrics } from "./_retrievalMetrics.js";
+import {
+  applyStandardApiHeaders,
+  handleOptionsAndMethod,
+  validateJsonRequest,
+} from "./_apiCommon.js";
+import { withRequestDedup } from "./_requestDedup.js";
+import {
+  API_REDIS_TIMEOUT_MS,
+  ANALYZE_CACHE_TTL_SECONDS,
+  ANTHROPIC_MESSAGES_URL,
+  ANTHROPIC_MODEL_ID,
+  ANTHROPIC_TIMEOUT_MS,
+} from "./_constants.js";
+import { RANK_STOP_WORDS, tokenizeWithExpansion } from "./_textUtils.js";
 import {
   logRequestStart,
   logRateLimitCheck,
@@ -37,7 +50,7 @@ function sanitizeUserInput(input) {
   return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>\s][^>]*)?>/g, "");
 }
 
-const CACHE_TTL_S = 60 * 60 * 24 * 7; // 7 days
+const CACHE_TTL_S = ANALYZE_CACHE_TTL_SECONDS;
 
 function cacheKey(scenario, filters) {
   return (
@@ -55,8 +68,8 @@ function ensureMetaContainer(result) {
 // ── Anthropic call ───────────────────────────────────────────────────────────
 
 async function callAnthropic(messages, system, apiKey) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    signal: AbortSignal.timeout(25_000), // 25s — Vercel serverless limit is 30s
+  const response = await fetch(ANTHROPIC_MESSAGES_URL, {
+    signal: AbortSignal.timeout(ANTHROPIC_TIMEOUT_MS), // 25s — Vercel serverless limit is 30s
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -65,7 +78,7 @@ async function callAnthropic(messages, system, apiKey) {
       "anthropic-beta": "prompt-caching-2024-07-31",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: ANTHROPIC_MODEL_ID,
       max_tokens: 1800,
       system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages,
@@ -86,72 +99,12 @@ async function callAnthropic(messages, system, apiKey) {
 
 // ── Deterministic retrieval ranking ──────────────────────────────────────────
 
-const RANK_STOP_WORDS = new Set([
-  "the", "and", "for", "with", "that", "this", "from", "into", "were", "was", "when", "where",
-  "while", "have", "has", "had", "over", "under", "they", "their", "them", "than", "then", "been",
-  "about", "would", "could", "should", "after", "before", "because", "through", "between",
-  "driver", "person", "police", "case", "law", "court", "officer", "crown", "defendant", "accused",
-  "facts", "held", "found", "order", "section", "said", "made", "day", "time", "year",
-]);
-
 function tokenizeForRanking(text) {
-  const rawTokens = String(text || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .map((w) => w.trim())
-    .filter((w) => w.length >= 3 && !RANK_STOP_WORDS.has(w));
-
-  const expanded = new Set();
-  for (const token of rawTokens) {
-    expanded.add(token);
-    if (token.endsWith("ies") && token.length > 4) {
-      expanded.add(`${token.slice(0, -3)}y`);
-    }
-    if (token.endsWith("ied") && token.length > 4) {
-      expanded.add(`${token.slice(0, -3)}y`);
-    }
-    if (token.endsWith("ed") && token.length > 4) {
-      expanded.add(token.slice(0, -2));
-    }
-    if (token.endsWith("ing") && token.length > 5) {
-      expanded.add(token.slice(0, -3));
-    }
-    if (token.endsWith("es") && token.length > 4) {
-      expanded.add(token.slice(0, -2));
-    }
-    if (token.endsWith("s") && token.length > 4) {
-      expanded.add(token.slice(0, -1));
-    }
-    if (token === "delayed" || token === "delaying" || token === "delays") {
-      expanded.add("delay");
-    }
-    if (token === "searched" || token === "searching" || token === "searches") {
-      expanded.add("search");
-    }
-    if (token === "seized" || token === "seizing" || token === "seizes" || token === "seizure") {
-      expanded.add("seize");
-      expanded.add("seizure");
-    }
-    if (token === "detained" || token === "detaining" || token === "detains") {
-      expanded.add("detain");
-      expanded.add("detention");
-    }
-    if (token === "warrants" || token === "warranted") {
-      expanded.add("warrant");
-    }
-    if (token === "adjourned" || token === "adjourning") {
-      expanded.add("adjournment");
-    }
-    if (token === "postponed" || token === "postponing") {
-      expanded.add("postpone");
-    }
-    if (token === "backlogged" || token === "backlogging") {
-      expanded.add("backlog");
-    }
-  }
-
-  return Array.from(expanded);
+  return tokenizeWithExpansion(text, {
+    stopWords: RANK_STOP_WORDS,
+    includeDelayAliases: true,
+    returnType: "array",
+  });
 }
 
 function scoreRetrievedCase(scenarioTokens, item) {
@@ -375,27 +328,16 @@ export default async function handler(req, res) {
   const requestId = req.headers['x-vercel-id'] || randomUUID();
   const startMs = Date.now();
   logRequestStart(req, "analyze", requestId);
-  applyCorsHeaders(req, res, "POST, OPTIONS", "Content-Type");
+  applyStandardApiHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Content-Security-Policy", "default-src 'none'");
-  res.setHeader("Cache-Control", "no-store");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const ct = req.headers["content-type"] || "";
-  if (!ct.includes("application/json")) {
-    logValidationError(requestId, "analyze", "Invalid Content-Type", "content-type");
-    return res.status(415).json({ error: "Content-Type must be application/json" });
-  }
-
-  const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-  if (contentLength > 50_000) {
-    logValidationError(requestId, "analyze", "Request body too large", "content-length");
-    return res.status(413).json({ error: "Request body too large" });
+  if (handleOptionsAndMethod(req, res, "POST")) return;
+  if (!validateJsonRequest(req, res, {
+    requestId,
+    endpoint: "analyze",
+    maxBytes: 50_000,
+    logValidationError,
+  })) {
+    return;
   }
 
   const rlResult = await checkRateLimit(getClientIp(req), "analyze");
@@ -456,7 +398,9 @@ export default async function handler(req, res) {
     if (redis) {
       try {
         const cacheKeyStr = cacheKey(scenario, filters);
-        const timeoutGet = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 500));
+        const timeoutGet = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+        );
         const cached = await Promise.race([redis.get(cacheKeyStr), timeoutGet]);
         if (cached) {
           const cachedResult = typeof cached === "string" ? JSON.parse(cached) : cached;
@@ -498,10 +442,10 @@ export default async function handler(req, res) {
     }
 
     const anthropicStartMs = Date.now();
-    const { result, raw, retryRaw, matchedLandmarks } = await analyzeWithRetry(
-      scenario,
-      filters,
-      apiKey
+    const dedupeKey = `inflight:analyze:${cacheKey(scenario, filters)}`;
+    const { result, raw, retryRaw, matchedLandmarks } = await withRequestDedup(
+      dedupeKey,
+      () => analyzeWithRetry(scenario, filters, apiKey)
     );
     const anthropicDurationMs = Date.now() - anthropicStartMs;
     logExternalApiCall(requestId, "analyze", "anthropic", 200, anthropicDurationMs, { retried: !!retryRaw });
@@ -540,23 +484,17 @@ export default async function handler(req, res) {
         });
       } else {
         try {
-          const RETRIEVAL_BUDGET_MS = 7_000;
-          const retrievalTimeout = new Promise((_, reject) =>
-            setTimeout(() => reject(Object.assign(new Error("Retrieval timeout"), { isTimeout: true })), RETRIEVAL_BUDGET_MS)
-          );
-          const { cases: retrievedCases, meta: retrievalMeta } = await Promise.race([
-            retrieveVerifiedCaseLaw({
-              scenario: scenario.trim(),
-              filters,
-              aiSuggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
-              aiCaseLaw: Array.isArray(result.case_law) ? result.case_law : [],
-              landmarkMatches: matchedLandmarks,
-              criminalCode: Array.isArray(result.criminal_code) ? result.criminal_code : [],
-              apiKey: canliiKey,
-              maxResults: 10,
-            }),
-            retrievalTimeout,
-          ]);
+          const { cases: retrievedCases, meta: retrievalMeta } = await runCaseLawRetrieval({
+            scenario: scenario.trim(),
+            filters,
+            aiSuggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
+            aiCaseLaw: Array.isArray(result.case_law) ? result.case_law : [],
+            landmarkMatches: matchedLandmarks,
+            criminalCode: Array.isArray(result.criminal_code) ? result.criminal_code : [],
+            apiKey: canliiKey,
+            maxResults: 10,
+            timeoutMs: 7_000,
+          });
         const retrievalDurationMs = Date.now() - retrievalStartMs;
 
         if ((retrievalMeta.searchCalls || 0) > 0 || (retrievalMeta.verificationCalls || 0) > 0) {

@@ -2,10 +2,10 @@
 
 import { randomUUID } from "crypto";
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
-import { applyCorsHeaders } from "./_cors.js";
 import { getRetrievalHealthSnapshot, getTrendlineSnapshots } from "./_retrievalHealthStore.js";
 import { evaluateRetrievalAlerts, RETRIEVAL_ALERT_THRESHOLDS } from "./_retrievalThresholds.js";
 import { buildRetrievalImprovements } from "./_retrievalImprovements.js";
+import { applyStandardApiHeaders, handleOptionsAndMethod } from "./_apiCommon.js";
 import {
   logRequestStart,
   logRateLimitCheck,
@@ -29,16 +29,8 @@ export default async function handler(req, res) {
   const startMs = Date.now();
   logRequestStart(req, "retrieval-health", requestId);
 
-  applyCorsHeaders(req, res, "GET, OPTIONS", "Authorization, Content-Type");
-
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Content-Security-Policy", "default-src 'none'");
-  res.setHeader("Cache-Control", "no-store");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+  applyStandardApiHeaders(req, res, "GET, OPTIONS", "Authorization, Content-Type");
+  if (handleOptionsAndMethod(req, res, "GET")) return;
 
   const rlResult = await checkRateLimit(getClientIp(req), "retrieval-health");
   logRateLimitCheck(requestId, "retrieval-health", rlResult, getClientIp(req));

@@ -4,8 +4,9 @@
 import { createLog } from "./_logging.js";
 import { redis } from "./_rateLimit.js";
 import { isIP } from "node:net";
+import { RETRIEVAL_THRESHOLDS_REDIS_TIMEOUT_MS } from "./_constants.js";
 
-const REDIS_TIMEOUT_MS = 500;
+const REDIS_TIMEOUT_MS = RETRIEVAL_THRESHOLDS_REDIS_TIMEOUT_MS;
 import { getRetrievalHealthSnapshot } from "./_retrievalHealthStore.js";
 
 const ALERT_DEDUPE_SECONDS = 15 * 60;

@@ -6,18 +6,13 @@
  * Shows current filter configuration, test success rate, and tuning status.
  */
 
-import { applyCorsHeaders } from "./_cors.js";
 import { FILTER_CONFIG } from "./_filterConfig.js";
+import { applyStandardApiHeaders, handleOptionsAndMethod } from "./_apiCommon.js";
 
 export default async function handler(req, res) {
-  applyCorsHeaders(req, res, "GET, OPTIONS", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+  applyStandardApiHeaders(req, res, "GET, OPTIONS", "Content-Type");
+  if (handleOptionsAndMethod(req, res, "GET")) {
+    return;
   }
 
   // Check auth token (same as retrieval-health)
@@ -28,9 +23,6 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // Security headers
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Cache-Control", "max-age=60");
 
   try {

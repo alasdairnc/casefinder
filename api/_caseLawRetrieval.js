@@ -13,6 +13,11 @@ import {
 } from "../src/lib/canlii.js";
 import { MASTER_CASE_LAW_DB } from "../src/lib/caselaw/index.js";
 import { findLandmarkSeeds } from "../src/lib/landmarkCases.js";
+import {
+  SIMPLE_STOP_WORDS,
+  normalizeForMatch,
+  tokenizeWithExpansion,
+} from "./_textUtils.js";
 
 // SECURITY TESTING: Set CANLII_API_BASE_URL env var to redirect to a mock server.
 // Also update the matching constant in src/lib/canlii.js (where HTTP calls originate).
@@ -44,39 +49,6 @@ const COURT_LEVEL_DB_IDS = {
 };
 
 const FEDERAL_DATABASE_IDS = ["csc-scc", "fca", "fct"];
-const SIMPLE_STOP_WORDS = new Set([
-  "and",
-  "for",
-  "the",
-  "with",
-  "from",
-  "that",
-  "this",
-  "was",
-  "were",
-  "have",
-  "has",
-  "had",
-  "but",
-  "what",
-  "when",
-  "where",
-  "they",
-  "them",
-  "their",
-  "got",
-  "into",
-  "very",
-  "brief",
-  "scenario",
-  "minimal",
-  "detail",
-  "heated",
-  "face",
-  "rights",
-  "crime",
-  "could",
-]);
 
 /** Lower rank = verify / display earlier (deterministic ordering). */
 const DATABASE_VERIFY_RANK = (() => {
@@ -149,15 +121,6 @@ function sanitizeTerm(term) {
   return term.replace(/\s+/g, " ").trim();
 }
 
-function normalizeForMatch(text) {
-  return String(text || "")
-    .toLowerCase()
-    .replace(/section\s+/g, "s ")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function termMatchesText(term, normalizedText) {
   const normalizedTerm = normalizeForMatch(term);
   if (!normalizedTerm) return false;
@@ -189,51 +152,10 @@ function dedupeStrings(values) {
 }
 
 function tokenizeScenario(text) {
-  const rawTokens = String(text || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .map((w) => w.trim())
-    .filter((w) => w.length >= 3 && !SIMPLE_STOP_WORDS.has(w));
-
-  const expanded = new Set();
-  for (const token of rawTokens) {
-    expanded.add(token);
-    if (token.endsWith("ies") && token.length > 4) {
-      expanded.add(`${token.slice(0, -3)}y`);
-    }
-    if (token.endsWith("ied") && token.length > 4) {
-      expanded.add(`${token.slice(0, -3)}y`);
-    }
-    if (token.endsWith("ed") && token.length > 4) {
-      expanded.add(token.slice(0, -2));
-    }
-    if (token.endsWith("ing") && token.length > 5) {
-      expanded.add(token.slice(0, -3));
-    }
-    if (token.endsWith("es") && token.length > 4) {
-      expanded.add(token.slice(0, -2));
-    }
-    if (token.endsWith("s") && token.length > 4) {
-      expanded.add(token.slice(0, -1));
-    }
-    if (token === "searched" || token === "searching" || token === "searches") {
-      expanded.add("search");
-    }
-    if (token === "seized" || token === "seizing" || token === "seizes" || token === "seizure") {
-      expanded.add("seize");
-      expanded.add("seizure");
-    }
-    if (token === "detained" || token === "detaining" || token === "detains") {
-      expanded.add("detain");
-      expanded.add("detention");
-    }
-    if (token === "warrants" || token === "warranted") {
-      expanded.add("warrant");
-    }
-  }
-
-  return expanded;
+  return tokenizeWithExpansion(text, {
+    stopWords: SIMPLE_STOP_WORDS,
+    returnType: "set",
+  });
 }
 
 function pickHelpfulScenarioTerms(scenarioTokens, limit = 2) {

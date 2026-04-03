@@ -2,12 +2,13 @@
 // Rolling retrieval metrics store with Redis + in-memory fallback.
 
 import { redis } from "./_rateLimit.js";
+import { RETRIEVAL_HEALTH_STORE_REDIS_TIMEOUT_MS } from "./_constants.js";
 
 const EVENT_LIST_KEY = "metrics:retrieval:events:v1";
 const LAST_EVENT_KEY = "metrics:retrieval:last-event:v1";
 const EVENT_COUNT_KEY = "metrics:retrieval:event-count:v1";
 const ALLTIME_KEY = "metrics:retrieval:alltime:v1";
-const REDIS_TIMEOUT_MS = 2000;
+const REDIS_TIMEOUT_MS = RETRIEVAL_HEALTH_STORE_REDIS_TIMEOUT_MS;
 const MAX_EVENTS = 2500;
 const MAX_RETENTION_MS = 2 * 60 * 60 * 1000;
 

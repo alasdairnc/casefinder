@@ -5,9 +5,13 @@ import { randomUUID, createHash } from "crypto";
 import { initSentry, Sentry } from "./_sentry.js";
 initSentry();
 import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
-import { applyCorsHeaders } from "./_cors.js";
-import { retrieveVerifiedCaseLaw } from "./_caseLawRetrieval.js";
+import { runCaseLawRetrieval } from "./_retrievalOrchestrator.js";
 import { logRetrievalMetrics } from "./_retrievalMetrics.js";
+import {
+  applyStandardApiHeaders,
+  handleOptionsAndMethod,
+  validateJsonRequest,
+} from "./_apiCommon.js";
 import {
   logRequestStart,
   logRateLimitCheck,
@@ -16,6 +20,8 @@ import {
   logSuccess,
   logError,
 } from "./_logging.js";
+import { API_REDIS_TIMEOUT_MS } from "./_constants.js";
+import { withRequestDedup } from "./_requestDedup.js";
 
 function logRetrievalMetricsAsync(payload) {
   Promise.resolve(logRetrievalMetrics(payload)).catch(() => {});
@@ -31,27 +37,16 @@ export default async function handler(req, res) {
   const startMs = Date.now();
   logRequestStart(req, "retrieve-caselaw", requestId);
 
-  applyCorsHeaders(req, res, "POST, OPTIONS", "Content-Type");
+  applyStandardApiHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Content-Security-Policy", "default-src 'none'");
-  res.setHeader("Cache-Control", "no-store");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const ct = req.headers["content-type"] || "";
-  if (!ct.includes("application/json")) {
-    logValidationError(requestId, "retrieve-caselaw", "Invalid Content-Type", "content-type");
-    return res.status(415).json({ error: "Content-Type must be application/json" });
-  }
-
-  const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-  if (contentLength > 50_000) {
-    logValidationError(requestId, "retrieve-caselaw", "Request body too large", "content-length");
-    return res.status(413).json({ error: "Request body too large" });
+  if (handleOptionsAndMethod(req, res, "POST")) return;
+  if (!validateJsonRequest(req, res, {
+    requestId,
+    endpoint: "retrieve-caselaw",
+    maxBytes: 50_000,
+    logValidationError,
+  })) {
+    return;
   }
 
   const rlResult = await checkRateLimit(getClientIp(req), "retrieve-caselaw");
@@ -77,7 +72,9 @@ export default async function handler(req, res) {
   const cacheKey = `cache:retrieve-caselaw:${createHash("sha256").update(JSON.stringify({ scenario, filters, suggestions })).digest("hex")}`;
   if (redis) {
     try {
-      const timeoutGet = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 500));
+      const timeoutGet = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+      );
       const cached = await Promise.race([redis.get(cacheKey), timeoutGet]);
       if (cached) {
         const parsed = typeof cached === "string" ? JSON.parse(cached) : cached;
@@ -114,13 +111,17 @@ export default async function handler(req, res) {
 
   const retrievalStartMs = Date.now();
   try {
-    const { cases, meta } = await retrieveVerifiedCaseLaw({
-      scenario,
-      filters,
-      aiSuggestions: suggestions,
-      apiKey,
-      maxResults: 3,
-    });
+    const dedupeKey = `inflight:retrieve-caselaw:${cacheKey}`;
+    const { cases, meta } = await withRequestDedup(dedupeKey, () =>
+      runCaseLawRetrieval({
+        scenario,
+        filters,
+        aiSuggestions: suggestions,
+        apiKey,
+        maxResults: 3,
+        timeoutMs: 7_000,
+      })
+    );
     const retrievalDurationMs = Date.now() - retrievalStartMs;
 
     logExternalApiCall(requestId, "retrieve-caselaw", "canlii-retrieval", 200, retrievalDurationMs, {
@@ -144,7 +145,9 @@ export default async function handler(req, res) {
 
     if (redis) {
       try {
-        const timeoutSet = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 500));
+        const timeoutSet = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+        );
         await Promise.race([redis.setex(cacheKey, 7 * 24 * 60 * 60, JSON.stringify({ case_law: cases, meta })), timeoutSet]);
       } catch (err) {}
     }

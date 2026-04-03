@@ -3,6 +3,8 @@
 // Sources: justice.gc.ca, laws-lois.justice.gc.ca, ontario.ca/laws, bclaws.gov.bc.ca, alberta.ca/alberta-king-s-printer
 // Used by api/verify.js to validate AI-suggested civil_law citations.
 
+import { createCivilLawRegistry } from "./civilLawRegistry.js";
+
 // ── Base URLs ─────────────────────────────────────────────────────────────────
 const CDSA_BASE    = "https://laws-lois.justice.gc.ca/eng/acts/c-38.8";
 const YCJA_BASE    = "https://laws-lois.justice.gc.ca/eng/acts/y-1.5";
@@ -1827,24 +1829,24 @@ const BC_HR_SECTIONS = new Map([
 ]);
 
 
-// ── Master index ──────────────────────────────────────────────────────────────
-export const CIVIL_LAW_INDEX = new Map([
-  ...Array.from(CDSA_SECTIONS.entries()).map(([k, v]) => [`CDSA s. ${k}`, v]),
-  ...Array.from(YCJA_SECTIONS.entries()).map(([k, v]) => [`YCJA s. ${k}`, v]),
-  ...Array.from(CHRA_SECTIONS.entries()).map(([k, v]) => [`CHRA s. ${k}`, v]),
-  ...Array.from(CC_SENTENCING.entries()).map(([k, v]) => [`CC s. ${k}`, v]),
-  ...Array.from(EVIDENCE_SECTIONS.entries()).map(([k, v]) => [`CEA s. ${k}`, v]),
-  ...Array.from(CCRA_SECTIONS.entries()).map(([k, v]) => [`CCRA s. ${k}`, v]),
-  ...Array.from(ON_HTA_SECTIONS.entries()).map(([k, v]) => [`HTA s. ${k}`, v]),
-  ...Array.from(ON_RTA_SECTIONS.entries()).map(([k, v]) => [`ON RTA s. ${k}`, v]),
-  ...Array.from(BC_MVA_SECTIONS.entries()).map(([k, v]) => [`MVA s. ${k}`, v]),
-  ...Array.from(BC_RTA_SECTIONS.entries()).map(([k, v]) => [`BC RTA s. ${k}`, v]),
-  ...Array.from(AB_TSA_SECTIONS.entries()).map(([k, v]) => [`TSA s. ${k}`, v]),
-  ...Array.from(AB_RTA_SECTIONS.entries()).map(([k, v]) => [`AB RTA s. ${k}`, v]),
-  ...Array.from(AB_HRA_SECTIONS.entries()).map(([k, v]) => [`AHRA s. ${k}`, v]),
-  ...Array.from(ON_HR_SECTIONS.entries()).map(([k, v]) => [`HRC (ON) s. ${k}`, v]),
-  ...Array.from(BC_HR_SECTIONS.entries()).map(([k, v]) => [`HRC (BC) s. ${k}`, v]),
-]);
+// ── Master index and lookup registry ─────────────────────────────────────────
+const CIVIL_LAW_INDEX_SOURCES = [
+  { prefix: "CDSA", map: CDSA_SECTIONS },
+  { prefix: "YCJA", map: YCJA_SECTIONS },
+  { prefix: "CHRA", map: CHRA_SECTIONS },
+  { prefix: "CC", map: CC_SENTENCING },
+  { prefix: "CEA", map: EVIDENCE_SECTIONS },
+  { prefix: "CCRA", map: CCRA_SECTIONS },
+  { prefix: "HTA", map: ON_HTA_SECTIONS },
+  { prefix: "ON RTA", map: ON_RTA_SECTIONS },
+  { prefix: "MVA", map: BC_MVA_SECTIONS },
+  { prefix: "BC RTA", map: BC_RTA_SECTIONS },
+  { prefix: "TSA", map: AB_TSA_SECTIONS },
+  { prefix: "AB RTA", map: AB_RTA_SECTIONS },
+  { prefix: "AHRA", map: AB_HRA_SECTIONS },
+  { prefix: "HRC (ON)", map: ON_HR_SECTIONS },
+  { prefix: "HRC (BC)", map: BC_HR_SECTIONS },
+];
 
 export { 
   CDSA_SECTIONS, YCJA_SECTIONS, CHRA_SECTIONS, CC_SENTENCING, EVIDENCE_SECTIONS, CCRA_SECTIONS,
@@ -1881,33 +1883,13 @@ const STATUTE_ALIASES = [
   { pattern: /\bAB RTA\b/i, prefix: "AB RTA", map: AB_RTA_SECTIONS },
 ];
 
-function extractSectionNumber(citation) {
-  const m = citation.match(/s\.\s*([\d.]+(?:\(\w+\))?)/i)
-    || citation.match(/section\s+([\d.]+)/i)
-    || citation.match(/,\s*([\d.]+(?:\(\w+\))?)\s*$/);
-  return m ? m[1].trim() : null;
-}
+const CIVIL_LAW_REGISTRY = createCivilLawRegistry({
+  indexSources: CIVIL_LAW_INDEX_SOURCES,
+  aliases: STATUTE_ALIASES,
+});
+
+export const CIVIL_LAW_INDEX = CIVIL_LAW_REGISTRY.index;
 
 export function lookupCivilLawSection(citation) {
-  if (!citation || typeof citation !== "string") return null;
-  const trimmed = citation.trim();
-
-  for (const { pattern, prefix, map } of STATUTE_ALIASES) {
-    if (pattern.test(trimmed)) {
-      const sectionNum = extractSectionNumber(trimmed);
-      if (!sectionNum) continue;
-      
-      let entry = map.get(sectionNum);
-      if (!entry) {
-        // Fallback: try base section number (e.g., "4(1)" -> "4")
-        const baseNum = sectionNum.split("(")[0];
-        if (baseNum !== sectionNum) {
-          entry = map.get(baseNum);
-        }
-      }
-      
-      if (entry) return { entry, prefix };
-    }
-  }
-  return null;
+  return CIVIL_LAW_REGISTRY.lookup(citation);
 }

@@ -1,7 +1,11 @@
 // /api/case-summary.js — Generate structured case summary via Claude
 import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
-import { applyCorsHeaders } from "./_cors.js";
 import { randomUUID, createHash } from "crypto";
+import {
+  applyStandardApiHeaders,
+  handleOptionsAndMethod,
+  validateJsonRequest,
+} from "./_apiCommon.js";
 import {
   logRequestStart,
   logRateLimitCheck,
@@ -10,6 +14,8 @@ import {
   logSuccess,
   logError,
 } from "./_logging.js";
+import { API_REDIS_TIMEOUT_MS } from "./_constants.js";
+import { withRequestDedup } from "./_requestDedup.js";
 
 // Strip XML-like tags from user input to prevent delimiter escape
 function sanitizeUserInput(input) {
@@ -89,26 +95,16 @@ export default async function handler(req, res) {
   const requestId = req.headers['x-vercel-id'] || randomUUID();
   const startMs = Date.now();
   logRequestStart(req, "case-summary", requestId);
-  applyCorsHeaders(req, res, "POST, OPTIONS", "Content-Type");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Content-Security-Policy", "default-src 'none'");
-  res.setHeader("Cache-Control", "no-store");
+  applyStandardApiHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const ct = req.headers["content-type"] || "";
-  if (!ct.includes("application/json")) {
-    logValidationError(requestId, "case-summary", "Invalid Content-Type", "content-type");
-    return res.status(415).json({ error: "Content-Type must be application/json" });
-  }
-
-  const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-  if (contentLength > 50_000) {
-    logValidationError(requestId, "case-summary", "Request body too large", "content-length");
-    return res.status(413).json({ error: "Request body too large" });
+  if (handleOptionsAndMethod(req, res, "POST")) return;
+  if (!validateJsonRequest(req, res, {
+    requestId,
+    endpoint: "case-summary",
+    maxBytes: 50_000,
+    logValidationError,
+  })) {
+    return;
   }
 
   const rlResult = await checkRateLimit(getClientIp(req), "case-summary");
@@ -142,7 +138,9 @@ export default async function handler(req, res) {
   const cacheKey = `cache:case-summary:${createHash("sha256").update(JSON.stringify(body)).digest("hex")}`;
   if (redis) {
     try {
-      const timeoutGet = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 500));
+      const timeoutGet = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+      );
       const cached = await Promise.race([redis.get(cacheKey), timeoutGet]);
       if (cached) {
         logSuccess(requestId, "case-summary", 200, Date.now() - startMs, rlResult, { cached: true });
@@ -172,7 +170,8 @@ export default async function handler(req, res) {
     }
 
     const anthropicStartMs = Date.now();
-    const raw = await callAnthropic(prompt, apiKey);
+    const dedupeKey = `inflight:case-summary:${cacheKey}`;
+    const raw = await withRequestDedup(dedupeKey, () => callAnthropic(prompt, apiKey));
     const anthropicDurationMs = Date.now() - anthropicStartMs;
     logExternalApiCall(requestId, "case-summary", "anthropic", 200, anthropicDurationMs);
     
@@ -192,7 +191,9 @@ export default async function handler(req, res) {
 
     if (redis) {
       try {
-        const timeoutSet = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 500));
+        const timeoutSet = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+        );
         await Promise.race([redis.setex(cacheKey, 7 * 24 * 60 * 60, JSON.stringify(normalized)), timeoutSet]);
       } catch (err) {}
     }
