@@ -163,10 +163,7 @@ function getRecentFailureScenarios(events = [], limit = 20) {
       endpoint: event.endpoint || "unknown",
       reason: event.reason || "unknown",
       retrievalError: Boolean(event.retrievalError),
-      finalCaseLawCount: Math.max(
-        toNonNegativeInt(event.finalCaseLawCount),
-        toNonNegativeInt(event.verifiedCount)
-      ),
+      finalCaseLawCount: toNonNegativeInt(event.finalCaseLawCount),
       verifiedCount: toNonNegativeInt(event.verifiedCount),
       fallbackPathUsed: event.fallbackPathUsed === true,
       latencyMs: Number.isFinite(event.retrievalLatencyMs) ? event.retrievalLatencyMs : null,

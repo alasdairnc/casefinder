@@ -287,7 +287,9 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
     return overlapCount >= minOverlap || strongScore;
   });
 
-  filtered.sort((a, b) => {
+  const pool = filtered.length > 0 ? filtered : cases;
+
+  pool.sort((a, b) => {
     const scoreDiff = scoreRetrievedCase(scenarioTokens, scenarioIssue, b) - scoreRetrievedCase(scenarioTokens, scenarioIssue, a);
     if (scoreDiff !== 0) return scoreDiff;
 
@@ -298,8 +300,12 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
     return String(a?.citation || "").localeCompare(String(b?.citation || ""));
   });
 
-  return filtered.slice(0, limit);
+  return pool.slice(0, limit);
 }
+
+export const __testables = {
+  selectTopRetrievedCases,
+};
 
 // ── Deterministic RAG Token Matching ─────────────────────────────────────────
 function matchLandmarkCases(scenario) {
