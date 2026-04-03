@@ -1401,7 +1401,7 @@ export async function retrieveVerifiedCaseLaw({
   return {
     cases,
     meta: {
-      issuePrimary: issue?.primary || "general_criminal",
+      issuePrimary: semanticFilter?.issue?.primary || detectedIssue.primary || "general_criminal",
       termsTried: terms.length,
       databasesTried: dbTargets.length,
       searchCalls: 0,
