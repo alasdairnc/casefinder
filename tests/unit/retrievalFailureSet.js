@@ -1,5 +1,25 @@
 export const RETRIEVAL_FAILURE_SET = [
   {
+    id: "stolen_chair_not_socan",
+    scenario: "My chair was stolen from outside my apartment.",
+    expectedPrimary: "theft",
+    shouldInclude: [],
+    shouldExclude: ["SOCAN", "copyright", "royalty", "digital", "conversion"],
+    expectedKeywords: [],
+    minResults: 0,
+    maxResults: 0,
+    landmarkMatches: [
+      {
+        citation: "SOCAN v. Entertainment Software Association, 2022 SCC 30",
+        title: "SOCAN v. Entertainment Software Association",
+        ratio: "Copyright royalties and making works available online.",
+        tags: ["copyright", "royalty", "digital", "property"],
+        topics: ["intellectual property", "copyright"],
+        year: 2022,
+      },
+    ],
+  },
+  {
     id: "robbery_positive_control",
     scenario: "A person threatened me and took my wallet by force near a bus stop.",
     expectedPrimary: "robbery",

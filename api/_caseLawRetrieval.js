@@ -211,7 +211,7 @@ function inferFallbackIssueSignals(scenarioTokens) {
     add("break and enter", "s. 348", "dwelling house", "intent");
   }
   if (hasAny(["robbery", "robbed", "mugged", "mugging", "theft", "stolen", "steal", "shoplift", "shoplifting"])) {
-    add("robbery", "theft", "s. 343", "s. 322", "property", "force", "threat");
+    add("robbery", "theft", "s. 343", "s. 322", "dishonesty", "without consent", "force", "threat", "stolen");
   }
 
   return dedupeStrings(out);
@@ -438,7 +438,7 @@ function detectCoreIssue(scenario) {
         /\b(theft|steal\w*|stolen|shoplift\w*|merchandise|without\s+paying)\b/
       ],
       primary: "theft",
-      subIssues: new Set(["theft", "s. 322", "dishonesty", "property", "without consent"])
+      subIssues: new Set(["theft", "s. 322", "dishonesty", "without consent", "stolen", "taking"])
     },
     domestic_assault: {
       tests: [
