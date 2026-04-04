@@ -1,0 +1,212 @@
+{
+  "total_tests": 25,
+  "evaluated_tests": 25,
+  "skipped_tests": 0,
+  "passed": 25,
+  "failed": 0,
+  "pass_rate": 100,
+  "avg_relevance_global": 0.6,
+  "avg_precision_global": 1,
+  "results": [
+    {
+      "scenario_summary": "My chair was stolen from outside my apartment.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "theft"
+    },
+    {
+      "scenario_summary": "A person threatened me and took my wallet by force near a bus stop.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "robbery"
+    },
+    {
+      "scenario_summary": "Police searched my phone without a warrant after they stopped me.",
+      "skipped": false,
+      "total_returned": 2,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "charter_search_seizure"
+    },
+    {
+      "scenario_summary": "My trial has been delayed for over three years and keeps getting adjourned.",
+      "skipped": false,
+      "total_returned": 3,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "trial_delay"
+    },
+    {
+      "scenario_summary": "I am accused of shoplifting from a grocery store.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "theft"
+    },
+    {
+      "scenario_summary": "I was mugged for $50 while walking home.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "robbery"
+    },
+    {
+      "scenario_summary": "Police took my phone and searched messages without a warrant.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "charter_search_seizure"
+    },
+    {
+      "scenario_summary": "Someone robbed me and took my cash while threatening me.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "robbery"
+    },
+    {
+      "scenario_summary": "I was detained and denied access to a lawyer for two hours.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "charter_counsel"
+    },
+    {
+      "scenario_summary": "I was pulled over for going 1 km/h over the speed limit. What case law applies?",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "minor_traffic_stop"
+    },
+    {
+      "scenario_summary": "Routine speeding stop. I got a ticket but there was no search or arrest.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I was stopped for a tiny speed overage and want to know if an old SCC landmark a",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "Someone pulled a knife on me and took my phone at a bus platform.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "Security says I stole a backpack from a department store.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "Officers entered my home and searched my computer without a warrant.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "My criminal trial delay is over four years with repeated adjournments.",
+      "skipped": false,
+      "total_returned": 3,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "trial_delay"
+    },
+    {
+      "scenario_summary": "At a roadside detention they kept questioning me and would not let me call couns",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I got a simple speeding ticket and there was no detention, search, or arrest.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "A speed camera mailed me a ticket. No officer stopped me and there was no search",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "charter_search_seizure"
+    },
+    {
+      "scenario_summary": "My neighbor keeps blasting loud music late at night and I want legal options.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "My landlord will not return my rent deposit and I want to know what to file.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "My ex keeps showing up outside my building. I want to know if I can get a peace ",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "peace_bond"
+    },
+    {
+      "scenario_summary": "I got a jaywalking ticket downtown. There was no search, detention, or force.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I lost my wallet on the subway and I am wondering what legal process applies.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I was detained at a roadside stop and couldn't call a lawyer for hours.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "charter_counsel"
+    }
+  ]
+}

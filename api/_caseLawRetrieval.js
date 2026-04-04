@@ -197,11 +197,14 @@ function isMinorTrafficStopScenario(scenario) {
   const s = String(scenario || "").toLowerCase();
   if (!s) return false;
 
-  const hasTrafficStopContext = /\b(pulled\s+over|traffic\s+stop|roadside|speed\s+limit|speeding|ticket|citation|fine)\b/.test(s);
-  const hasMinorSpeedContext = /\b(\d+\s*km\/h|km\/h|over\s*the\s*limit|over\s*\d+\s*km\/h)\b/.test(s);
+  const hasTrafficStopContext = /\b(pulled\s+over|traffic\s+stop|roadside|stopped|speed\s+limit|speeding|speeding\s+stop|ticket|citation|fine)\b/.test(s);
+  const hasMinorSpeedContext = /\b(\d+\s*km\/h|km\/h|over\s*the\s*limit|over\s*\d+\s*km\/h|speed\s*overage|speeding\s+ticket|speeding\s+stop)\b/.test(s);
   const hasSeriousCharterOrCriminalContext = /\b(charter|detain\w*|arrest\w*|search\w*|seiz\w*|counsel|warrant|impaired|breath|drunk|dangerous|careless)\b/.test(s);
 
-  return (hasTrafficStopContext && hasMinorSpeedContext) || (hasTrafficStopContext && !hasSeriousCharterOrCriminalContext && /\bspeed\s+limit\b/.test(s));
+  return (
+    (hasTrafficStopContext && hasMinorSpeedContext) ||
+    (hasTrafficStopContext && !hasSeriousCharterOrCriminalContext && /\b(speed\s+limit|speeding\s+stop|speeding\s+ticket)\b/.test(s))
+  );
 }
 
 function candidateDbId(candidate) {
@@ -376,7 +379,7 @@ function detectCoreIssue(scenario) {
     search_seizure: {
       tests: [
         /\b(search|searched|searching|seiz\w*|warrant|warrantless|privacy|phone|device|records|text|computer|digital)\b/,
-        /\b(charter|police|officer|lawful|unreasonable|state|without\s+warrant|no\s+warrant)\b/,
+        /\b(charter|police|officer\w*|lawful|unreasonable|state|without\s+warrant|no\s+warrant)\b/,
       ],
       primary: "charter_search_seizure",
       subIssues: new Set(["charter", "s. 8", "search", "seizure", "warrant", "privacy", "phone", "digital", "grant", "hunter", "marakah", "vu"]),
@@ -384,7 +387,7 @@ function detectCoreIssue(scenario) {
     impaired_motor: {
       tests: [
         /\b(impaired|ride|drunk|over\s*80|breathalyzer|breath\s+sample|breath\s+demand|refus\w*)\b/,
-        /\b(motor|vehicle|drive|driving|stopped|checkpoint|checkstop|pulled\s+over)\b/
+        /\b(motor|vehicle|drive|driving|stop|stopped|checkpoint|checkstop|pulled\s+over|station)\b/
       ],
       primary: "impaired_driving",
       subIssues: new Set(["s. 9", "detention", "stop", "breath", "roadside", "grant", "reasonable suspicion", "breath demand", "impaired"])
@@ -392,7 +395,7 @@ function detectCoreIssue(scenario) {
     assault_harm: {
       tests: [
         /\b(assault|punch\w*|struck|hit|fight|physical\s+contact)\b/,
-        /\b(bodily|harm|injur\w*|wound\w*|broke|fracture\w*|minor\s+injur\w*)\b/
+        /\b(bodily|harm|injur\w*|wound\w*|broke|broken|fracture\w*|stitches?|minor\s+injur\w*)\b/
       ],
       primary: "assault_bodily_harm",
       subIssues: new Set(["bodily harm", "s. 267", "recklessness", "self-defence", "punch"])
@@ -406,22 +409,28 @@ function detectCoreIssue(scenario) {
       subIssues: new Set(["weapon", "s. 267", "self-defence", "dangerous", "knife", "firearm"])
     },
     sexual_assault: {
-      tests: [/\bsexual\b/, /\b(assault|attack|touch|intercourse|coerce|consent)\b/],
+      tests: [
+        /\b(sexual|complainant|mistaken\s+belief\s+in\s+consent)\b/,
+        /\b(assault|attack|touch|intercourse|coerce|consent)\b/
+      ],
       primary: "sexual_assault",
       subIssues: new Set(["s. 271", "consent", "s. 273", "complainant", "credibility"])
     },
     drug_trafficking: {
-      tests: [/\b(drug|narcotic|cocaine|fentanyl|cannabis|marijuana)\b/, /\b(traffick|sell|distribut|deal)\b/],
+      tests: [/\b(drug|narcotic|cocaine|fentanyl|cannabis|marijuana)\b/, /\b(traffick\w*|sell|sold|distribut\w*|deal\w*)\b/],
       primary: "drug_trafficking",
       subIssues: new Set(["cdsa", "s. 5", "trafficking", "possession", "schedule", "intent"])
     },
     charter_detention: {
-      tests: [/\bcharter\b/, /\b(detain\w*|arrest\w*|arbitrary)\b/],
+      tests: [
+        /\b(charter|detain\w*|arbitrary|free\s+to\s+leave|boxed\s+in)\b/,
+        /\b(detain\w*|arbitrary|free\s+to\s+leave|boxed\s+in|questioned)\b/
+      ],
       primary: "charter_detention",
       subIssues: new Set(["s. 9", "detention", "arbitrary", "grant", "psychological detention"])
     },
     charter_counsel: {
-      tests: [/\b(right\s+to)?\s*counsel\b|\blawyer\b/, /\b(detain\w*|arrest\w*)\b/],
+      tests: [/\b(right\s+to)?\s*counsel\b|\blawyer\b/, /\b(detain\w*|detention|arrest\w*)\b/],
       primary: "charter_counsel",
       subIssues: new Set(["s. 10", "s. 10(b)", "right to counsel", "informational", "detention", "waiver", "woods", "suberu"])
     },
@@ -473,13 +482,13 @@ function detectCoreIssue(scenario) {
       ])
     },
     robbery: {
-      tests: [/\b(robbery|robbed|mugg(?:ed|ing)?)\b|\b(took|take|stole|steal|grabbed|snatched)\b.*\b(wallet|cash|money|property|phone|bag|purse)\b.*\b(force|threat|threatened|violence|violent)\b|\b(force|threat|threatened|violence|violent)\b.*\b(took|take|stole|steal|grabbed|snatched)\b.*\b(wallet|cash|money|property|phone|bag|purse)\b/],
+      tests: [/\b(robbery|robbed|mugg(?:ed|ing)?)\b|\b(took|take|stole|steal\w*|grabbed|snatched)\b.*\b(wallet|cash|money|property|phone|bag|purse|backpack)\b.*\b(force|threat|threatened|violence|violent|knife|gun|firearm|shove\w*)\b|\b(force|threat|threatened|violence|violent|knife|gun|firearm|shove\w*)\b.*\b(took|take|stole|steal\w*|grabbed|snatched)\b.*\b(wallet|cash|money|property|phone|bag|purse|backpack)\b/],
       primary: "robbery",
       subIssues: new Set(["robbery", "robbed", "mugging", "s. 343", "violence", "threat", "force"])
     },
     theft: {
       tests: [
-        /\b(theft|steal\w*|stolen|shoplift\w*|merchandise|without\s+paying)\b/
+        /\b(theft|steal\w*|stole|stolen|shoplift\w*|merchandise|without\s+paying)\b/
       ],
       primary: "theft",
       subIssues: new Set(["theft", "s. 322", "dishonesty", "without consent", "stolen", "taking"])
@@ -495,7 +504,7 @@ function detectCoreIssue(scenario) {
     trial_delay: {
       tests: [
         /\b(delay|delayed|adjourned|adjournment|postponed|backlog|waited)\b/,
-        /\b(trial|crown|court|hearing|charter|11\(b\))\b/
+        /\b(trial|case|charge\w*|crown|court|hearing|charter|11\(b\))\b/
       ],
       primary: "trial_delay",
       subIssues: new Set([
