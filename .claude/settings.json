@@ -1,4 +1,17 @@
 {
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(chmod 777 *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)",
+      "Bash(sudo *)",
+      "Bash(ssh *)",
+      "Bash(* > /dev/*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -7,6 +20,25 @@
           {
             "type": "command",
             "command": "python3 -c \"\nimport sys, json, re\ndata = json.load(sys.stdin)\npath = data.get('file_path', '')\nfilename = path.split('/')[-1]\nif re.match(r'^\\.env(\\.|$)', filename):\n    print('Blocked: .env files must not be edited via Claude. Edit manually or use \\\"vercel env\\\".', file=sys.stderr)\n    sys.exit(2)\nif filename == 'vercel.json':\n    print('Blocked: vercel.json controls CORS and routing. Edit manually and confirm changes.', file=sys.stderr)\n    sys.exit(2)\n\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json, re\ndata = json.load(sys.stdin)\ncmd = data.get('command', '')\ndangerous = [r'rm\\s+-rf', r'git\\s+push\\s+--force', r'git\\s+reset\\s+--hard', r'chmod\\s+777', r'\\|\\s*bash', r'\\|\\s*sh']\nfor pattern in dangerous:\n    if re.search(pattern, cmd):\n        print(f'Blocked: dangerous command pattern detected: {cmd[:80]}', file=sys.stderr)\n        sys.exit(2)\n\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport subprocess, sys\nresult = subprocess.run(['git', 'diff', '--name-only'], capture_output=True, text=True)\nfiles = result.stdout.strip()\nif files:\n    sensitive = [f for f in files.splitlines() if '.env' in f or 'secret' in f.lower() or 'credential' in f.lower()]\n    if sensitive:\n        print(f'Warning: session ended with potentially sensitive files modified: {sensitive}', file=sys.stderr)\n\""
           }
         ]
       }
