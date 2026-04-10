@@ -69,7 +69,7 @@ async function callAnthropic(caseText, apiKey) {
       "Content-Type": "application/json",
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
-      "anthropic-beta": "prompt-caching-2024-07-31,citations-2023-12-31",
+      "anthropic-beta": "prompt-caching-2024-07-31",
     },
     body: JSON.stringify({
       model: ANTHROPIC_MODEL_ID,
@@ -81,7 +81,7 @@ async function callAnthropic(caseText, apiKey) {
           content: [
             {
               type: "document",
-              source: { type: "text", data: caseText },
+              source: { type: "text", media_type: "text/plain", data: caseText },
               citations: { enabled: true },
             },
             {
