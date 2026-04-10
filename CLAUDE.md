@@ -1,6 +1,6 @@
 # CaseDive - Claude Context File
 
-Last updated: March 30, 2026 (verify+retrieval-health tests + docs sync)
+Last updated: April 9, 2026 (gotchas + project tree expanded)
 
 ## About
 Built by Alasdair NC, Justice Studies student at University of Guelph-Humber. Toronto-based.
@@ -10,31 +10,39 @@ Live at [casedive.ca](https://casedive.ca) - Repo: `alasdairnc/casefinder`
 AI-powered Canadian legal research tool. User describes a legal scenario in plain language and gets Criminal Code sections, case law, civil law statutes, Charter rights analysis, and CanLII/Justice Laws-linked citations.
 
 ## Roadmap Status (Current)
-- Completed: Core product flow is production-ready (scenario input -> AI analysis -> grouped legal output -> citation verification).
-- Completed: Serverless API suite includes analysis, citation verification, case summary generation, and PDF export.
-- Completed: Expanded legal datasets now back local verification for Criminal Code, civil law statutes, and Charter citations.
-- Completed (Phase A): retrieval-assisted case-law pipeline added (CanLII term search -> verify -> merge into analyze output).
-- Completed (Phase B): analyze output is retrieval-first for case law (model-generated case_law is no longer used in final output).
-- Completed (Phase C-A): structured retrieval metrics logging added for analyze/retrieve-caselaw (reason, call counts, verification yield, latency).
-- Completed (Phase C-B): rolling retrieval health aggregates (5m/1h) added with Redis + in-memory fallback.
-- Completed (Phase C-C): threshold alert evaluation + deduped alert logs + internal retrieval health endpoint.
-- Completed: optional `RETRIEVAL_ALERT_WEBHOOK_URL` POST for deduped threshold alerts; case-law fallback search + expanded DB targets when primary pass verifies nothing; internal dashboard at `/internal/retrieval-health`.
-- Completed: Redis operation timeout guards (500ms Promise.race) added to all Redis call sites in _rateLimit.js, _retrievalThresholds.js, and _retrievalHealthStore.js.
-- Completed (pending user testing): Data quality refinement — fixed 5 duplicate Map keys in civilLawData.js, replaced ~160 placeholder summaries with exact statute text across all 15 statute Maps (0 placeholders remaining, 191 entries, all lookups verified).
-- Completed: targeted unit test coverage for edge citation formats in CanLII parsing/ID generation paths.
-- Completed: retrieval-health endpoint unit tests for auth, method guards, rate limiting, CORS/security headers, and upstream error mapping.
-- Completed: verify endpoint unit tests for timeout handling, non-JSON upstream responses, mixed citation batches, and request guard branches (415/413/429).
-- Completed: retrieval-health dashboard E2E coverage for auth failure (401) and successful render after token save.
-- Completed: hallucination-filter E2E flake hardening (DOM content navigation + strict locator assertions + resilient banner matcher), validated with repeat-run browser stress checks.
-- Completed: docs sync for current retrieval telemetry + alert status.
-- Completed (Phase D-A): labeled retrieval failure set + evaluation loop added (`npm run test:retrieval-failures`) for false positives like routine traffic stops surfacing broad landmark cases.
-- Completed (Phase D-B): issue-to-case compatibility gating + staged semantic retrieval passes added to reduce cross-issue landmark leakage while preserving recall on on-point scenarios.
-- Completed (Phase D-C): analyze-side ranking harmonized with issue compatibility penalties so mismatched case domains are demoted after retrieval.
-- Completed: guardrail workflow now includes retrieval-failure regression check (`npm run test:guardrails` runs `test:retrieval-failures` before `test:filter`).
-- Next priorities:
-  - Expand retrieval failure corpus with production-derived misses/false-positives (target 25+ labeled scenarios)
-  - Optional: retrieval health trendlines over time (dashboard shows 5m/1h snapshots today)
-  - Continue case-law retrieval quality tuning (query shaping, fallback calibration, and empty-state UX)
+Next priorities:
+- Expand retrieval failure corpus with production-derived misses/false-positives (target 25+ labeled scenarios)
+- Optional: retrieval health trendlines over time (dashboard shows 5m/1h snapshots today)
+- Continue case-law retrieval quality tuning (query shaping, fallback calibration, and empty-state UX)
+
+## Commands
+
+```bash
+npm run dev          # Vite frontend only (localhost:5173)
+npm run dev:api      # Full stack via Vercel CLI — use this for any API work
+npm run build        # Production build
+npm run preview      # Preview production build locally
+```
+
+## Testing
+
+Three separate runners — use the right one for the scope of your change:
+
+```bash
+npm run test:unit          # Vitest — JS unit tests (api handlers, lib modules); excludes .test.jsx
+npm run test:component     # Vitest — component tests (.test.jsx files only)
+npm test                   # Playwright — full E2E suite
+npm run test:ui            # Playwright — interactive UI mode
+npm run test:live          # Playwright — runs against live casedive.ca
+npm run test:guardrails    # Composite pre-PR check: sanitizer + retrieval-failures + hallucination filter
+npm run test:retrieval-failures  # Evaluate labeled retrieval failure scenarios
+npm run test:filter        # Hallucination filter quality report
+```
+
+```bash
+npm run security:scan      # gitleaks scan (branches + tags)
+npm run perf:monitor       # Performance monitoring script
+```
 
 ## Tech Stack
 - Frontend: React 18 + Vite, inline styles with ThemeContext (no CSS framework by design)
@@ -96,6 +104,16 @@ casedive/
 |  |- App.jsx
 |  |- main.jsx
 |  \- index.css
+|- tests/
+|  |- e2e/               # Playwright E2E specs
+|  |- unit/              # Vitest unit + component tests
+|  \- live/              # Playwright specs run against casedive.ca
+|- scripts/
+|  |- evaluate-retrieval-failures.js  # Labeled failure evaluation loop
+|  |- tune-filters.js                 # Hallucination filter tuning + reporting
+|  |- performance-monitor.js
+|  |- security-probe.js
+|  \- setup-git-hooks.sh
 |- public/
 |- vercel.json
 |- vite.config.js
@@ -164,6 +182,15 @@ RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP=false # Optional; set true only for local/dev
 - Dark: `#1a1814` bg, `#e8e0d0` text, `#d4a040` accent
 - Styling remains inline via ThemeContext (no CSS framework)
 
+## Gotchas
+
+- **`npm run dev` vs `npm run dev:api`**: `dev` starts Vite only — API routes won't work. Use `dev:api` (Vercel CLI) whenever touching `/api/`.
+- **Redis falls back to in-memory in dev**: You don't need Upstash locally. Rate limiting and caching work without `UPSTASH_REDIS_REST_URL` set.
+- **CanLII API key is optional**: Verification degrades gracefully without `CANLII_API_KEY` — case citations show unverified rather than erroring.
+- **`test:unit` excludes `.test.jsx` files**: Despite the name, it runs Vitest on JS files only. Use `test:component` for JSX component tests.
+- **No CSS framework**: All styling is inline via `ThemeContext`. Don't add Tailwind, CSS modules, or styled-components.
+- **Model calls are server-side only**: Never call the Anthropic API from React components — always route through `/api/` functions.
+
 ## Security
 - API keys are server-side only.
 - CORS is restricted to `casedive.ca`, `www.casedive.ca`, and `casedive.vercel.app`.
@@ -182,6 +209,7 @@ RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP=false # Optional; set true only for local/dev
 - Preserve legal-disclaimer behavior in the UI.
 - Use clear, scoped commit messages; separate unrelated changes.
 - Never commit `.env` or secrets.
+
 ## Communication Style (Alasdair's Preferences)
 - Be concise. Confirm actions in one sentence. Don't over-explain.
 - If something is ambiguous, ask one clarifying question only.

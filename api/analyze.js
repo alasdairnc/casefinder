@@ -67,7 +67,10 @@ function ensureMetaContainer(result) {
 
 // ── Anthropic call ───────────────────────────────────────────────────────────
 
-async function callAnthropic(messages, system, apiKey) {
+async function callAnthropic(messages, system, apiKey, { useSearchGrounding = false } = {}) {
+  const betaHeaders = ["prompt-caching-2024-07-31"];
+  if (useSearchGrounding) betaHeaders.push("search-grounding-2025-02-19");
+
   const response = await fetch(ANTHROPIC_MESSAGES_URL, {
     signal: AbortSignal.timeout(ANTHROPIC_TIMEOUT_MS), // 25s — Vercel serverless limit is 30s
     method: "POST",
@@ -75,7 +78,7 @@ async function callAnthropic(messages, system, apiKey) {
       "Content-Type": "application/json",
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
-      "anthropic-beta": "prompt-caching-2024-07-31",
+      "anthropic-beta": betaHeaders.join(","),
     },
     body: JSON.stringify({
       model: ANTHROPIC_MODEL_ID,
@@ -366,10 +369,29 @@ function matchLandmarkCases(scenario) {
 
 // ── Parse with one retry ─────────────────────────────────────────────────────
 
-async function analyzeWithRetry(scenario, filters, apiKey) {
+// Build search_result content blocks from verified CanLII cases.
+// Each block follows the Anthropic Messages API search_result spec:
+// https://docs.anthropic.com/en/docs/build-with-claude/citations
+function buildSearchResultBlocks(cases) {
+  if (!Array.isArray(cases) || cases.length === 0) return [];
+  return cases.map((c) => ({
+    type: "search_result",
+    source: c.url_canlii || `https://www.canlii.org/en/`,
+    title: c.citation || c.title || "",
+    content: [
+      {
+        type: "text",
+        text: c.summary || c.title || c.citation || "",
+      },
+    ],
+    citations: { enabled: true },
+  }));
+}
+
+async function analyzeWithRetry(scenario, filters, apiKey, retrievedCases = []) {
   let system = buildSystemPrompt(filters || {});
   let matchedLandmarks = [];
-  
+
   if (filters?.lawTypes?.case_law !== false) {
     matchedLandmarks = matchLandmarkCases(scenario);
     if (matchedLandmarks.length > 0) {
@@ -381,10 +403,18 @@ async function analyzeWithRetry(scenario, filters, apiKey) {
   }
 
   const sanitized = sanitizeUserInput(scenario);
-  const messages = [{ role: "user", content: `<user_input>\n${sanitized}\n</user_input>` }];
+  const searchResultBlocks = buildSearchResultBlocks(retrievedCases);
+  const useSearchGrounding = searchResultBlocks.length > 0;
+
+  // User message: search_result blocks (if any) followed by the query text block.
+  const userContent = [
+    ...searchResultBlocks,
+    { type: "text", text: `<user_input>\n${sanitized}\n</user_input>` },
+  ];
+  const messages = [{ role: "user", content: userContent }];
 
   // First attempt
-  const raw = await callAnthropic(messages, system, apiKey);
+  const raw = await callAnthropic(messages, system, apiKey, { useSearchGrounding });
   try {
     return { result: JSON.parse(raw), raw, matchedLandmarks };
   } catch {
@@ -399,7 +429,7 @@ async function analyzeWithRetry(scenario, filters, apiKey) {
       },
     ];
 
-    const retryRaw = await callAnthropic(retryMessages, system, apiKey);
+    const retryRaw = await callAnthropic(retryMessages, system, apiKey, { useSearchGrounding });
     try {
       return { result: JSON.parse(retryRaw), raw, retryRaw, matchedLandmarks };
     } catch {
@@ -527,11 +557,35 @@ export default async function handler(req, res) {
       } catch { /* cache miss — proceed normally */ }
     }
 
+    // Pre-retrieval pass: fetch CanLII cases from the raw scenario before calling
+    // Anthropic so they can be included as search_result blocks in the user message.
+    // The Phase B loop below still runs afterward using AI hints to refine results.
+    let preRetrievedCases = [];
+    const canliiKey = process.env.CANLII_API_KEY || "";
+    if (filters.lawTypes.case_law !== false && canliiKey) {
+      try {
+        const { cases: preCases } = await runCaseLawRetrieval({
+          scenario: scenario.trim(),
+          filters,
+          aiSuggestions: [],
+          aiCaseLaw: [],
+          landmarkMatches: [],
+          criminalCode: [],
+          apiKey: canliiKey,
+          maxResults: 5,
+          timeoutMs: 5_000,
+        });
+        preRetrievedCases = preCases;
+      } catch {
+        // Best-effort — Anthropic call proceeds without grounding blocks.
+      }
+    }
+
     const anthropicStartMs = Date.now();
     const dedupeKey = `inflight:analyze:${cacheKey(scenario, filters)}`;
     const { result, raw, retryRaw, matchedLandmarks } = await withRequestDedup(
       dedupeKey,
-      () => analyzeWithRetry(scenario, filters, apiKey)
+      () => analyzeWithRetry(scenario, filters, apiKey, preRetrievedCases)
     );
     const anthropicDurationMs = Date.now() - anthropicStartMs;
     logExternalApiCall(requestId, "analyze", "anthropic", 200, anthropicDurationMs, { retried: !!retryRaw });

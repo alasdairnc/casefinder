@@ -347,6 +347,14 @@ describe("safeLine — landmark data sanitization before system prompt injection
 // ── 2. RAG poisoning / user input sanitization ────────────────────────────────
 
 describe("RAG poisoning — user scenario sanitization", () => {
+  // userContent is now an array of content blocks (search_result blocks + text block).
+  // Helper to extract the text from the final text block in the user message.
+  function getUserTextBlock(userContent) {
+    if (typeof userContent === "string") return userContent;
+    const textBlock = [...userContent].reverse().find((b) => b.type === "text");
+    return textBlock?.text ?? "";
+  }
+
   it("strips XML-like tags from user scenario before forwarding to Anthropic", async () => {
     mockAnthropicSuccess();
 
@@ -363,11 +371,11 @@ describe("RAG poisoning — user scenario sanitization", () => {
     expect(anthropicCall).toBeDefined();
 
     const body = JSON.parse(anthropicCall[1].body);
-    const userContent = body.messages[0].content;
+    const userText = getUserTextBlock(body.messages[0].content);
 
-    expect(userContent).not.toContain("<SYSTEM>");
-    expect(userContent).not.toContain("</SYSTEM>");
-    expect(userContent).toContain("ignore all previous instructions");
+    expect(userText).not.toContain("<SYSTEM>");
+    expect(userText).not.toContain("</SYSTEM>");
+    expect(userText).toContain("ignore all previous instructions");
   });
 
   it("strips closing user_input tag from user scenario to prevent delimiter escape", async () => {
@@ -384,20 +392,20 @@ describe("RAG poisoning — user scenario sanitization", () => {
     const fetchCalls = globalThis.fetch.mock.calls;
     const anthropicCall = fetchCalls.find((c) => String(c[0]).includes("anthropic.com"));
     const body = JSON.parse(anthropicCall[1].body);
-    const userContent = body.messages[0].content;
+    const userText = getUserTextBlock(body.messages[0].content);
 
     // The handler wraps content in <user_input>...</user_input> itself — that's expected.
     // What we must NOT see is the injected tags from the user's scenario appearing
     // as a second </user_input> or <system> pair outside the wrapper.
     // Count occurrences: there should be exactly one of each wrapper tag.
-    const openCount = (userContent.match(/<user_input>/g) || []).length;
-    const closeCount = (userContent.match(/<\/user_input>/g) || []).length;
+    const openCount = (userText.match(/<user_input>/g) || []).length;
+    const closeCount = (userText.match(/<\/user_input>/g) || []).length;
     expect(openCount).toBe(1);
     expect(closeCount).toBe(1);
 
     // The injected <system> tag must be stripped
-    expect(userContent).not.toContain("<system>");
-    expect(userContent).not.toContain("</system>");
+    expect(userText).not.toContain("<system>");
+    expect(userText).not.toContain("</system>");
   });
 
   it("accepts benign scenarios without modification", async () => {
@@ -411,11 +419,11 @@ describe("RAG poisoning — user scenario sanitization", () => {
     const fetchCalls = globalThis.fetch.mock.calls;
     const anthropicCall = fetchCalls.find((c) => String(c[0]).includes("anthropic.com"));
     const body = JSON.parse(anthropicCall[1].body);
-    const userContent = body.messages[0].content;
+    const userText = getUserTextBlock(body.messages[0].content);
 
     // The substantive text should be preserved
-    expect(userContent).toContain("shoplifting");
-    expect(userContent).toContain("Ontario");
+    expect(userText).toContain("shoplifting");
+    expect(userText).toContain("Ontario");
   });
 });
 
@@ -435,8 +443,10 @@ describe("CanLII retrieval timeout", () => {
 
     const handlerPromise = handler(req, res);
 
-    // Advance past the 7s budget
-    await vi.advanceTimersByTimeAsync(8_000);
+    // Advance past both the pre-retrieval budget (5s) and the Phase B budget (7s).
+    // Pre-retrieval runs first and is best-effort (caught); Anthropic resolves instantly
+    // via mock; then Phase B runs and times out. Total virtual time needed: >12s.
+    await vi.advanceTimersByTimeAsync(13_000);
     await handlerPromise;
 
     vi.useRealTimers();
@@ -445,7 +455,7 @@ describe("CanLII retrieval timeout", () => {
     expect(res.body.case_law).toEqual([]);
     expect(res.body.meta.case_law.reason).toBe("retrieval_timeout");
     expect(res.body.meta.case_law.source).toBe("retrieval_error");
-  });
+  }, 15_000);
 
   it("does not call Sentry.captureException on retrieval timeout", async () => {
     vi.useFakeTimers();
@@ -457,13 +467,13 @@ describe("CanLII retrieval timeout", () => {
     const res = createRes();
 
     const handlerPromise = handler(req, res);
-    await vi.advanceTimersByTimeAsync(8_000);
+    await vi.advanceTimersByTimeAsync(13_000);
     await handlerPromise;
 
     vi.useRealTimers();
 
     expect(mockCaptureException).not.toHaveBeenCalled();
-  });
+  }, 15_000);
 
   it("calls Sentry.captureException for non-timeout retrieval errors", async () => {
     mockAnthropicSuccess();
