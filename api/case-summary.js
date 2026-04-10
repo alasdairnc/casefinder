@@ -81,7 +81,7 @@ async function callAnthropic(caseText, apiKey) {
           content: [
             {
               type: "document",
-              source: { type: "text", media_type: "text/plain", data: caseText },
+              source: { type: "text", data: caseText },
               citations: { enabled: true },
             },
             {
