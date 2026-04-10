@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"\nimport sys, json, re\ndata = json.load(sys.stdin)\npath = data.get('file_path', '')\nfilename = path.split('/')[-1]\nif re.match(r'^\\.env(\\.|$)', filename):\n    print('Blocked: .env files must not be edited via Claude. Edit manually or use \\\"vercel env\\\".', file=sys.stderr)\n    sys.exit(2)\n\""
+            "command": "python3 -c \"\nimport sys, json, re\ndata = json.load(sys.stdin)\npath = data.get('file_path', '')\nfilename = path.split('/')[-1]\nif re.match(r'^\\.env(\\.|$)', filename):\n    print('Blocked: .env files must not be edited via Claude. Edit manually or use \\\"vercel env\\\".', file=sys.stderr)\n    sys.exit(2)\nif filename == 'vercel.json':\n    print('Blocked: vercel.json controls CORS and routing. Edit manually and confirm changes.', file=sys.stderr)\n    sys.exit(2)\n\""
           }
         ]
       }

@@ -1,6 +1,6 @@
 # CaseDive - Claude Context File
 
-Last updated: April 9, 2026 (gotchas + project tree expanded)
+Last updated: April 9, 2026 (full structure sync, CORS/Sentry/retrieval modules documented)
 
 ## About
 Built by Alasdair NC, Justice Studies student at University of Guelph-Humber. Toronto-based.
@@ -47,7 +47,7 @@ npm run perf:monitor       # Performance monitoring script
 ## Tech Stack
 - Frontend: React 18 + Vite, inline styles with ThemeContext (no CSS framework by design)
 - Backend: Vercel serverless functions (`/api/`)
-- AI: Anthropic Messages API (currently `claude-haiku-4-5-20251001`)
+- AI: Anthropic Messages API (`claude-haiku-4-5-20251001` default, overridable via `ANTHROPIC_MODEL_ID` env var in `analyze.js`; `case-summary.js` currently hardcodes the model)
 - Legal data:
   - CanLII API for case verification metadata
   - Local legal lookup datasets for Criminal Code, civil law statutes, and Charter sections
@@ -59,17 +59,30 @@ npm run perf:monitor       # Performance monitoring script
 ```text
 casedive/
 |- api/
-|  |- _logging.js            # Structured request/API/error logs
-|  |- _retrievalMetrics.js   # Structured retrieval telemetry payload/log helper
+|  |- _apiCommon.js           # applyStandardApiHeaders() + handleOptionsAndMethod() — import this in every endpoint
+|  |- _caseLawRetrieval.js    # Phase A: CanLII search + local DB verification pipeline
+|  |- _constants.js           # Centralized tunable constants (model ID, timeouts, TTLs)
+|  |- _cors.js                # ALLOWED_ORIGINS list + applyCorsHeaders() — source of truth for CORS
+|  |- _filterConfig.js        # Tunable thresholds for semantic filtering/ranking (edit here, not in code)
+|  |- _filterScoring.js       # Filter quality scoring: precision, recall, semantic relevance
+|  |- _legalConcepts.js       # Regex concept patterns + overlap counting for retrieval ranking
+|  |- _logging.js             # Structured request/API/error logs
+|  |- _rateLimit.js           # Sliding-window limiter (Redis + in-memory fallback)
+|  |- _requestDedup.js        # In-memory in-flight deduplication for concurrent identical requests
 |  |- _retrievalHealthStore.js # Rolling retrieval event storage + 5m/1h aggregation
+|  |- _retrievalImprovements.js # Deterministic tuning suggestions from recent retrieval failures
+|  |- _retrievalMetrics.js    # Structured retrieval telemetry payload/log helper
+|  |- _retrievalOrchestrator.js # Shared retrieval runner used by endpoints needing verified case-law
 |  |- _retrievalThresholds.js # Retrieval threshold evaluator + deduped alert emission
-|  |- _rateLimit.js          # Sliding-window limiter (Redis + in-memory fallback)
-|  |- analyze.js             # POST /api/analyze - main AI legal analysis handler
-|  |- verify.js              # POST /api/verify - citation verification (max 10 citations)
-|  |- retrieve-caselaw.js    # POST /api/retrieve-caselaw - Phase A retrieval endpoint
-|  |- retrieval-health.js    # GET /api/retrieval-health - internal retrieval metrics/alerts snapshot
-|  |- case-summary.js        # POST /api/case-summary - structured case summary via Anthropic
-|  \- export-pdf.js         # POST /api/export-pdf - branded PDF export
+|  |- _sentry.js              # Sentry init wrapper (no-ops if SENTRY_DSN not set)
+|  |- _textUtils.js           # Shared text normalization + stop-word sets for retrieval/ranking
+|  |- analyze.js              # POST /api/analyze — main AI legal analysis handler
+|  |- case-summary.js         # POST /api/case-summary — structured case summary via Anthropic
+|  |- export-pdf.js           # POST /api/export-pdf — branded PDF export
+|  |- filter-quality.js       # GET /api/filter-quality — internal filter dashboard (auth-gated)
+|  |- retrieval-health.js     # GET /api/retrieval-health — retrieval metrics/alerts snapshot (auth-gated)
+|  |- retrieve-caselaw.js     # POST /api/retrieve-caselaw — Phase A retrieval endpoint
+|  \- verify.js               # POST /api/verify — citation verification (max 10 citations)
 |- src/
 |  |- components/
 |  |  |- Header.jsx
@@ -84,6 +97,8 @@ casedive/
 |  |  |- BookmarksPanel.jsx
 |  |  |- CriminalCodeExplorer.jsx
 |  |  |- RetrievalHealthDashboard.jsx
+|  |  |- retrievalHealthPanels.jsx  # Sub-panels for RetrievalHealthDashboard
+|  |  |- retrievalHealthUtils.js    # Formatting helpers (pct, num, fmtDate, severityForMetric)
 |  |  |- ErrorMessage.jsx
 |  |  \- Select.jsx
 |  |- hooks/
@@ -98,9 +113,19 @@ casedive/
 |  |  |- prompts.js
 |  |  |- canlii.js
 |  |  |- criminalCodeData.js
+|  |  |- criminalCodeParts.js   # Parts list only — import this instead of criminalCodeData when you don't need the full 316KB dataset
 |  |  |- civilLawData.js
+|  |  |- civilLawRegistry.js    # Registry builder for civil law lookups (wraps civilLawData with alias resolution)
 |  |  |- charterData.js
-|  |  \- validateUrl.js
+|  |  |- landmarkCases.js       # High-signal landmark case seeds for retrieval fallback/query enrichment
+|  |  |- validateUrl.js
+|  |  \- caselaw/               # Live case-law database (merged via index.js)
+|  |     |- index.js            # Exports MASTER_CASE_LAW_DB — merge point for all domain arrays
+|  |     |- criminal.js
+|  |     |- charter.js
+|  |     |- constitutional.js
+|  |     |- administrative.js
+|  |     \- indigenous.js
 |  |- App.jsx
 |  |- main.jsx
 |  \- index.css
@@ -128,6 +153,9 @@ The AI response is JSON with top-level keys:
 
 This is not the legacy `charges`/`cases` format.
 
+### Case Summary Response Shape (`/api/case-summary`)
+Returns JSON with keys: `facts`, `held`, `ratio`, `keyQuote`, `significance`, and `citations` (array of citation blocks from the Anthropic Citations API — may be empty). Case text is passed as a `type: "document"` content block with `citations: { enabled: true }`. Uses beta header `citations-2023-12-31` alongside `prompt-caching-2024-07-31`. Do NOT add `output_config.format` — structured output is incompatible with Citations.
+
 ### Verification Pipeline
 1. AI returns grouped citations in legal sections.
 2. Client extracts citations from `criminal_code`, `case_law`, `civil_law`, `charter`.
@@ -139,9 +167,12 @@ This is not the legacy `charges`/`cases` format.
    - CanLII API for case citations
 5. UI renders verification status badges/links in `ResultCard`.
 
-### Scalable Case Law Architecture (RAG)
-- **Short-Term (0-500 cases)**: Isolated JSON modules within `src/lib/caselaw/` (e.g., `criminal.js`, `charter.js`) that are merged into `index.js`. `api/analyze.js` performs lightning-fast substring matching against this unified memory array.
-- **Long-Term (>500 cases)**: To prevent Serverless memory bloat and execution timeouts, a formal SQL migration (Postgres/Supabase) MUST occur once the threshold is crossed. The schema (`citation`, `topics`, `tags`, `facts`, `ratio`) maps 1:1 to SQL columns.
+### Case Law Database (`src/lib/caselaw/`)
+Domain-split JS modules (`criminal.js`, `charter.js`, `constitutional.js`, `administrative.js`, `indigenous.js`) merged by `index.js` into `MASTER_CASE_LAW_DB`. `api/analyze.js` and `_caseLawRetrieval.js` import from `index.js` only.
+
+**To add a new domain**: create `src/lib/caselaw/<domain>.js`, export a named array, import and spread it in `index.js`.
+
+**Scaling threshold**: at >500 total cases, migrate to SQL (Postgres/Supabase) to avoid serverless memory bloat. Schema maps 1:1: `citation`, `topics`, `tags`, `facts`, `ratio`.
 
 ### Law Type Filtering
 `FiltersPanel` controls `criminal_code`, `case_law`, `civil_law`, `charter` booleans.
@@ -160,6 +191,10 @@ These are passed into `buildSystemPrompt()` and enforced server-side via allowli
 - `casedive-audit`: Comprehensive codebase auditing tool
 - `casedive-skill-router`: Internal skill routing logic
 - `everything-claude-code`: Master rulebook for agent behaviors
+- `new-api-endpoint`: Scaffolds a compliant endpoint stub (`/new-api-endpoint <name> <METHOD>`)
+
+## Subagents
+- `api-invariant-reviewer`: Checks any `api/*.js` file for the three mandatory invariants (rate limiting, input validation, security headers). Auto-runs after `/new-api-endpoint`.
 
 ## Environment Variables
 ```bash
@@ -171,6 +206,7 @@ RETRIEVAL_HEALTH_TOKEN=...             # Optional; protects GET /api/retrieval-h
 RETRIEVAL_ALERT_WEBHOOK_URL=...        # Optional; Slack/generic webhook for deduped retrieval threshold alerts
 RETRIEVAL_ALERT_WEBHOOK_HOST_ALLOWLIST=hooks.slack.com # Optional; comma-separated host allowlist for webhook destination
 RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP=false # Optional; set true only for local/dev webhook endpoints
+SENTRY_DSN=...                           # Optional; error tracking via _sentry.js (no-ops if absent)
 ```
 
 ## Design System
@@ -190,6 +226,10 @@ RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP=false # Optional; set true only for local/dev
 - **`test:unit` excludes `.test.jsx` files**: Despite the name, it runs Vitest on JS files only. Use `test:component` for JSX component tests.
 - **No CSS framework**: All styling is inline via `ThemeContext`. Don't add Tailwind, CSS modules, or styled-components.
 - **Model calls are server-side only**: Never call the Anthropic API from React components — always route through `/api/` functions.
+- **CORS is centralized in `_cors.js`**: `applyCorsHeaders()` is called via `applyStandardApiHeaders()` from `_apiCommon.js`. Don't set CORS headers directly in endpoints — add origins to `_cors.js` only.
+- **Model ID comes from `_constants.js`**: `analyze.js` uses `ANTHROPIC_MODEL_ID` (env-overridable). `case-summary.js` still hardcodes `claude-haiku-4-5-20251001` — update both if switching models.
+- **Sentry is optional**: `_sentry.js` no-ops if `SENTRY_DSN` is not set. Don't assume it's active in dev.
+- **`criminalCodeData.js` is 316KB**: Import `criminalCodeParts.js` instead when you only need the parts list (e.g., for UI dropdowns).
 
 ## Security
 - API keys are server-side only.
