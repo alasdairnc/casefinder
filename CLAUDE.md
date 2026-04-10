@@ -1,7 +1,5 @@
 # CaseDive - Claude Context File
 
-Last updated: April 9, 2026 (full structure sync, CORS/Sentry/retrieval modules documented)
-
 ## About
 Built by Alasdair NC, Justice Studies student at University of Guelph-Humber. Toronto-based.
 Live at [casedive.ca](https://casedive.ca) - Repo: `alasdairnc/casefinder`
@@ -228,7 +226,6 @@ SENTRY_DSN=...                           # Optional; error tracking via _sentry.
 - **Model ID comes from `_constants.js`**: Both `analyze.js` and `case-summary.js` use `ANTHROPIC_MODEL_ID` (env-overridable, defaults to `claude-haiku-4-5-20251001`). Change the model in one place.
 - **Sentry is optional**: `_sentry.js` no-ops if `SENTRY_DSN` is not set. Don't assume it's active in dev.
 - **`criminalCodeData.js` is 316KB**: Import `criminalCodeParts.js` instead when you only need the parts list (e.g., for UI dropdowns).
-- **`_constants.js` is the single source for tunable thresholds**: `ANTHROPIC_MODEL_ID` env var overrides the default there. New endpoints should import constants from `_constants.js`, not hardcode values.
 
 ## Security
 - API keys are server-side only.
