@@ -11,7 +11,11 @@ AI-powered Canadian legal research tool. User describes a legal scenario in plai
 
 Current focus: case-law retrieval quality — query shaping, fallback calibration, and empty-state UX. Retrieval failure corpus is the active test target (`npm run test:retrieval-failures`).
 
+Click-path audit completed April 2026 — all 25 touchpoints clean, no state conflicts.
+
 ## Commands
+
+> Requires `vercel` CLI installed globally (`npm i -g vercel`).
 
 ```bash
 npm run dev          # Vite frontend only (localhost:5173)
@@ -184,10 +188,7 @@ These are passed into `buildSystemPrompt()` and enforced server-side via allowli
 - Charter index: 55 entries (`src/lib/charterData.js`, including key base sections and common subsections)
 
 ## Agent Skills (Claude)
-- `casedive-audit`: Comprehensive codebase auditing tool
-- `casedive-skill-router`: Internal skill routing logic
-- `everything-claude-code`: Master rulebook for agent behaviors
-- `new-api-endpoint`: Scaffolds a compliant endpoint stub (`/new-api-endpoint <name> <METHOD>`)
+Skills are auto-loaded from `.claude/skills/`. Key ones: `casedive-audit`, `new-api-endpoint`.
 
 ## Subagents
 - `api-invariant-reviewer`: Checks any `api/*.js` file for the three mandatory invariants (rate limiting, input validation, security headers). Auto-runs after `/new-api-endpoint`.
