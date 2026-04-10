@@ -47,7 +47,7 @@ npm run perf:monitor       # Performance monitoring script
 ## Tech Stack
 - Frontend: React 18 + Vite, inline styles with ThemeContext (no CSS framework by design)
 - Backend: Vercel serverless functions (`/api/`)
-- AI: Anthropic Messages API (`claude-haiku-4-5-20251001` default, overridable via `ANTHROPIC_MODEL_ID` env var in `analyze.js`; `case-summary.js` currently hardcodes the model)
+- AI: Anthropic Messages API (`claude-haiku-4-5-20251001` default, overridable via `ANTHROPIC_MODEL_ID` env var — used by both `analyze.js` and `case-summary.js`)
 - Legal data:
   - CanLII API for case verification metadata
   - Local legal lookup datasets for Criminal Code, civil law statutes, and Charter sections
@@ -227,7 +227,7 @@ SENTRY_DSN=...                           # Optional; error tracking via _sentry.
 - **No CSS framework**: All styling is inline via `ThemeContext`. Don't add Tailwind, CSS modules, or styled-components.
 - **Model calls are server-side only**: Never call the Anthropic API from React components — always route through `/api/` functions.
 - **CORS is centralized in `_cors.js`**: `applyCorsHeaders()` is called via `applyStandardApiHeaders()` from `_apiCommon.js`. Don't set CORS headers directly in endpoints — add origins to `_cors.js` only.
-- **Model ID comes from `_constants.js`**: `analyze.js` uses `ANTHROPIC_MODEL_ID` (env-overridable). `case-summary.js` still hardcodes `claude-haiku-4-5-20251001` — update both if switching models.
+- **Model ID comes from `_constants.js`**: Both `analyze.js` and `case-summary.js` use `ANTHROPIC_MODEL_ID` (env-overridable, defaults to `claude-haiku-4-5-20251001`). Change the model in one place.
 - **Sentry is optional**: `_sentry.js` no-ops if `SENTRY_DSN` is not set. Don't assume it's active in dev.
 - **`criminalCodeData.js` is 316KB**: Import `criminalCodeParts.js` instead when you only need the parts list (e.g., for UI dropdowns).
 

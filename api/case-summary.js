@@ -14,7 +14,7 @@ import {
   logSuccess,
   logError,
 } from "./_logging.js";
-import { API_REDIS_TIMEOUT_MS } from "./_constants.js";
+import { API_REDIS_TIMEOUT_MS, ANTHROPIC_MODEL_ID } from "./_constants.js";
 import { withRequestDedup } from "./_requestDedup.js";
 
 // Strip XML-like tags from user input to prevent delimiter escape
@@ -72,7 +72,7 @@ async function callAnthropic(caseText, apiKey) {
       "anthropic-beta": "prompt-caching-2024-07-31,citations-2023-12-31",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: ANTHROPIC_MODEL_ID,
       max_tokens: 800,
       system: CASE_SUMMARY_SYSTEM,
       messages: [
