@@ -7,9 +7,11 @@ CaseDive now has a **fully planned, testable, and auto-tunable** case law filter
 ## Architecture
 
 ### 1. **Filter Configuration** (`api/_filterConfig.js`)
+
 Central hub for all tuning parameters. No hard-coded thresholds scattered across code.
 
 **Key parameters:**
+
 - `ai_citation_min_token_overlap`: Min scenario tokens for AI suggestions (default: 2)
 - `final_case_min_token_overlap`: Min scenario tokens for final results (default: 3)
 - `stop_words`: Noise tokens removed from ranking (set of ~50 words)
@@ -17,6 +19,7 @@ Central hub for all tuning parameters. No hard-coded thresholds scattered across
 - `ranking_boost`: Points for SCC cases, recent cases, landmark matches, etc.
 
 **Usage:**
+
 ```javascript
 import { FILTER_CONFIG, updateConfig, getConfig } from "./api/_filterConfig.js";
 
@@ -34,28 +37,27 @@ resetConfig();
 ```
 
 ### 2. **Filter Scoring System** (`api/_filterScoring.js`)
+
 Measures and evaluates filter effectiveness using multiple metrics.
 
 **Key Functions:**
+
 - `scoreResultRelevance()`: Score a single case (0-10) against scenario
 - `evaluateResultSet()`: Judge a result set → precision, recall, F1, pass/fail
 - `runTestSuite()`: Run all test scenarios and aggregate metrics
 - `compareConfigs()`: A/B test two configurations against test suite
 
 **Example:**
+
 ```javascript
 import { evaluateResultSet, runTestSuite } from "./api/_filterScoring.js";
 
-const metrics = evaluateResultSet(
-  scenario,
-  casesReturned,
-  {
-    expectedKeywords: ["charter", "s. 9", "detention"],
-    shouldExclude: ["theft", "robbery"],
-    minResults: 1,
-    maxResults: 5,
-  }
-);
+const metrics = evaluateResultSet(scenario, casesReturned, {
+  expectedKeywords: ["charter", "s. 9", "detention"],
+  shouldExclude: ["theft", "robbery"],
+  minResults: 1,
+  maxResults: 5,
+});
 
 if (metrics.is_acceptable) {
   console.log("✓ Test passed");
@@ -66,9 +68,11 @@ if (metrics.is_acceptable) {
 ```
 
 ### 3. **Test Suite** (`tests/unit/filterTuning.test.js`)
+
 16+ realistic scenarios covering all major legal issues.
 
 **Each test defines:**
+
 - `scenario`: User's legal question
 - `expectedPrimary`: Core issue category (e.g., "impaired_driving")
 - `expectedKeywords`: Keywords that should appear in results
@@ -77,6 +81,7 @@ if (metrics.is_acceptable) {
 - `minResults`, `maxResults`: Expected result count range
 
 **Coverage:**
+
 - ✓ Impaired driving (2 scenarios)
 - ✓ Assault with bodily harm (2 scenarios)
 - ✓ Assault with weapon (1)
@@ -89,6 +94,7 @@ if (metrics.is_acceptable) {
 - ✓ Mixed/edge cases (1)
 
 ### 4. **Auto-Tuning Script** (`scripts/tune-filters.js`)
+
 Automates test execution, measurement, and reporting.
 
 **Commands:**
@@ -108,17 +114,20 @@ node scripts/tune-filters.js --suggest
 ```
 
 **Output:**
+
 - Console summary (pass rate, precision, relevance)
 - HTML report with per-scenario breakdowns
 - Improvement suggestions prioritized by impact
 - Diff comparisons to baseline
 
 ### 5. **Internal Dashboard** (`api/filter-quality.js`)
+
 Real-time view of filter configuration and health.
 
 **Endpoint:** `GET /api/filter-quality`  
 **Auth:** Same as `/api/retrieval-health` (Bearer token)  
 **Response:**
+
 ```json
 {
   "filters": {
@@ -144,20 +153,26 @@ Real-time view of filter configuration and health.
 ## Workflow: Test → Measure → Improve
 
 ### Step 1: Run All Tests
+
 ```bash
 node scripts/tune-filters.js --report
 ```
+
 Generates `filter-quality-report.html` with all metrics.
 
 ### Step 2: Analyze Results
+
 Look for:
+
 - **Low precision** (<70%): Too many irrelevant cases
 - **Low relevance** (<6/10): Cases are tangentially related
 - **False positives** (excluded patterns found): Wrong case types returned
 - **Consistent failures**: Specific scenarios always fail
 
 ### Step 3: Identify Root Cause
+
 Use the suggestions in the report:
+
 ```
 [HIGH] Low precision across multiple scenarios
   Details: 5 cases with precision < 0.6
@@ -165,20 +180,24 @@ Use the suggestions in the report:
 ```
 
 ### Step 4: Update Config (`api/_filterConfig.js`)
+
 ```javascript
 export const FILTER_CONFIG = {
   // Tuned values
-  ai_citation_min_token_overlap: 3,     // Was 2
-  final_case_min_token_overlap: 4,      // Was 3
+  ai_citation_min_token_overlap: 3, // Was 2
+  final_case_min_token_overlap: 4, // Was 3
   stop_words: new Set([
     // ... existing words ...
-    "facts", "court", "person",         // Add more noise words
+    "facts",
+    "court",
+    "person", // Add more noise words
   ]),
   // ...
 };
 ```
 
 ### Step 5: Save Baseline & Re-test
+
 ```bash
 # Save the old config as baseline
 node scripts/tune-filters.js --baseline
@@ -190,6 +209,7 @@ node scripts/tune-filters.js --compare
 ```
 
 Output:
+
 ```
 📈 Comparison to baseline:
   Pass Rate Delta: +8.5%
@@ -198,7 +218,9 @@ Output:
 ```
 
 ### Step 6: Validate in Production
+
 After committing config changes:
+
 1. Deploy to staging
 2. Monitor `/api/retrieval-health` for retrieval quality metrics
 3. Test with real scenarios from `/api/filter-quality`
@@ -209,23 +231,29 @@ After committing config changes:
 ### Scenario: False Positives (Irrelevant Cases Returned)
 
 **Diagnosis:**
+
 - Precision < 70%
 - Excluded patterns appearing in results
 
 **Fix Priority:**
+
 1. **Increase token overlap threshold**
+
    ```javascript
    final_case_min_token_overlap: 3 → 4
    ```
+
    Requires more scenario words in case summaries.
 
 2. **Expand stop_words**
+
    ```javascript
    stop_words: new Set([
      ...,
      "law", "case", "court",  // Remove very generic words
    ])
    ```
+
    Prevents cases from matching on generic terms.
 
 3. **Refine issue patterns**
@@ -233,20 +261,26 @@ After committing config changes:
    ```javascript
    impaired_motor: {
      sub_issues: [
-       "charter", "s. 9", "detention",
-       "breath", "roadside",  // More specific
-     ]
+       "charter",
+       "s. 9",
+       "detention",
+       "breath",
+       "roadside", // More specific
+     ];
    }
    ```
 
 ### Scenario: False Negatives (Missing Relevant Cases)
 
 **Diagnosis:**
+
 - Pass rate < 80%
 - Results count below `minResults`
 
 **Fix Priority:**
+
 1. **Decrease token overlap threshold**
+
    ```javascript
    final_case_min_token_overlap: 3 → 2
    ```
@@ -260,32 +294,36 @@ After committing config changes:
 ### Scenario: Inconsistent Results
 
 **Diagnosis:**
+
 - Some similar scenarios pass, others fail
 
 **Fix Priority:**
+
 1. Review test case definitions — ensure consistency
 2. Check if scenarios need more specificity
 3. Verify landmark database has all key cases
 
 ## Metrics Definitions
 
-| Metric | Definition | Target | Action If Low |
-|--------|-----------|--------|---------------|
-| **Precision** | % of returned cases relevant to core issue | >85% | Increase thresholds |
-| **Recall** | % of relevant cases that are returned | >80% | Decrease thresholds or expand patterns |
-| **Relevance (0-10)** | Semantic alignment score | >6 | Add more sub-issue keywords |
-| **Pass Rate** | % of scenarios meeting criteria | >85% | Review failing scenarios |
-| **False Positives** | Excluded patterns appearing | 0 | Refine stop words or ranking boosts |
+| Metric               | Definition                                 | Target | Action If Low                          |
+| -------------------- | ------------------------------------------ | ------ | -------------------------------------- |
+| **Precision**        | % of returned cases relevant to core issue | >85%   | Increase thresholds                    |
+| **Recall**           | % of relevant cases that are returned      | >80%   | Decrease thresholds or expand patterns |
+| **Relevance (0-10)** | Semantic alignment score                   | >6     | Add more sub-issue keywords            |
+| **Pass Rate**        | % of scenarios meeting criteria            | >85%   | Review failing scenarios               |
+| **False Positives**  | Excluded patterns appearing                | 0      | Refine stop words or ranking boosts    |
 
 ## Integration with Existing Code
 
 The filter config is used by:
+
 - `api/_caseLawRetrieval.js` — `detectCoreIssue()` uses issue_patterns
 - `api/analyze.js` — `selectTopRetrievedCases()` uses min_token_overlap and stop_words
 - `api/_filterScoring.js` — All metrics reference FILTER_CONFIG
 - Test suite — All thresholds come from config
 
 To migrate existing hard-coded values to config:
+
 ```javascript
 // OLD (hard-coded)
 const AI_MIN_OVERLAP = 2;
@@ -300,6 +338,7 @@ const FINAL_MIN_OVERLAP = getConfig("final_case_min_token_overlap");
 ## Running Tests in CI/CD
 
 Add to `package.json`:
+
 ```json
 {
   "scripts": {
@@ -310,10 +349,11 @@ Add to `package.json`:
 ```
 
 In CI pipeline:
+
 ```yaml
 - name: Run filter quality tests
   run: npm run test:filter-quality
-  
+
 - name: Compare to baseline
   run: npm run test:filter-compare
 ```
@@ -323,12 +363,12 @@ Fail the build if pass_rate < 70%.
 ## Monitoring & Alerting
 
 Set up with `/api/filter-quality` endpoint:
+
 ```javascript
 // Health check
-const health = await fetch(
-  "https://casedive.ca/api/filter-quality",
-  { headers: { Authorization: `Bearer ${token}` } }
-);
+const health = await fetch("https://casedive.ca/api/filter-quality", {
+  headers: { Authorization: `Bearer ${token}` },
+});
 const { filters } = await health.json();
 
 // Alert if thresholds drift
@@ -344,11 +384,13 @@ if (filters.configuration.ai_citation_min_token_overlap > 3) {
 **Problem:** Impaired driving scenarios returning theft cases.
 
 **Diagnosis:**
+
 1. Run tests: `node scripts/tune-filters.js --report`
 2. See: Impaired driving scenarios have precision < 70%
 3. Check failures: Seeing cases like "R v Theft" returned
 
 **Fix:**
+
 ```javascript
 // In api/_filterConfig.js
 impaired_motor: {
@@ -365,9 +407,11 @@ final_case_min_token_overlap: 3 → 4
 ```
 
 **Test:**
+
 ```bash
 node scripts/tune-filters.js --compare
 ```
+
 Output: Pass rate +12%, Precision improved to 87%.
 
 ### Example 2: Adding New Issue Category
@@ -375,7 +419,9 @@ Output: Pass rate +12%, Precision improved to 87%.
 **Need:** Sexual assault scenario support
 
 **Steps:**
+
 1. Add to test suite (`tests/unit/filterTuning.test.js`):
+
    ```javascript
    {
      id: "sexual_assault_01",
@@ -387,6 +433,7 @@ Output: Pass rate +12%, Precision improved to 87%.
    ```
 
 2. Add to config (`api/_filterConfig.js`):
+
    ```javascript
    sexual_assault: {
      tests: [/sexual/, /assault|attack|consent/],
@@ -402,16 +449,19 @@ Output: Pass rate +12%, Precision improved to 87%.
 ## Troubleshooting
 
 ### Tests hanging or failing
+
 - Check mock retrieval function in `scripts/tune-filters.js`
 - Ensure `TEST_SCENARIOS` is properly exported from test file
 - Verify no real API calls are being made during test runs
 
 ### HTML report not generated
+
 - Check write permissions in repo root
 - Verify `scripts/tune-filters.js` has proper path config
 - Run with: `node scripts/tune-filters.js --report 2>&1`
 
 ### Baseline comparison showing no improvement
+
 - Ensure baseline was saved with old config: `node scripts/tune-filters.js --baseline`
 - Change config in `api/_filterConfig.js`
 - Run: `node scripts/tune-filters.js --compare`

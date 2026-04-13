@@ -18,18 +18,23 @@ function getNumericEnv(name, fallback) {
  * Score a single result against a testing dataset.
  * Returns: { relevant: boolean, score: 0-10, reason: string }
  */
-export function scoreResultRelevance(scenario, caseResult, expectedKeywords = []) {
+export function scoreResultRelevance(
+  scenario,
+  caseResult,
+  expectedKeywords = [],
+) {
   if (!caseResult || !caseResult.citation) {
     return { relevant: false, score: 0, reason: "missing_citation" };
   }
 
-  const caseText = `${caseResult.title || ""} ${caseResult.summary || ""} ${caseResult.matched_content || ""}`.toLowerCase();
+  const caseText =
+    `${caseResult.title || ""} ${caseResult.summary || ""} ${caseResult.matched_content || ""}`.toLowerCase();
   const scenarioTokens = new Set(
     String(scenario || "")
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)
-      .filter(w => w.length >= 3 && !FILTER_CONFIG.stop_words.has(w))
+      .filter((w) => w.length >= 3 && !FILTER_CONFIG.stop_words.has(w)),
   );
 
   // Count token overlap
@@ -63,7 +68,8 @@ export function scoreResultRelevance(scenario, caseResult, expectedKeywords = []
   else if (conceptOverlap >= 1) score += 1;
 
   // Expected keyword coverage
-  const keywordRatio = expectedKeywords.length > 0 ? keywordMatch / expectedKeywords.length : 1;
+  const keywordRatio =
+    expectedKeywords.length > 0 ? keywordMatch / expectedKeywords.length : 1;
   if (keywordRatio >= 0.7) {
     score += 3;
     reason = "high_relevance";
@@ -78,14 +84,17 @@ export function scoreResultRelevance(scenario, caseResult, expectedKeywords = []
     reason = "landmark_match";
   }
 
-  const minScore = getNumericEnv("FILTER_RELEVANCE_MIN_SCORE", FILTER_CONFIG.relevance_min_score ?? 5);
+  const minScore = getNumericEnv(
+    "FILTER_RELEVANCE_MIN_SCORE",
+    FILTER_CONFIG.relevance_min_score ?? 5,
+  );
   const minTokenOverlap = getNumericEnv(
     "FILTER_RELEVANCE_MIN_TOKEN_OVERLAP",
-    FILTER_CONFIG.relevance_min_token_overlap ?? 2
+    FILTER_CONFIG.relevance_min_token_overlap ?? 2,
   );
   const minConceptOverlap = getNumericEnv(
     "FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP",
-    FILTER_CONFIG.relevance_min_concept_overlap ?? 2
+    FILTER_CONFIG.relevance_min_concept_overlap ?? 2,
   );
 
   const relevant =
@@ -106,15 +115,11 @@ export function scoreResultRelevance(scenario, caseResult, expectedKeywords = []
  * Evaluate a result set against expected outcomes.
  * Returns precision, recall, F1 score, and detailed breakdown.
  */
-export function evaluateResultSet(
-  scenario = "",
-  results = [],
-  options = {}
-) {
+export function evaluateResultSet(scenario = "", results = [], options = {}) {
   const {
-    shouldIncude = [],       // Citations/titles that should appear
-    shouldExclude = [],      // Keywords/patterns that should NOT appear
-    expectedKeywords = [],   // Keywords expected in results
+    shouldIncude = [], // Citations/titles that should appear
+    shouldExclude = [], // Keywords/patterns that should NOT appear
+    expectedKeywords = [], // Keywords expected in results
     minResults = 1,
     maxResults = 5,
   } = options;
@@ -134,7 +139,11 @@ export function evaluateResultSet(
 
   // Score each result
   for (const result of results) {
-    const relevanceScore = scoreResultRelevance(scenario, result, expectedKeywords);
+    const relevanceScore = scoreResultRelevance(
+      scenario,
+      result,
+      expectedKeywords,
+    );
     metrics.relevance_scores.push(relevanceScore);
 
     if (relevanceScore.relevant) {
@@ -144,30 +153,39 @@ export function evaluateResultSet(
     }
 
     // Check for excluded patterns
-    const resultText = `${result.title || ""} ${result.summary || ""}`.toLowerCase();
+    const resultText =
+      `${result.title || ""} ${result.summary || ""}`.toLowerCase();
     for (const exclude of shouldExclude) {
       if (resultText.includes(exclude.toLowerCase())) {
-        metrics.excluded_found.push({ result: result.citation, pattern: exclude });
+        metrics.excluded_found.push({
+          result: result.citation,
+          pattern: exclude,
+        });
       }
     }
   }
 
   // Calculate metrics
   if (metrics.relevance_scores.length > 0) {
-    metrics.avg_relevance = 
-      metrics.relevance_scores.reduce((sum, s) => sum + s.score, 0) / 
+    metrics.avg_relevance =
+      metrics.relevance_scores.reduce((sum, s) => sum + s.score, 0) /
       metrics.relevance_scores.length;
   }
 
-  metrics.precision = metrics.true_positives / (metrics.true_positives + metrics.false_positives) || 0;
-  metrics.false_negatives = Math.max(0, shouldIncude.length - metrics.true_positives);
+  metrics.precision =
+    metrics.true_positives /
+      (metrics.true_positives + metrics.false_positives) || 0;
+  metrics.false_negatives = Math.max(
+    0,
+    shouldIncude.length - metrics.true_positives,
+  );
 
   // Overall pass/fail
   metrics.is_acceptable =
-    metrics.precision >= 0.7 &&           // 70% of results are relevant
+    metrics.precision >= 0.7 && // 70% of results are relevant
     metrics.avg_relevance >= (FILTER_CONFIG.relevance_min_score ?? 5) && // Average score meets configured threshold
     metrics.excluded_found.length === 0 && // No excluded patterns found
-    metrics.within_bounds;                // Result count in acceptable range
+    metrics.within_bounds; // Result count in acceptable range
 
   // Edge scenario: allow intentionally empty outputs when requested and no explicit includes are required.
   if (
@@ -201,8 +219,8 @@ export async function runTestSuite(testScenarios = [], retrievalFn = null) {
     const normalizedResults = Array.isArray(retrievalResult)
       ? retrievalResult
       : Array.isArray(retrievalResult?.cases)
-      ? retrievalResult.cases
-      : [];
+        ? retrievalResult.cases
+        : [];
     const skipped = Boolean(retrievalResult?.skip);
 
     if (skipped) {
@@ -220,17 +238,13 @@ export async function runTestSuite(testScenarios = [], retrievalFn = null) {
       continue;
     }
 
-    const evaluation = evaluateResultSet(
-      testCase.scenario,
-      normalizedResults,
-      {
-        shouldIncude: testCase.shouldInclude,
-        shouldExclude: testCase.shouldExclude,
-        expectedKeywords: testCase.expectedKeywords,
-        minResults: testCase.minResults ?? 1,
-        maxResults: testCase.maxResults ?? 5,
-      }
-    );
+    const evaluation = evaluateResultSet(testCase.scenario, normalizedResults, {
+      shouldIncude: testCase.shouldInclude,
+      shouldExclude: testCase.shouldExclude,
+      expectedKeywords: testCase.expectedKeywords,
+      minResults: testCase.minResults ?? 1,
+      maxResults: testCase.maxResults ?? 5,
+    });
 
     results.push({
       scenario_summary: testCase.scenario.substring(0, 80),
@@ -242,7 +256,10 @@ export async function runTestSuite(testScenarios = [], retrievalFn = null) {
   }
 
   const evaluatedResults = results.filter((r) => !r.skipped);
-  const totalRelevance = evaluatedResults.reduce((sum, r) => sum + r.avg_relevance, 0);
+  const totalRelevance = evaluatedResults.reduce(
+    (sum, r) => sum + r.avg_relevance,
+    0,
+  );
   const avgRelevance = totalRelevance / evaluatedResults.length || 0;
   const evaluatedTests = testScenarios.length - skippedCount;
 
@@ -256,7 +273,8 @@ export async function runTestSuite(testScenarios = [], retrievalFn = null) {
     avg_relevance_global: avgRelevance,
     avg_precision_global:
       evaluatedResults.length > 0
-        ? evaluatedResults.reduce((sum, r) => sum + r.precision, 0) / evaluatedResults.length
+        ? evaluatedResults.reduce((sum, r) => sum + r.precision, 0) /
+          evaluatedResults.length
         : 0,
     results: results, // Per-scenario breakdown
   };
@@ -265,7 +283,12 @@ export async function runTestSuite(testScenarios = [], retrievalFn = null) {
 /**
  * Compare two filter configurations by running test suite against both.
  */
-export async function compareConfigs(config1, config2, testScenarios = [], retrievalFn = null) {
+export async function compareConfigs(
+  config1,
+  config2,
+  testScenarios = [],
+  retrievalFn = null,
+) {
   if (!retrievalFn) {
     throw new Error("retrievalFn is required");
   }
@@ -278,9 +301,12 @@ export async function compareConfigs(config1, config2, testScenarios = [], retri
     config2_results: results2,
     improvements: {
       pass_rate_delta: results2.pass_rate - results1.pass_rate,
-      relevance_delta: results2.avg_relevance_global - results1.avg_relevance_global,
-      precision_delta: results2.avg_precision_global - results1.avg_precision_global,
-      better_config: results2.pass_rate > results1.pass_rate ? "config2" : "config1",
+      relevance_delta:
+        results2.avg_relevance_global - results1.avg_relevance_global,
+      precision_delta:
+        results2.avg_precision_global - results1.avg_precision_global,
+      better_config:
+        results2.pass_rate > results1.pass_rate ? "config2" : "config1",
     },
   };
 }

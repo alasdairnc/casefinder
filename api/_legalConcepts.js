@@ -8,14 +8,18 @@ const CONCEPT_PATTERNS = {
   s10b: /\b(s\.?\s*10\s*\(?b\)?|10\(b\)|section\s*10\(b\))\b/,
   search: /\b(search|searched|seizure|seized|warrant|privacy|digital|phone)\b/,
   s8: /\b(s\.?\s*8|section\s*8|hunter|marakah|vu)\b/,
-  impaired: /\b(impaired|drunk|breath|breathalyzer|breath\s+demand|over\s*80|roadside|checkstop|ride|refus\w*)\b/,
-  trafficStop: /\b(traffic\s+stop|pulled\s+over|motor\s+vehicle|checkpoint|checkstop|roadside)\b/,
+  impaired:
+    /\b(impaired|drunk|breath|breathalyzer|breath\s+demand|over\s*80|roadside|checkstop|ride|refus\w*)\b/,
+  trafficStop:
+    /\b(traffic\s+stop|pulled\s+over|motor\s+vehicle|checkpoint|checkstop|roadside)\b/,
   robbery: /\b(robbery|robbed|mugging|mugged|s\.?\s*343|threat|force)\b/,
   theft: /\b(theft|stolen|steal\w*|shoplift\w*|s\.?\s*322|dishonesty)\b/,
-  assault: /\b(assault|bodily\s+harm|weapon|s\.?\s*267|self\s*-?defence|punch\w*|hit|struck|fight|injur\w*|wound\w*)\b/,
+  assault:
+    /\b(assault|bodily\s+harm|weapon|s\.?\s*267|self\s*-?defence|punch\w*|hit|struck|fight|injur\w*|wound\w*)\b/,
   sexualAssault: /\b(sexual\s+assault|consent|complainant|s\.?\s*271)\b/,
   drug: /\b(cdsa|drug|traffick\w*|fentanyl|cocaine|possession|s\.?\s*5)\b/,
-  trialDelay: /\b(jordan|cody|11\(b\)|s\.?\s*11\(b\)|trial\s+delay|reasonable\s+time|adjourn\w*)\b/,
+  trialDelay:
+    /\b(jordan|cody|11\(b\)|s\.?\s*11\(b\)|trial\s+delay|reasonable\s+time|adjourn\w*)\b/,
 };
 
 function toSet(values) {

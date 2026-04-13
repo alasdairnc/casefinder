@@ -15,7 +15,9 @@ function createRetrievalFn() {
       apiKey: "test-key",
       scenario,
       aiCaseLaw: Array.isArray(testCase.aiCaseLaw) ? testCase.aiCaseLaw : [],
-      landmarkMatches: Array.isArray(testCase.landmarkMatches) ? testCase.landmarkMatches : [],
+      landmarkMatches: Array.isArray(testCase.landmarkMatches)
+        ? testCase.landmarkMatches
+        : [],
       maxResults: testCase.maxResults ?? 3,
     });
 
@@ -28,18 +30,28 @@ function evaluateFailureScenario(testCase, cases) {
   const isEmptyExpected = (testCase.maxResults ?? 0) === 0;
 
   if (isEmptyExpected) {
-    const excludedHit = (testCase.shouldExclude || []).find((term) => resultText.includes(term));
+    const excludedHit = (testCase.shouldExclude || []).find((term) =>
+      resultText.includes(term),
+    );
     return {
       pass: cases.length === 0 && !excludedHit,
-      reason: cases.length === 0 ? "no_direct_case_law" : `unexpected_case:${cases[0]?.citation || "unknown"}`,
+      reason:
+        cases.length === 0
+          ? "no_direct_case_law"
+          : `unexpected_case:${cases[0]?.citation || "unknown"}`,
     };
   }
 
-  const includedHit = (testCase.shouldInclude || []).some((term) => resultText.includes(term));
-  const excludedHit = (testCase.shouldExclude || []).find((term) => resultText.includes(term));
+  const includedHit = (testCase.shouldInclude || []).some((term) =>
+    resultText.includes(term),
+  );
+  const excludedHit = (testCase.shouldExclude || []).find((term) =>
+    resultText.includes(term),
+  );
 
   return {
-    pass: cases.length >= (testCase.minResults || 1) && includedHit && !excludedHit,
+    pass:
+      cases.length >= (testCase.minResults || 1) && includedHit && !excludedHit,
     reason: includedHit ? "relevant_case_law" : "missing_expected_case_law",
   };
 }
@@ -57,7 +69,11 @@ function printSummary(results) {
     scenario: row.scenario_summary,
     issue: row.issuePrimary || "unknown",
     results: row.total_returned,
-    status: row.skipped ? `SKIP (${row.skip_reason || "skipped"})` : row.passed ? "PASS" : "FAIL",
+    status: row.skipped
+      ? `SKIP (${row.skip_reason || "skipped"})`
+      : row.passed
+        ? "PASS"
+        : "FAIL",
     reason: row.reason || "n/a",
   }));
 
@@ -67,7 +83,9 @@ function printSummary(results) {
   if (failures.length > 0) {
     console.log("\nFailing scenarios:");
     for (const failure of failures) {
-      console.log(`- ${failure.scenario_summary} (${failure.reason || "unknown"})`);
+      console.log(
+        `- ${failure.scenario_summary} (${failure.reason || "unknown"})`,
+      );
     }
   }
 }
@@ -87,7 +105,9 @@ function writeBaseline(results) {
 function compareToBaseline(results) {
   const baseline = readBaseline();
   if (!baseline) {
-    console.log("\n⚠ No baseline found. Run with --baseline to save one first.");
+    console.log(
+      "\n⚠ No baseline found. Run with --baseline to save one first.",
+    );
     return;
   }
 
@@ -100,9 +120,15 @@ function compareToBaseline(results) {
   };
 
   console.log("\nComparison to baseline:");
-  console.log(`  Pass rate delta: ${delta.pass_rate >= 0 ? "+" : ""}${delta.pass_rate.toFixed(1)}%`);
-  console.log(`  Avg precision delta: ${delta.avg_precision >= 0 ? "+" : ""}${delta.avg_precision.toFixed(2)}`);
-  console.log(`  Avg relevance delta: ${delta.avg_relevance >= 0 ? "+" : ""}${delta.avg_relevance.toFixed(2)}`);
+  console.log(
+    `  Pass rate delta: ${delta.pass_rate >= 0 ? "+" : ""}${delta.pass_rate.toFixed(1)}%`,
+  );
+  console.log(
+    `  Avg precision delta: ${delta.avg_precision >= 0 ? "+" : ""}${delta.avg_precision.toFixed(2)}`,
+  );
+  console.log(
+    `  Avg relevance delta: ${delta.avg_relevance >= 0 ? "+" : ""}${delta.avg_relevance.toFixed(2)}`,
+  );
   console.log(`  Passed delta: ${delta.passed >= 0 ? "+" : ""}${delta.passed}`);
   console.log(`  Failed delta: ${delta.failed >= 0 ? "+" : ""}${delta.failed}`);
 }
@@ -121,7 +147,9 @@ async function main() {
 
   for (const testCase of RETRIEVAL_FAILURE_SET) {
     const retrievalResult = await retrievalFn(testCase.scenario, testCase);
-    const cases = Array.isArray(retrievalResult?.cases) ? retrievalResult.cases : [];
+    const cases = Array.isArray(retrievalResult?.cases)
+      ? retrievalResult.cases
+      : [];
     const skippedRow = Boolean(retrievalResult?.skip);
 
     if (skippedRow) {
@@ -133,7 +161,8 @@ async function main() {
         total_returned: cases.length,
         passed: false,
         reason: retrievalResult?.skipReason || "skipped",
-        issuePrimary: retrievalResult?.meta?.issuePrimary || testCase.expectedPrimary,
+        issuePrimary:
+          retrievalResult?.meta?.issuePrimary || testCase.expectedPrimary,
       });
       continue;
     }
@@ -147,7 +176,8 @@ async function main() {
       total_returned: cases.length,
       passed: verdict.pass,
       reason: verdict.reason,
-      issuePrimary: retrievalResult?.meta?.issuePrimary || testCase.expectedPrimary,
+      issuePrimary:
+        retrievalResult?.meta?.issuePrimary || testCase.expectedPrimary,
     });
 
     if (verdict.pass) passed += 1;
@@ -160,9 +190,18 @@ async function main() {
     skipped_tests: skipped,
     passed,
     failed,
-    pass_rate: RETRIEVAL_FAILURE_SET.length - skipped > 0 ? (passed / (RETRIEVAL_FAILURE_SET.length - skipped)) * 100 : 0,
-    avg_relevance_global: RETRIEVAL_FAILURE_SET.length - skipped > 0 ? totalReturned / (RETRIEVAL_FAILURE_SET.length - skipped) : 0,
-    avg_precision_global: RETRIEVAL_FAILURE_SET.length - skipped > 0 ? passed / (RETRIEVAL_FAILURE_SET.length - skipped) : 0,
+    pass_rate:
+      RETRIEVAL_FAILURE_SET.length - skipped > 0
+        ? (passed / (RETRIEVAL_FAILURE_SET.length - skipped)) * 100
+        : 0,
+    avg_relevance_global:
+      RETRIEVAL_FAILURE_SET.length - skipped > 0
+        ? totalReturned / (RETRIEVAL_FAILURE_SET.length - skipped)
+        : 0,
+    avg_precision_global:
+      RETRIEVAL_FAILURE_SET.length - skipped > 0
+        ? passed / (RETRIEVAL_FAILURE_SET.length - skipped)
+        : 0,
     results: rows,
   };
 
@@ -176,7 +215,9 @@ async function main() {
     writeBaseline(evaluated);
   }
 
-  const hasFailures = evaluated.results.some((row) => !row.skipped && !row.passed);
+  const hasFailures = evaluated.results.some(
+    (row) => !row.skipped && !row.passed,
+  );
   process.exitCode = hasFailures ? 1 : 0;
 }
 

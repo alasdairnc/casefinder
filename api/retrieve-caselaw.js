@@ -4,7 +4,12 @@
 import { randomUUID, createHash } from "crypto";
 import { initSentry, Sentry } from "./_sentry.js";
 initSentry();
-import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
+import {
+  redis,
+  checkRateLimit,
+  getClientIp,
+  rateLimitHeaders,
+} from "./_rateLimit.js";
 import { runCaseLawRetrieval } from "./_retrievalOrchestrator.js";
 import { logRetrievalMetrics } from "./_retrievalMetrics.js";
 import {
@@ -40,12 +45,14 @@ export default async function handler(req, res) {
   applyStandardApiHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
   if (handleOptionsAndMethod(req, res, "POST")) return;
-  if (!validateJsonRequest(req, res, {
-    requestId,
-    endpoint: "retrieve-caselaw",
-    maxBytes: 50_000,
-    logValidationError,
-  })) {
+  if (
+    !validateJsonRequest(req, res, {
+      requestId,
+      endpoint: "retrieve-caselaw",
+      maxBytes: 50_000,
+      logValidationError,
+    })
+  ) {
     return;
   }
 
@@ -54,16 +61,26 @@ export default async function handler(req, res) {
   const rlHeaders = rateLimitHeaders(rlResult);
   Object.entries(rlHeaders).forEach(([k, v]) => res.setHeader(k, v));
   if (!rlResult.allowed) {
-    return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
+    return res
+      .status(429)
+      .json({ error: "Rate limit exceeded. Please try again later." });
   }
 
   const body = req.body || {};
   const scenario = sanitizeUserInput(body.scenario || "").trim();
-  const filters = body.filters && typeof body.filters === "object" ? body.filters : {};
-  const suggestions = Array.isArray(body.suggestions) ? body.suggestions.slice(0, 12) : [];
+  const filters =
+    body.filters && typeof body.filters === "object" ? body.filters : {};
+  const suggestions = Array.isArray(body.suggestions)
+    ? body.suggestions.slice(0, 12)
+    : [];
 
   if (!scenario) {
-    logValidationError(requestId, "retrieve-caselaw", "scenario is required", "scenario");
+    logValidationError(
+      requestId,
+      "retrieve-caselaw",
+      "scenario is required",
+      "scenario",
+    );
     return res.status(400).json({ error: "scenario is required" });
   }
 
@@ -73,12 +90,19 @@ export default async function handler(req, res) {
   if (redis) {
     try {
       const timeoutGet = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS),
       );
       const cached = await Promise.race([redis.get(cacheKey), timeoutGet]);
       if (cached) {
         const parsed = typeof cached === "string" ? JSON.parse(cached) : cached;
-        logSuccess(requestId, "retrieve-caselaw", 200, Date.now() - startMs, rlResult, { cached: true, casesReturned: parsed.case_law?.length });
+        logSuccess(
+          requestId,
+          "retrieve-caselaw",
+          200,
+          Date.now() - startMs,
+          rlResult,
+          { cached: true, casesReturned: parsed.case_law?.length },
+        );
         return res.status(200).json(parsed);
       }
     } catch (err) {}
@@ -105,8 +129,15 @@ export default async function handler(req, res) {
       retrievalError: true,
       errorMessage: "CANLII_API_KEY is not configured",
     });
-    logValidationError(requestId, "retrieve-caselaw", "CANLII_API_KEY is not configured", "environment");
-    return res.status(503).json({ error: "Case law retrieval service temporarily unavailable." });
+    logValidationError(
+      requestId,
+      "retrieve-caselaw",
+      "CANLII_API_KEY is not configured",
+      "environment",
+    );
+    return res
+      .status(503)
+      .json({ error: "Case law retrieval service temporarily unavailable." });
   }
 
   const retrievalStartMs = Date.now();
@@ -120,35 +151,57 @@ export default async function handler(req, res) {
         apiKey,
         maxResults: 3,
         timeoutMs: 7_000,
-      })
+      }),
     );
     const retrievalDurationMs = Date.now() - retrievalStartMs;
 
-    logExternalApiCall(requestId, "retrieve-caselaw", "canlii-retrieval", 200, retrievalDurationMs, {
-      ...meta,
-      casesReturned: cases.length,
-    });
+    logExternalApiCall(
+      requestId,
+      "retrieve-caselaw",
+      "canlii-retrieval",
+      200,
+      retrievalDurationMs,
+      {
+        ...meta,
+        casesReturned: cases.length,
+      },
+    );
     logRetrievalMetricsAsync({
       requestId,
       endpoint: "retrieve-caselaw",
       source: "retrieval",
       scenario,
       filters,
-      reason: meta?.reason || (cases.length > 0 ? "verified_results" : "no_verified"),
+      reason:
+        meta?.reason || (cases.length > 0 ? "verified_results" : "no_verified"),
       retrievalMeta: meta,
       retrievalLatencyMs: retrievalDurationMs,
       finalCaseLawCount: cases.length,
     });
-    logSuccess(requestId, "retrieve-caselaw", 200, Date.now() - startMs, rlResult, {
-      casesReturned: cases.length,
-    });
+    logSuccess(
+      requestId,
+      "retrieve-caselaw",
+      200,
+      Date.now() - startMs,
+      rlResult,
+      {
+        casesReturned: cases.length,
+      },
+    );
 
     if (redis) {
       try {
         const timeoutSet = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS),
         );
-        await Promise.race([redis.setex(cacheKey, 7 * 24 * 60 * 60, JSON.stringify({ case_law: cases, meta })), timeoutSet]);
+        await Promise.race([
+          redis.setex(
+            cacheKey,
+            7 * 24 * 60 * 60,
+            JSON.stringify({ case_law: cases, meta }),
+          ),
+          timeoutSet,
+        ]);
       } catch (err) {}
     }
 
@@ -168,10 +221,22 @@ export default async function handler(req, res) {
       retrievalError: true,
       errorMessage: err?.message || "Case law retrieval failed",
     });
-    const statusCode = err.status ? (err.status >= 500 ? 502 : err.status) : 500;
-    logError(requestId, "retrieve-caselaw", err, statusCode, Date.now() - startMs);
+    const statusCode = err.status
+      ? err.status >= 500
+        ? 502
+        : err.status
+      : 500;
+    logError(
+      requestId,
+      "retrieve-caselaw",
+      err,
+      statusCode,
+      Date.now() - startMs,
+    );
     if (err.status) {
-      return res.status(statusCode).json({ error: "Case law retrieval service temporarily unavailable." });
+      return res
+        .status(statusCode)
+        .json({ error: "Case law retrieval service temporarily unavailable." });
     }
     return res.status(500).json({ error: "Internal server error" });
   }

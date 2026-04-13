@@ -7,9 +7,15 @@ import {
   getRetrievalHealthSnapshot,
   getTrendlineSnapshots,
 } from "./_retrievalHealthStore.js";
-import { evaluateRetrievalAlerts, RETRIEVAL_ALERT_THRESHOLDS } from "./_retrievalThresholds.js";
+import {
+  evaluateRetrievalAlerts,
+  RETRIEVAL_ALERT_THRESHOLDS,
+} from "./_retrievalThresholds.js";
 import { buildRetrievalImprovements } from "./_retrievalImprovements.js";
-import { applyStandardApiHeaders, handleOptionsAndMethod } from "./_apiCommon.js";
+import {
+  applyStandardApiHeaders,
+  handleOptionsAndMethod,
+} from "./_apiCommon.js";
 import {
   logRequestStart,
   logRateLimitCheck,
@@ -44,27 +50,59 @@ export default async function handler(req, res) {
   const startMs = Date.now();
   logRequestStart(req, "retrieval-health", requestId);
 
-  applyStandardApiHeaders(req, res, "GET, OPTIONS", "Authorization, Content-Type");
+  applyStandardApiHeaders(
+    req,
+    res,
+    "GET, OPTIONS",
+    "Authorization, Content-Type",
+  );
   if (handleOptionsAndMethod(req, res, "GET")) return;
 
   const rlResult = await checkRateLimit(getClientIp(req), "retrieval-health");
   logRateLimitCheck(requestId, "retrieval-health", rlResult, getClientIp(req));
   const rlHeaders = rateLimitHeaders(rlResult);
-  Object.entries(rlHeaders).forEach(([key, value]) => res.setHeader(key, value));
+  Object.entries(rlHeaders).forEach(([key, value]) =>
+    res.setHeader(key, value),
+  );
   if (!rlResult.allowed) {
-    return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
+    return res
+      .status(429)
+      .json({ error: "Rate limit exceeded. Please try again later." });
   }
 
   if (!isAuthorized(req)) {
-    logValidationError(requestId, "retrieval-health", "Unauthorized retrieval health request", "authorization");
+    logValidationError(
+      requestId,
+      "retrieval-health",
+      "Unauthorized retrieval health request",
+      "authorization",
+    );
     return res.status(401).json({ error: "Unauthorized" });
   }
 
   try {
-    const url = new URL(req.url || "http://localhost/api/retrieval-health", "http://localhost");
-    const failureLimit = parseBoundedInt(url.searchParams.get("failureLimit"), 20, 1, MAX_FAILURE_ARCHIVE_LIMIT);
-    const failuresBeforeTs = parseBoundedInt(url.searchParams.get("failuresBeforeTs"), null, 1, Number.MAX_SAFE_INTEGER);
-    const failuresOffset = parseBoundedInt(url.searchParams.get("failuresOffset"), 0, 0, MAX_FAILURE_ARCHIVE_OFFSET);
+    const url = new URL(
+      req.url || "http://localhost/api/retrieval-health",
+      "http://localhost",
+    );
+    const failureLimit = parseBoundedInt(
+      url.searchParams.get("failureLimit"),
+      20,
+      1,
+      MAX_FAILURE_ARCHIVE_LIMIT,
+    );
+    const failuresBeforeTs = parseBoundedInt(
+      url.searchParams.get("failuresBeforeTs"),
+      null,
+      1,
+      Number.MAX_SAFE_INTEGER,
+    );
+    const failuresOffset = parseBoundedInt(
+      url.searchParams.get("failuresOffset"),
+      0,
+      0,
+      MAX_FAILURE_ARCHIVE_OFFSET,
+    );
 
     const [snapshot, trendline, failureArchive] = await Promise.all([
       getRetrievalHealthSnapshot(),
@@ -76,7 +114,9 @@ export default async function handler(req, res) {
       }),
     ]);
     const alerts = evaluateRetrievalAlerts(snapshot);
-    const improvements = buildRetrievalImprovements(snapshot?.recentFailures || []);
+    const improvements = buildRetrievalImprovements(
+      snapshot?.recentFailures || [],
+    );
 
     const response = {
       generatedAt: snapshot.generatedAt,
@@ -95,15 +135,32 @@ export default async function handler(req, res) {
       alerts,
     };
 
-    logSuccess(requestId, "retrieval-health", 200, Date.now() - startMs, rlResult, {
-      alerts: alerts.length,
-      totalStoredEvents: snapshot.totalStoredEvents,
-    });
+    logSuccess(
+      requestId,
+      "retrieval-health",
+      200,
+      Date.now() - startMs,
+      rlResult,
+      {
+        alerts: alerts.length,
+        totalStoredEvents: snapshot.totalStoredEvents,
+      },
+    );
 
     return res.status(200).json(response);
   } catch (err) {
-    const statusCode = err.status ? (err.status >= 500 ? 502 : err.status) : 500;
-    logError(requestId, "retrieval-health", err, statusCode, Date.now() - startMs);
+    const statusCode = err.status
+      ? err.status >= 500
+        ? 502
+        : err.status
+      : 500;
+    logError(
+      requestId,
+      "retrieval-health",
+      err,
+      statusCode,
+      Date.now() - startMs,
+    );
     return res.status(statusCode).json({ error: "Internal server error" });
   }
 }

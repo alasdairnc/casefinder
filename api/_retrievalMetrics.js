@@ -2,7 +2,10 @@
 // Shared retrieval metrics payload builder + logger for case-law telemetry.
 
 import { createLog } from "./_logging.js";
-import { getRetrievalHealthSnapshot, recordRetrievalMetricsEvent } from "./_retrievalHealthStore.js";
+import {
+  getRetrievalHealthSnapshot,
+  recordRetrievalMetricsEvent,
+} from "./_retrievalHealthStore.js";
 import { emitRetrievalAlerts } from "./_retrievalThresholds.js";
 
 const METRIC_FIELDS = [
@@ -94,7 +97,7 @@ export function buildRetrievalMetrics(input = {}) {
   const metrics = normalizeMetrics(retrievalMeta);
   const sourceMix = normalizeSourceMix(retrievalMeta?.candidateSourceMix);
   const finalCount = toNonNegativeInt(
-    finalCaseLawCount == null ? metrics.verifiedCount : finalCaseLawCount
+    finalCaseLawCount == null ? metrics.verifiedCount : finalCaseLawCount,
   );
   const normalizedReason = inferReason({
     reason,
@@ -123,19 +126,29 @@ export function buildRetrievalMetrics(input = {}) {
     relevanceScoreAvg: toNullableFloat(retrievalMeta?.relevanceScoreAvg),
     fallbackPathUsed: retrievalMeta?.fallbackPathUsed === true,
     fallbackReason: toReason(retrievalMeta?.fallbackReason) || null,
-    fallbackTriggerReason: toReason(retrievalMeta?.fallbackDiagnostics?.fallbackTriggerReason) || null,
-    issuePrimary: toLabel(retrievalMeta?.issuePrimary, 40) || "general_criminal",
+    fallbackTriggerReason:
+      toReason(retrievalMeta?.fallbackDiagnostics?.fallbackTriggerReason) ||
+      null,
+    issuePrimary:
+      toLabel(retrievalMeta?.issuePrimary, 40) || "general_criminal",
     retrievalPass: toLabel(retrievalMeta?.retrievalPass, 40) || null,
-    prefilterConceptRescueCount: toNonNegativeInt(retrievalMeta?.prefilterDiagnostics?.passedByConceptRescue),
+    prefilterConceptRescueCount: toNonNegativeInt(
+      retrievalMeta?.prefilterDiagnostics?.passedByConceptRescue,
+    ),
     semanticFilterDropCount: metrics.semanticFilterDropCount,
     candidateSourceMix: sourceMix,
     caseLawFilterEnabled: filters?.lawTypes?.case_law !== false,
     cacheHit: Boolean(cacheHit),
     retrievalError: isError,
-    jurisdiction: typeof filters?.jurisdiction === "string" ? filters.jurisdiction : "all",
-    courtLevel: typeof filters?.courtLevel === "string" ? filters.courtLevel : "all",
-    dateRange: typeof filters?.dateRange === "string" ? filters.dateRange : "all",
-    errorMessage: isError ? String(errorMessage || "unknown").slice(0, 200) : null,
+    jurisdiction:
+      typeof filters?.jurisdiction === "string" ? filters.jurisdiction : "all",
+    courtLevel:
+      typeof filters?.courtLevel === "string" ? filters.courtLevel : "all",
+    dateRange:
+      typeof filters?.dateRange === "string" ? filters.dateRange : "all",
+    errorMessage: isError
+      ? String(errorMessage || "unknown").slice(0, 200)
+      : null,
     scenarioSnippet: toScenarioSnippet(scenario),
   };
 }

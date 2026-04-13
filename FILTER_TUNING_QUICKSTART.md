@@ -21,7 +21,7 @@ npm run test:filter
 
 # Output:
 # ✓ Report written to: /filter-quality-report.html
-# 
+#
 # 📊 Results:
 #   Pass Rate: 87.5%
 #   Passed: 14/16
@@ -67,15 +67,17 @@ npm run test:filter
 ### Problem: Too Many Irrelevant Cases
 
 **Increase the filtering threshold:**
+
 ```javascript
 // api/_filterConfig.js
 export const FILTER_CONFIG = {
-  final_case_min_token_overlap: 4,  // Was 3 — stricter filter
+  final_case_min_token_overlap: 4, // Was 3 — stricter filter
   // ...
 };
 ```
 
 **Add more stop words (noise removal):**
+
 ```javascript
 stop_words: new Set([
   // ... existing words ...
@@ -84,6 +86,7 @@ stop_words: new Set([
 ```
 
 **Re-test:**
+
 ```bash
 npm run test:filter:baseline
 # Edit config...
@@ -94,17 +97,24 @@ npm run test:filter:compare
 ### Problem: Missing Relevant Cases
 
 **Decrease the threshold:**
+
 ```javascript
 final_case_min_token_overlap: 2,  // Was 3 — more permissive
 ```
 
 **Add more issue-specific keywords:**
+
 ```javascript
 impaired_motor: {
   sub_issues: [
-    "charter", "s. 9", "detention", "breath",
-    "roadside", "grant", "vehicle",  // Add more
-  ]
+    "charter",
+    "s. 9",
+    "detention",
+    "breath",
+    "roadside",
+    "grant",
+    "vehicle", // Add more
+  ];
 }
 ```
 
@@ -120,6 +130,7 @@ impaired_motor: {
 ## APIs & Endpoints
 
 ### Filter Configuration API
+
 ```javascript
 import { FILTER_CONFIG, updateConfig, getConfig } from "./api/_filterConfig.js";
 
@@ -135,8 +146,13 @@ resetConfig();
 ```
 
 ### Scoring API
+
 ```javascript
-import { scoreResultRelevance, evaluateResultSet, runTestSuite } from "./api/_filterScoring.js";
+import {
+  scoreResultRelevance,
+  evaluateResultSet,
+  runTestSuite,
+} from "./api/_filterScoring.js";
 
 // Score a single case
 const score = scoreResultRelevance(scenario, caseResult, expectedKeywords);
@@ -156,6 +172,7 @@ const results = runTestSuite(TEST_SCENARIOS, retrievalFunction);
 ```
 
 ### Dashboard Endpoint
+
 ```bash
 curl -H "Authorization: Bearer $RETRIEVAL_HEALTH_TOKEN" \
   https://casedive.ca/api/filter-quality
@@ -185,6 +202,7 @@ curl -H "Authorization: Bearer $RETRIEVAL_HEALTH_TOKEN" \
 ## Test Scenario Coverage
 
 Currently testing:
+
 - ✓ Impaired driving (2 scenarios)
 - ✓ Assault bodily harm (2)
 - ✓ Assault with weapon (1)
@@ -199,6 +217,7 @@ Currently testing:
 **Total: 16 scenarios**
 
 To add more:
+
 ```javascript
 // tests/unit/filterTuning.test.js
 export const TEST_SCENARIOS = [
@@ -223,6 +242,7 @@ Then re-run tests — they'll automatically include the new scenario.
 ### In GitHub Actions
 
 Add to CI/CD:
+
 ```yaml
 - name: Run filter quality tests
   run: npm run test:filter
@@ -239,6 +259,7 @@ Add to CI/CD:
 ### Manual Monitoring
 
 Check health periodically:
+
 ```bash
 # Save baseline after each release
 npm run test:filter:baseline
@@ -250,35 +271,41 @@ npm run test:filter:compare
 
 ## File Reference
 
-| File | Purpose | Modified From |
-|------|---------|-----------------|
-| `api/_filterConfig.js` | **NEW** — Centralized config | N/A |
-| `api/_filterScoring.js` | **NEW** — Metrics & measurement | N/A |
-| `api/filter-quality.js` | **NEW** — Dashboard endpoint | N/A |
-| `tests/unit/filterTuning.test.js` | **NEW** — Test scenarios | N/A |
-| `scripts/tune-filters.js` | **NEW** — Auto-tuning runner | N/A |
-| `FILTER_TUNING.md` | **NEW** — Full docs | N/A |
-| `api/_caseLawRetrieval.js` | ✅ Updated | Added `detectCoreIssue()`, pre-verify semantic gate |
-| `api/analyze.js` | ✅ Updated | Expanded stop_words, added min-token validation |
-| `package.json` | ✅ Updated | Added test:filter* scripts |
+| File                              | Purpose                         | Modified From                                       |
+| --------------------------------- | ------------------------------- | --------------------------------------------------- |
+| `api/_filterConfig.js`            | **NEW** — Centralized config    | N/A                                                 |
+| `api/_filterScoring.js`           | **NEW** — Metrics & measurement | N/A                                                 |
+| `api/filter-quality.js`           | **NEW** — Dashboard endpoint    | N/A                                                 |
+| `tests/unit/filterTuning.test.js` | **NEW** — Test scenarios        | N/A                                                 |
+| `scripts/tune-filters.js`         | **NEW** — Auto-tuning runner    | N/A                                                 |
+| `FILTER_TUNING.md`                | **NEW** — Full docs             | N/A                                                 |
+| `api/_caseLawRetrieval.js`        | ✅ Updated                      | Added `detectCoreIssue()`, pre-verify semantic gate |
+| `api/analyze.js`                  | ✅ Updated                      | Expanded stop_words, added min-token validation     |
+| `package.json`                    | ✅ Updated                      | Added test:filter\* scripts                         |
 
 ## Troubleshooting
 
 ### Q: Report not generated
+
 A: Check write permissions and ensure script ran without errors:
+
 ```bash
 node scripts/tune-filters.js --report 2>&1 | tail -20
 ```
 
 ### Q: Tests pass locally but fail in CI
+
 A: Ensure `TEST_SCENARIOS` exports are correct:
+
 ```bash
 node -e "import('./tests/unit/filterTuning.test.js').then(m => console.log(m.TEST_SCENARIOS?.length))"
 # Should print: 16
 ```
 
 ### Q: How do I know if the filters are good?
+
 A: Look for:
+
 - ✓ Pass rate > 85%
 - ✓ Precision > 0.80
 - ✓ Avg relevance > 6/10
@@ -286,17 +313,20 @@ A: Look for:
 - ✓ Report suggestions < 3
 
 ### Q: Can I test specific scenarios?
+
 A: Run in Node:
+
 ```javascript
 import { TEST_SCENARIOS } from "./tests/unit/filterTuning.test.js";
 
-const scenario = TEST_SCENARIOS.find(s => s.id === "impaired_01");
+const scenario = TEST_SCENARIOS.find((s) => s.id === "impaired_01");
 console.log(scenario.scenario);
 ```
 
 ## Next Steps
 
 1. **Run tests immediately:**
+
    ```bash
    npm run test:filter
    ```
@@ -308,6 +338,7 @@ console.log(scenario.scenario);
 4. **Make config improvements** — Edit `api/_filterConfig.js` based on hints
 
 5. **Measure impact** — Compare before/after:
+
    ```bash
    npm run test:filter:baseline
    # Edit config...

@@ -20,7 +20,8 @@ const WEBHOOK_TIMEOUT_MS = 8000;
 function isPrivateOrLocalHost(hostname = "") {
   const host = String(hostname).trim().toLowerCase();
   if (!host) return true;
-  if (host === "localhost" || host === "0.0.0.0" || host.endsWith(".local")) return true;
+  if (host === "localhost" || host === "0.0.0.0" || host.endsWith(".local"))
+    return true;
 
   const ipVersion = isIP(host);
   if (ipVersion === 4) {
@@ -36,7 +37,13 @@ function isPrivateOrLocalHost(hostname = "") {
   if (ipVersion === 6) {
     if (host === "::1") return true;
     if (host.startsWith("fc") || host.startsWith("fd")) return true; // ULA
-    if (host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb")) return true; // link-local
+    if (
+      host.startsWith("fe8") ||
+      host.startsWith("fe9") ||
+      host.startsWith("fea") ||
+      host.startsWith("feb")
+    )
+      return true; // link-local
   }
 
   return false;
@@ -51,7 +58,9 @@ function isAllowedWebhookHost(hostname = "") {
 
   if (allowlist.length === 0) return true;
   const host = String(hostname).trim().toLowerCase();
-  return allowlist.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+  return allowlist.some(
+    (allowed) => host === allowed || host.endsWith(`.${allowed}`),
+  );
 }
 
 function getAlertWebhookUrl() {
@@ -65,7 +74,8 @@ function getAlertWebhookUrl() {
     return "";
   }
 
-  const allowInsecureHttp = process.env.RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP === "true";
+  const allowInsecureHttp =
+    process.env.RETRIEVAL_ALERT_WEBHOOK_ALLOW_HTTP === "true";
   if (parsed.protocol !== "https:" && !allowInsecureHttp) return "";
   if (isPrivateOrLocalHost(parsed.hostname)) return "";
   if (!isAllowedWebhookHost(parsed.hostname)) return "";
@@ -112,7 +122,7 @@ async function postAlertToWebhook(alert, webhookUrl) {
 
 export const RETRIEVAL_ALERT_THRESHOLDS = {
   errorRate1h: 0.05,
-  noVerifiedRate1h: 0.70,
+  noVerifiedRate1h: 0.7,
   p95LatencyMs1h: 2500,
   avgVerifiedPerRequestMin1h: 0.3,
   fallbackPathRate1h: 0.65,
@@ -175,9 +185,9 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
         errorRate,
         RETRIEVAL_ALERT_THRESHOLDS.errorRate1h,
         `Retrieval error rate is ${formatPercent(errorRate)} over 1h (threshold ${formatPercent(
-          RETRIEVAL_ALERT_THRESHOLDS.errorRate1h
-        )}).`
-      )
+          RETRIEVAL_ALERT_THRESHOLDS.errorRate1h,
+        )}).`,
+      ),
     );
   }
 
@@ -195,9 +205,9 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
         noVerifiedRate,
         RETRIEVAL_ALERT_THRESHOLDS.noVerifiedRate1h,
         `No-verified rate is ${formatPercent(noVerifiedRate)} over 1h (threshold ${formatPercent(
-          RETRIEVAL_ALERT_THRESHOLDS.noVerifiedRate1h
-        )}).`
-      )
+          RETRIEVAL_ALERT_THRESHOLDS.noVerifiedRate1h,
+        )}).`,
+      ),
     );
   }
 
@@ -214,8 +224,8 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
         "1h",
         p95Latency,
         RETRIEVAL_ALERT_THRESHOLDS.p95LatencyMs1h,
-        `Retrieval p95 latency is ${p95Latency}ms over 1h (threshold ${RETRIEVAL_ALERT_THRESHOLDS.p95LatencyMs1h}ms).`
-      )
+        `Retrieval p95 latency is ${p95Latency}ms over 1h (threshold ${RETRIEVAL_ALERT_THRESHOLDS.p95LatencyMs1h}ms).`,
+      ),
     );
   }
 
@@ -233,9 +243,9 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
         avgVerified,
         RETRIEVAL_ALERT_THRESHOLDS.avgVerifiedPerRequestMin1h,
         `Average verified results/request is ${formatFloat(avgVerified)} over 1h (threshold ${formatFloat(
-          RETRIEVAL_ALERT_THRESHOLDS.avgVerifiedPerRequestMin1h
-        )}).`
-      )
+          RETRIEVAL_ALERT_THRESHOLDS.avgVerifiedPerRequestMin1h,
+        )}).`,
+      ),
     );
   }
 
@@ -253,9 +263,9 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
         fallbackPathRate,
         RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h,
         `Fallback-path usage is ${formatPercent(fallbackPathRate)} over 1h (threshold ${formatPercent(
-          RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h
-        )}).`
-      )
+          RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h,
+        )}).`,
+      ),
     );
   }
 
@@ -273,13 +283,15 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
         avgRelevanceScore,
         RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h,
         `Average relevance score is ${formatFloat(avgRelevanceScore)} over 1h (threshold ${formatFloat(
-          RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h
-        )}).`
-      )
+          RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h,
+        )}).`,
+      ),
     );
   }
 
-  const byIssueRows = Array.isArray(oneHour?.breakdowns?.byIssue) ? oneHour.breakdowns.byIssue : [];
+  const byIssueRows = Array.isArray(oneHour?.breakdowns?.byIssue)
+    ? oneHour.breakdowns.byIssue
+    : [];
   for (const row of byIssueRows) {
     const issuePrimary = row?.issuePrimary || "unknown";
     const issueRequests = Number(row?.requests || 0);
@@ -298,8 +310,8 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
           issueNoVerifiedRate,
           RETRIEVAL_ALERT_THRESHOLDS.issueNoVerifiedRate1h,
           `Issue ${issuePrimary} has no-verified rate ${formatPercent(issueNoVerifiedRate)} over 1h (${issueRequests} requests; threshold ${formatPercent(
-            RETRIEVAL_ALERT_THRESHOLDS.issueNoVerifiedRate1h
-          )}).`
+            RETRIEVAL_ALERT_THRESHOLDS.issueNoVerifiedRate1h,
+          )}).`,
         ),
         issuePrimary,
         requests: issueRequests,
@@ -307,7 +319,10 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
     }
 
     const issueErrorRate = row?.errorRate;
-    if (issueErrorRate != null && issueErrorRate > RETRIEVAL_ALERT_THRESHOLDS.issueErrorRate1h) {
+    if (
+      issueErrorRate != null &&
+      issueErrorRate > RETRIEVAL_ALERT_THRESHOLDS.issueErrorRate1h
+    ) {
       alerts.push({
         ...buildAlert(
           `retrieval_issue_error_rate_1h_${toIssueAlertId(issuePrimary)}`,
@@ -316,8 +331,8 @@ export function evaluateRetrievalAlerts(healthSnapshot = {}) {
           issueErrorRate,
           RETRIEVAL_ALERT_THRESHOLDS.issueErrorRate1h,
           `Issue ${issuePrimary} has error rate ${formatPercent(issueErrorRate)} over 1h (${issueRequests} requests; threshold ${formatPercent(
-            RETRIEVAL_ALERT_THRESHOLDS.issueErrorRate1h
-          )}).`
+            RETRIEVAL_ALERT_THRESHOLDS.issueErrorRate1h,
+          )}).`,
         ),
         issuePrimary,
         requests: issueRequests,
@@ -339,12 +354,19 @@ async function shouldEmitAlert(alertId, nowMs = Date.now()) {
 
   if (redis) {
     try {
-      const timeout = () => new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
-      );
+      const timeout = () =>
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Redis timeout")),
+            REDIS_TIMEOUT_MS,
+          ),
+        );
       const existing = await Promise.race([redis.get(key), timeout()]);
       if (existing) return false;
-      await Promise.race([redis.setex(key, ALERT_DEDUPE_SECONDS, String(nowMs)), timeout()]);
+      await Promise.race([
+        redis.setex(key, ALERT_DEDUPE_SECONDS, String(nowMs)),
+        timeout(),
+      ]);
       return true;
     } catch {
       // fallback to in-memory dedupe
@@ -358,7 +380,11 @@ async function shouldEmitAlert(alertId, nowMs = Date.now()) {
   return true;
 }
 
-export async function emitRetrievalAlerts({ requestId = "unknown", endpoint = "unknown", healthSnapshot = null } = {}) {
+export async function emitRetrievalAlerts({
+  requestId = "unknown",
+  endpoint = "unknown",
+  healthSnapshot = null,
+} = {}) {
   const snapshot = healthSnapshot || (await getRetrievalHealthSnapshot());
   const alerts = evaluateRetrievalAlerts(snapshot);
   if (alerts.length === 0) {
@@ -379,11 +405,16 @@ export async function emitRetrievalAlerts({ requestId = "unknown", endpoint = "u
         event: "retrieval_alert",
         dedupeSeconds: ALERT_DEDUPE_SECONDS,
         ...alert,
-      })
+      }),
     );
     // eslint-disable-next-line no-await-in-loop
     const webhookResult = await postAlertToWebhook(alert, webhookUrl);
-    if (webhookUrl && webhookResult && !webhookResult.ok && !webhookResult.skipped) {
+    if (
+      webhookUrl &&
+      webhookResult &&
+      !webhookResult.ok &&
+      !webhookResult.skipped
+    ) {
       console.log(
         createLog({
           requestId,
@@ -391,7 +422,7 @@ export async function emitRetrievalAlerts({ requestId = "unknown", endpoint = "u
           event: "retrieval_alert_webhook_failed",
           alertId: alert.id,
           webhookStatus: webhookResult.status ?? null,
-        })
+        }),
       );
     }
   }

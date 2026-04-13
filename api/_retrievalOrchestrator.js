@@ -26,7 +26,7 @@ export async function runCaseLawRetrieval({
       criminalCode,
       apiKey,
       maxResults,
-    })
+    }),
   );
 
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
@@ -36,7 +36,9 @@ export async function runCaseLawRetrieval({
   let timeoutId;
   const timeoutPromise = new Promise((_, reject) => {
     timeoutId = setTimeout(() => {
-      reject(Object.assign(new Error("Retrieval timeout"), { isTimeout: true }));
+      reject(
+        Object.assign(new Error("Retrieval timeout"), { isTimeout: true }),
+      );
     }, timeoutMs);
   });
 

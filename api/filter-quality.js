@@ -9,7 +9,10 @@
 import { randomUUID } from "crypto";
 import { FILTER_CONFIG } from "./_filterConfig.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
-import { applyStandardApiHeaders, handleOptionsAndMethod } from "./_apiCommon.js";
+import {
+  applyStandardApiHeaders,
+  handleOptionsAndMethod,
+} from "./_apiCommon.js";
 import {
   logRequestStart,
   logRateLimitCheck,
@@ -31,9 +34,13 @@ export default async function handler(req, res) {
   const rlResult = await checkRateLimit(getClientIp(req), "filter-quality");
   logRateLimitCheck(requestId, "filter-quality", rlResult, getClientIp(req));
   const rlHeaders = rateLimitHeaders(rlResult);
-  Object.entries(rlHeaders).forEach(([key, value]) => res.setHeader(key, value));
+  Object.entries(rlHeaders).forEach(([key, value]) =>
+    res.setHeader(key, value),
+  );
   if (!rlResult.allowed) {
-    return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
+    return res
+      .status(429)
+      .json({ error: "Rate limit exceeded. Please try again later." });
   }
 
   // Check auth token (same as retrieval-health)
@@ -41,7 +48,12 @@ export default async function handler(req, res) {
   const expectedToken = process.env.RETRIEVAL_HEALTH_TOKEN;
 
   if (!expectedToken || !token || token !== expectedToken) {
-    logValidationError(requestId, "filter-quality", "Unauthorized filter quality request", "authorization");
+    logValidationError(
+      requestId,
+      "filter-quality",
+      "Unauthorized filter quality request",
+      "authorization",
+    );
     return res.status(401).json({ error: "Unauthorized" });
   }
 
@@ -52,8 +64,10 @@ export default async function handler(req, res) {
     const filterSnapshot = {
       timestamp: new Date().toISOString(),
       thresholds: {
-        ai_citation_min_token_overlap: FILTER_CONFIG.ai_citation_min_token_overlap,
-        final_case_min_token_overlap: FILTER_CONFIG.final_case_min_token_overlap,
+        ai_citation_min_token_overlap:
+          FILTER_CONFIG.ai_citation_min_token_overlap,
+        final_case_min_token_overlap:
+          FILTER_CONFIG.final_case_min_token_overlap,
         base_points_per_token: FILTER_CONFIG.base_points_per_token,
       },
       stop_words_count: FILTER_CONFIG.stop_words.size,
@@ -63,7 +77,9 @@ export default async function handler(req, res) {
     };
 
     // Build issue patterns summary (for dashboard display)
-    const issuePatternsSummary = Object.entries(FILTER_CONFIG.issue_patterns).map(([key, config]) => ({
+    const issuePatternsSummary = Object.entries(
+      FILTER_CONFIG.issue_patterns,
+    ).map(([key, config]) => ({
       id: key,
       primary: config.primary,
       sub_issues_count: config.sub_issues.length,
@@ -99,7 +115,9 @@ export default async function handler(req, res) {
       ],
       tuning_guide: {
         if_low_precision: [
-          "Increase final_case_min_token_overlap (current: " + FILTER_CONFIG.final_case_min_token_overlap + ")",
+          "Increase final_case_min_token_overlap (current: " +
+            FILTER_CONFIG.final_case_min_token_overlap +
+            ")",
           "Add more domain-specific stop words to FILTER_CONFIG.stop_words",
           "Review and expand issue_patterns sub_issues lists",
         ],
@@ -116,9 +134,16 @@ export default async function handler(req, res) {
       },
     };
 
-    logSuccess(requestId, "filter-quality", 200, Date.now() - startMs, rlResult, {
-      issuePatterns: issuePatternsSummary.length,
-    });
+    logSuccess(
+      requestId,
+      "filter-quality",
+      200,
+      Date.now() - startMs,
+      rlResult,
+      {
+        issuePatterns: issuePatternsSummary.length,
+      },
+    );
     return res.status(200).json(response);
   } catch (error) {
     console.error("Filter quality endpoint error:", error);

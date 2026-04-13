@@ -13,14 +13,26 @@ function classifyScenario(snippet) {
   const s = normalize(snippet);
   if (!s) return { classId: "unknown", labels: [] };
 
-  if (/\b(delay|delayed|adjourned|adjournment|crown\s+delay|11\s*b|trial)\b/.test(s)) {
+  if (
+    /\b(delay|delayed|adjourned|adjournment|crown\s+delay|11\s*b|trial)\b/.test(
+      s,
+    )
+  ) {
     return {
       classId: "trial_delay",
-      labels: ["R v Jordan 2016 SCC 27", "R v Cody 2017 SCC 31", "Charter section 11(b)"],
+      labels: [
+        "R v Jordan 2016 SCC 27",
+        "R v Cody 2017 SCC 31",
+        "Charter section 11(b)",
+      ],
     };
   }
 
-  if (/\b(broke\s+into|break\s+in|break\s+and\s+enter|burglary|home\s+invasion)\b/.test(s)) {
+  if (
+    /\b(broke\s+into|break\s+in|break\s+and\s+enter|burglary|home\s+invasion)\b/.test(
+      s,
+    )
+  ) {
     return {
       classId: "break_enter",
       labels: ["break and enter Criminal Code section 348", "dwelling house"],
@@ -37,11 +49,18 @@ function classifyScenario(snippet) {
   if (/\b(detain|detention|arrest|charter|search|seizure)\b/.test(s)) {
     return {
       classId: "charter_detention",
-      labels: ["R v Grant 2009 SCC 32", "Charter section 9", "Charter section 8"],
+      labels: [
+        "R v Grant 2009 SCC 32",
+        "Charter section 9",
+        "Charter section 8",
+      ],
     };
   }
 
-  return { classId: "general_criminal", labels: ["criminal code", "canadian criminal case law"] };
+  return {
+    classId: "general_criminal",
+    labels: ["criminal code", "canadian criminal case law"],
+  };
 }
 
 export function buildRetrievalImprovements(recentFailures = []) {

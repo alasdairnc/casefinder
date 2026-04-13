@@ -74,7 +74,9 @@ function tokenize(text) {
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .map((token) => token.trim())
-    .filter((token) => token.length >= 3 && !FILTER_CONFIG.stop_words.has(token));
+    .filter(
+      (token) => token.length >= 3 && !FILTER_CONFIG.stop_words.has(token),
+    );
 }
 
 function scoreLandmarkCase(scenario, caseLaw) {
@@ -109,26 +111,37 @@ function scoreLandmarkCase(scenario, caseLaw) {
     if (tagTokens.has(token)) score += 3;
   }
 
-  const normalizedTitle = String(caseLaw.title || "").toLowerCase().replace(/[^a-z0-9\s]/g, "");
+  const normalizedTitle = String(caseLaw.title || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "");
   const normalizedScenario = scenarioText.replace(/[^a-z0-9\s]/g, "");
-  if (normalizedScenario.includes(normalizedTitle) && normalizedTitle) score += 20;
+  if (normalizedScenario.includes(normalizedTitle) && normalizedTitle)
+    score += 20;
 
   return score;
 }
 
 function isCriminalOrCharterCase(caseLaw) {
-  const haystack = `${caseLaw?.title || ""} ${caseLaw?.facts || ""} ${caseLaw?.ratio || ""} ${(caseLaw?.topics || []).join(" ")} ${(caseLaw?.tags || []).join(" ")}`.toLowerCase();
-  const positive = /\b(criminal|charter|detention|search|seizure|warrant|counsel|11\(b\)|trial\s+delay|robbery|theft|assault|sexual\s+assault|drug|cdsa|impaired|breath|domestic|peace\s+bond|break\s+and\s+enter|uttering\s+threats|harassment)\b/;
-  const negative = /\b(copyright|royalt(?:y|ies)|socan|intellectual\s+property|secession|senate|same-sex\s+marriage|impact\s+assessment|trade\s+and\s+commerce|administrative\s+law|tribunal|first\s+nation|aboriginal\s+title|treaty\s+rights)\b/;
+  const haystack =
+    `${caseLaw?.title || ""} ${caseLaw?.facts || ""} ${caseLaw?.ratio || ""} ${(caseLaw?.topics || []).join(" ")} ${(caseLaw?.tags || []).join(" ")}`.toLowerCase();
+  const positive =
+    /\b(criminal|charter|detention|search|seizure|warrant|counsel|11\(b\)|trial\s+delay|robbery|theft|assault|sexual\s+assault|drug|cdsa|impaired|breath|domestic|peace\s+bond|break\s+and\s+enter|uttering\s+threats|harassment)\b/;
+  const negative =
+    /\b(copyright|royalt(?:y|ies)|socan|intellectual\s+property|secession|senate|same-sex\s+marriage|impact\s+assessment|trade\s+and\s+commerce|administrative\s+law|tribunal|first\s+nation|aboriginal\s+title|treaty\s+rights)\b/;
 
   if (negative.test(haystack)) return false;
   return positive.test(haystack);
 }
 
 function buildLandmarkMatches(scenario, limit = 3) {
-  const scopedCases = [...MASTER_CASE_LAW_DB].filter((caseLaw) => isCriminalOrCharterCase(caseLaw));
+  const scopedCases = [...MASTER_CASE_LAW_DB].filter((caseLaw) =>
+    isCriminalOrCharterCase(caseLaw),
+  );
   return scopedCases
-    .map((caseLaw) => ({ caseLaw, score: scoreLandmarkCase(scenario, caseLaw) }))
+    .map((caseLaw) => ({
+      caseLaw,
+      score: scoreLandmarkCase(scenario, caseLaw),
+    }))
     .filter((item) => item.score >= 3)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
@@ -145,7 +158,10 @@ async function realRetrievalFn(scenario, testCase = {}) {
   if (retrievalCache.has(cacheKey)) {
     return retrievalCache.get(cacheKey);
   }
-  const landmarkMatches = buildLandmarkMatches(scenario, testCase.maxResults || 3);
+  const landmarkMatches = buildLandmarkMatches(
+    scenario,
+    testCase.maxResults || 3,
+  );
   const aiCaseLaw = [];
 
   if (!apiKey) {
@@ -176,8 +192,10 @@ async function realRetrievalFn(scenario, testCase = {}) {
 async function calibrateRelevanceThresholds({ TEST_SCENARIOS, runTestSuite }) {
   const baselineEnv = {
     FILTER_RELEVANCE_MIN_SCORE: process.env.FILTER_RELEVANCE_MIN_SCORE,
-    FILTER_RELEVANCE_MIN_TOKEN_OVERLAP: process.env.FILTER_RELEVANCE_MIN_TOKEN_OVERLAP,
-    FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP: process.env.FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP,
+    FILTER_RELEVANCE_MIN_TOKEN_OVERLAP:
+      process.env.FILTER_RELEVANCE_MIN_TOKEN_OVERLAP,
+    FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP:
+      process.env.FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP,
   };
 
   const grid = [];
@@ -189,8 +207,10 @@ async function calibrateRelevanceThresholds({ TEST_SCENARIOS, runTestSuite }) {
     for (const minTokenOverlap of minTokenOverlaps) {
       for (const minConceptOverlap of minConceptOverlaps) {
         process.env.FILTER_RELEVANCE_MIN_SCORE = String(minScore);
-        process.env.FILTER_RELEVANCE_MIN_TOKEN_OVERLAP = String(minTokenOverlap);
-        process.env.FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP = String(minConceptOverlap);
+        process.env.FILTER_RELEVANCE_MIN_TOKEN_OVERLAP =
+          String(minTokenOverlap);
+        process.env.FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP =
+          String(minConceptOverlap);
         const result = await runTestSuite(TEST_SCENARIOS, realRetrievalFn);
         grid.push({
           minScore,
@@ -206,13 +226,17 @@ async function calibrateRelevanceThresholds({ TEST_SCENARIOS, runTestSuite }) {
     }
   }
 
-  process.env.FILTER_RELEVANCE_MIN_SCORE = baselineEnv.FILTER_RELEVANCE_MIN_SCORE;
-  process.env.FILTER_RELEVANCE_MIN_TOKEN_OVERLAP = baselineEnv.FILTER_RELEVANCE_MIN_TOKEN_OVERLAP;
-  process.env.FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP = baselineEnv.FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP;
+  process.env.FILTER_RELEVANCE_MIN_SCORE =
+    baselineEnv.FILTER_RELEVANCE_MIN_SCORE;
+  process.env.FILTER_RELEVANCE_MIN_TOKEN_OVERLAP =
+    baselineEnv.FILTER_RELEVANCE_MIN_TOKEN_OVERLAP;
+  process.env.FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP =
+    baselineEnv.FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP;
 
   const ranked = [...grid].sort((a, b) => {
     if (b.passRate !== a.passRate) return b.passRate - a.passRate;
-    if (b.avgPrecision !== a.avgPrecision) return b.avgPrecision - a.avgPrecision;
+    if (b.avgPrecision !== a.avgPrecision)
+      return b.avgPrecision - a.avgPrecision;
     return b.avgRelevance - a.avgRelevance;
   });
 
@@ -248,8 +272,10 @@ function suggestImprovements(testResults) {
       {
         priority: "HIGH",
         issue: "No evaluable scenarios",
-        details: "All scenarios were skipped due to missing local coverage or retrieval data.",
-        recommendation: "Set CANLII_API_KEY to run full retrieval-backed evaluation.",
+        details:
+          "All scenarios were skipped due to missing local coverage or retrieval data.",
+        recommendation:
+          "Set CANLII_API_KEY to run full retrieval-backed evaluation.",
       },
     ];
   }
@@ -258,20 +284,20 @@ function suggestImprovements(testResults) {
 
   // Identify consistently failing scenarios
   const failingScenarios = evaluatedResults
-    .filter(r => !r.is_acceptable)
+    .filter((r) => !r.is_acceptable)
     .sort((a, b) => a.precision - b.precision);
 
   if (failingScenarios.length > 0) {
     suggestions.push({
       priority: "HIGH",
       issue: `${failingScenarios.length} test scenarios failing`,
-      details: failingScenarios.slice(0, 3).map(r => r.scenario_summary),
+      details: failingScenarios.slice(0, 3).map((r) => r.scenario_summary),
       recommendation: "Review issue detection patterns or ranking thresholds",
     });
   }
 
   // Alert on low precision
-  const lowPrecisionCases = evaluatedResults.filter(r => r.precision < 0.6);
+  const lowPrecisionCases = evaluatedResults.filter((r) => r.precision < 0.6);
   if (lowPrecisionCases.length > evaluatedResults.length * 0.2) {
     suggestions.push({
       priority: "HIGH",
@@ -293,15 +319,19 @@ function suggestImprovements(testResults) {
   }
 
   // False positives in excluded patterns
-  const excludedFound = evaluatedResults.filter(r => r.excluded_found.length > 0);
+  const excludedFound = evaluatedResults.filter(
+    (r) => r.excluded_found.length > 0,
+  );
   if (excludedFound.length > 0) {
     suggestions.push({
       priority: "MEDIUM",
       issue: "Excluded patterns found in results",
       details: excludedFound.map(
-        r => `${r.scenario_summary}: ${r.excluded_found.map(e => e.pattern).join(", ")}`
+        (r) =>
+          `${r.scenario_summary}: ${r.excluded_found.map((e) => e.pattern).join(", ")}`,
       ),
-      recommendation: "Review ranking boosts or add more exclude patterns to test cases",
+      recommendation:
+        "Review ranking boosts or add more exclude patterns to test cases",
     });
   }
 
@@ -311,7 +341,12 @@ function suggestImprovements(testResults) {
 /**
  * Generate HTML report
  */
-function generateHtmlReport(testResults, suggestions, filename = "filter-quality-report.html", modeLabel = "unknown") {
+function generateHtmlReport(
+  testResults,
+  suggestions,
+  filename = "filter-quality-report.html",
+  modeLabel = "unknown",
+) {
   const timestamp = new Date().toISOString();
   const passRate = testResults.pass_rate.toFixed(1);
   const avgRelevance = testResults.avg_relevance_global.toFixed(2);
@@ -319,7 +354,7 @@ function generateHtmlReport(testResults, suggestions, filename = "filter-quality
 
   const resultsRows = testResults.results
     .map(
-      r => `
+      (r) => `
     <tr class="${r.skipped ? "skip" : r.is_acceptable ? "pass" : "fail"}">
       <td>${r.scenario_summary}</td>
       <td>${r.precision.toFixed(2)}</td>
@@ -327,19 +362,19 @@ function generateHtmlReport(testResults, suggestions, filename = "filter-quality
       <td>${r.total_returned}</td>
       <td>${r.skipped ? "- SKIP" : r.is_acceptable ? "✓ PASS" : "✗ FAIL"}</td>
     </tr>
-  `
+  `,
     )
     .join("");
 
   const suggestionsRows = suggestions
     .map(
-      s => `
+      (s) => `
     <div class="suggestion ${s.priority.toLowerCase()}">
       <h4>${s.priority}: ${s.issue}</h4>
       <p><strong>Details:</strong> ${Array.isArray(s.details) ? s.details.join("<br>") : s.details}</p>
       <p><strong>Recommendation:</strong> ${s.recommendation}</p>
     </div>
-  `
+  `,
     )
     .join("");
 
@@ -456,8 +491,10 @@ function compareToBaseline(newResults, filename = ".filter-baseline.json") {
 
   return {
     pass_rate_delta: newResults.pass_rate - baseline.pass_rate,
-    avg_relevance_delta: newResults.avg_relevance_global - baseline.avg_relevance_global,
-    avg_precision_delta: newResults.avg_precision_global - baseline.avg_precision_global,
+    avg_relevance_delta:
+      newResults.avg_relevance_global - baseline.avg_relevance_global,
+    avg_precision_delta:
+      newResults.avg_precision_global - baseline.avg_precision_global,
     tests_fixed: newResults.passed - baseline.passed,
     better: newResults.pass_rate > baseline.pass_rate ? "YES ✓" : "NO ✗",
   };
@@ -485,10 +522,14 @@ async function main() {
     console.log(`Evaluation mode: ${modeLabel}`);
     if (!canliiKey) {
       if (requireKey) {
-        console.log("Error: CANLII_API_KEY is required for keyed filter mode (--require-key).");
+        console.log(
+          "Error: CANLII_API_KEY is required for keyed filter mode (--require-key).",
+        );
         process.exit(1);
       }
-      console.log("Warning: CANLII_API_KEY is not set; scenarios will be skipped.");
+      console.log(
+        "Warning: CANLII_API_KEY is not set; scenarios will be skipped.",
+      );
     }
 
     // Run test suite with the real retrieval endpoint
@@ -523,21 +564,33 @@ async function main() {
     const suggestions = suggestImprovements(testResults);
     if (suggestions.length > 0) {
       console.log(`\n💡 Suggestions (${suggestions.length} found):`);
-      suggestions.forEach(s => {
+      suggestions.forEach((s) => {
         console.log(`  [${s.priority}] ${s.issue}`);
       });
     }
 
     if (doReport) {
-      generateHtmlReport(testResults, suggestions, "filter-quality-report.html", modeLabel);
+      generateHtmlReport(
+        testResults,
+        suggestions,
+        "filter-quality-report.html",
+        modeLabel,
+      );
     }
 
     if (doCalibrate) {
       console.log("\nRunning threshold calibration grid...");
-      const calibration = await calibrateRelevanceThresholds({ TEST_SCENARIOS, runTestSuite });
+      const calibration = await calibrateRelevanceThresholds({
+        TEST_SCENARIOS,
+        runTestSuite,
+      });
       if (calibration?.best) {
-        console.log(`Best calibration: pass ${calibration.best.passRate.toFixed(1)}% (${calibration.best.passed}/${calibration.best.evaluated}), precision ${calibration.best.avgPrecision.toFixed(2)}, relevance ${calibration.best.avgRelevance.toFixed(2)}`);
-        console.log(`Recommended env: FILTER_RELEVANCE_MIN_SCORE=${calibration.best.minScore} FILTER_RELEVANCE_MIN_TOKEN_OVERLAP=${calibration.best.minTokenOverlap} FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP=${calibration.best.minConceptOverlap}`);
+        console.log(
+          `Best calibration: pass ${calibration.best.passRate.toFixed(1)}% (${calibration.best.passed}/${calibration.best.evaluated}), precision ${calibration.best.avgPrecision.toFixed(2)}, relevance ${calibration.best.avgRelevance.toFixed(2)}`,
+        );
+        console.log(
+          `Recommended env: FILTER_RELEVANCE_MIN_SCORE=${calibration.best.minScore} FILTER_RELEVANCE_MIN_TOKEN_OVERLAP=${calibration.best.minTokenOverlap} FILTER_RELEVANCE_MIN_CONCEPT_OVERLAP=${calibration.best.minConceptOverlap}`,
+        );
         console.log(`Calibration written to: ${calibration.outPath}`);
       }
     }
