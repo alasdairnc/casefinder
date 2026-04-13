@@ -1,3 +1,15 @@
+---
+name: new-endpoint
+description: Scaffold a new CaseDive Vercel serverless API endpoint with all mandatory boilerplate pre-wired
+allowed_tools: ["Bash", "Write", "Read", "Glob"]
+version: "1.0.0"
+rollback: "delete the scaffolded api/<endpoint-name>.js if the invariant review fails or the endpoint is no longer needed"
+observation_hooks:
+  - verify: "ls api/*.js | sort"
+feedback_hooks:
+  - on_failure: "confirm the api-invariant-reviewer passed before adding business logic"
+---
+
 # /new-endpoint
 
 Scaffold a new CaseDive Vercel serverless API endpoint with all mandatory boilerplate pre-wired.

@@ -3,6 +3,11 @@ name: retrieval-health
 description: Fetch the live retrieval health snapshot, diagnose issues, and optionally apply fixes
 allowed_tools: ["Read", "WebFetch", "Bash", "Grep", "Glob", "Edit"]
 version: "1.0.0"
+rollback: "revert any retrieval pipeline edits if re-running the health check shows the same or worse metrics"
+observation_hooks:
+  - verify: "git diff --stat api/_retrievalHealthStore.js api/retrieve-caselaw.js"
+feedback_hooks:
+  - on_failure: "check snapshotSource, Redis write path, and CanLII API key config before retrying"
 ---
 
 # /retrieval-health — Retrieval Health Check + Fix

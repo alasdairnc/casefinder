@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; if echo \"$FILE\" | grep -qE '\\.(js|jsx)$'; then npx eslint --fix \"$FILE\" 2>/dev/null || true; fi",
+            "command": "sh .claude/hooks/lint-on-save.sh",
             "statusMessage": "Linting..."
           }
         ]
