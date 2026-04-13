@@ -1,14 +1,17 @@
 # Mode 4 Evaluation Snapshot (2026-04-04)
 
 ## Scope
+
 Post-Mode 3 classification tuning snapshot for retrieval-failure corpus expansion.
 
 ## Commands Run
+
 - npm run test:retrieval-failures
 - npm run test:guardrails
 - npm run test:retrieval-failures:compare
 
 ## Results
+
 - Retrieval failures: 52/52 passed (100.0%)
 - Guardrails: passed
   - resultCardSanitizer tests passed
@@ -22,13 +25,16 @@ Post-Mode 3 classification tuning snapshot for retrieval-failure corpus expansio
   - failed delta: +0
 
 ## Mode 4 Gate Status
+
 - Regression gate: PASS
 - Expanded corpus gate: PASS
 - Guardrails gate: PASS
 - Promotion to next step (Mode 5 operational monitoring/canary): READY
 
 ## Classification Improvements (Mode 3)
+
 Targeted positives now classify into issue-specific categories instead of general_criminal where applicable:
+
 - robbery_bus_knife_positive -> robbery
 - theft_backpack_positive -> theft
 - search_home_warrant_positive -> charter_search_seizure
@@ -37,12 +43,14 @@ Targeted positives now classify into issue-specific categories instead of genera
 - robbery_force_alley_positive -> robbery
 
 Traffic-style zero-expected scenarios now consistently classify as minor_traffic_stop where intended:
+
 - traffic_minor_grant
 - traffic_minor_oakes
 - traffic_ticket_only_zero
 - impaired_minor_ticket_negative
 
 ## Next Step (Mode 5)
+
 - Pull retrieval-health snapshot (5m and 1h windows)
 - Validate canary/promotion thresholds on:
   - error rate

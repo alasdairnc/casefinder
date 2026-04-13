@@ -55,6 +55,7 @@ Suggested prompt template:
 Investigate and fix retrieval failure for this CaseDive scenario.
 
 Failure context:
+
 - ts: [timestamp]
 - endpoint: [endpoint]
 - reason: [reason]
@@ -66,10 +67,11 @@ Failure context:
 - errorMessage: [optional]
 
 Tasks:
-1) Identify likely root cause in retrieval pipeline.
-2) Implement minimal code fix.
-3) Add or update tests to prevent recurrence.
-4) Run relevant tests and summarize measurable impact.
+
+1. Identify likely root cause in retrieval pipeline.
+2. Implement minimal code fix.
+3. Add or update tests to prevent recurrence.
+4. Run relevant tests and summarize measurable impact.
 
 ## Prioritized Optimization Backlog
 
