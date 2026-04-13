@@ -15,7 +15,9 @@ describe("normalizeCharterSection", () => {
   });
 
   it("strips full Charter prefix", () => {
-    expect(normalizeCharterSection("Canadian Charter of Rights and Freedoms, s. 8")).toBe("8");
+    expect(
+      normalizeCharterSection("Canadian Charter of Rights and Freedoms, s. 8"),
+    ).toBe("8");
   });
 
   it("passes through subsection format like '11(b)'", () => {

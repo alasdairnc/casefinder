@@ -1,12 +1,14 @@
 import { test, expect } from "@playwright/test";
 
 const MOCK_ANALYZE_RESPONSE = {
-  summary: "A person entered a residential property at night without permission and stole jewelry.",
+  summary:
+    "A person entered a residential property at night without permission and stole jewelry.",
   criminal_code: [
     {
       citation: "s. 348(1)(b)",
       title: "Breaking and Entering",
-      summary: "Breaking and entering a place with intent to commit an indictable offence.",
+      summary:
+        "Breaking and entering a place with intent to commit an indictable offence.",
     },
   ],
   case_law: [
@@ -15,14 +17,19 @@ const MOCK_ANALYZE_RESPONSE = {
       title: "R v Briscoe",
       court: "SCC",
       year: "2010",
-      summary: "Wilful blindness can substitute for knowledge as a fault element.",
+      summary:
+        "Wilful blindness can substitute for knowledge as a fault element.",
     },
   ],
   civil_law: [],
   charter: [],
   analysis: "This scenario involves a residential break and enter.",
   suggestions: [
-    { type: "canlii", term: "break and enter", label: "Search CanLII for break and enter" },
+    {
+      type: "canlii",
+      term: "break and enter",
+      label: "Search CanLII for break and enter",
+    },
   ],
 };
 
@@ -35,7 +42,8 @@ const MOCK_VERIFY_RESPONSE = {
   "R v Briscoe, 2010 SCC 13": {
     status: "verified",
     url: "https://www.canlii.org/en/ca/scc/doc/2010/2010scc13/2010scc13.html",
-    searchUrl: "https://www.canlii.org/en/ca/scc/doc/2010/2010scc13/2010scc13.html",
+    searchUrl:
+      "https://www.canlii.org/en/ca/scc/doc/2010/2010scc13/2010scc13.html",
   },
 };
 
@@ -54,9 +62,13 @@ async function setupAndSearch(page) {
       body: JSON.stringify(MOCK_VERIFY_RESPONSE),
     });
   });
-  await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
+  await page
+    .locator('[data-testid="scenario-input"]')
+    .fill("A person broke into a house at night and stole jewelry");
   await page.locator('[data-testid="research-submit"]').click();
-  await expect(page.locator('[data-testid="results-section"]')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('[data-testid="results-section"]')).toBeVisible({
+    timeout: 10000,
+  });
 }
 
 test.describe("Results", () => {
@@ -66,19 +78,29 @@ test.describe("Results", () => {
 
   test("renders scenario summary after a search", async ({ page }) => {
     await setupAndSearch(page);
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Scenario Summary", { exact: true }),
+    ).toBeVisible();
     await expect(page.getByText(MOCK_ANALYZE_RESPONSE.summary)).toBeVisible();
   });
 
-  test("renders Criminal Code section label and Export PDF button", async ({ page }) => {
+  test("renders Criminal Code section label and Export PDF button", async ({
+    page,
+  }) => {
     await setupAndSearch(page);
-    await expect(page.locator('[data-testid="results-section"]').getByText("Criminal Code", { exact: true })).toBeVisible();
+    await expect(
+      page
+        .locator('[data-testid="results-section"]')
+        .getByText("Criminal Code", { exact: true }),
+    ).toBeVisible();
     await expect(page.locator('[data-testid="export-pdf-btn"]')).toBeVisible();
   });
 
   test("renders Legal Analysis section", async ({ page }) => {
     await setupAndSearch(page);
-    await expect(page.getByText("Legal Analysis", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Legal Analysis", { exact: true }),
+    ).toBeVisible();
   });
 });
 
@@ -92,20 +114,30 @@ test.describe("ResultCard", () => {
     await expect(page.getByText("s. 348(1)(b)")).toBeVisible();
   });
 
-  test("shows verified badge for a verified criminal code citation", async ({ page }) => {
+  test("shows verified badge for a verified criminal code citation", async ({
+    page,
+  }) => {
     await setupAndSearch(page);
     // Wait for verification to complete — badge text appears after /api/verify resolves
-    await expect(page.getByText("Confirmed — Justice Laws")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Confirmed — Justice Laws")).toBeVisible({
+      timeout: 5000,
+    });
   });
 
-  test("shows verified badge for a verified case law citation", async ({ page }) => {
+  test("shows verified badge for a verified case law citation", async ({
+    page,
+  }) => {
     await setupAndSearch(page);
-    await expect(page.getByText("Verified on CanLII").first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Verified on CanLII").first()).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("bookmark button is present on a result card", async ({ page }) => {
     await setupAndSearch(page);
-    await expect(page.locator('[data-testid="bookmark-add"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.locator('[data-testid="bookmark-add"]').first(),
+    ).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -114,11 +146,17 @@ test.describe("SuggestionLink", () => {
     await page.goto("/");
   });
 
-  test("renders suggestion link with label text when suggestions are present", async ({ page }) => {
+  test("renders suggestion link with label text when suggestions are present", async ({
+    page,
+  }) => {
     await setupAndSearch(page);
-    await expect(page.getByText("Suggested Links", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Suggested Links", { exact: true }),
+    ).toBeVisible();
     // SuggestionLink renders as: suggestion.label + " ↗"
-    await expect(page.getByText(/Search CanLII for break and enter/)).toBeVisible();
+    await expect(
+      page.getByText(/Search CanLII for break and enter/),
+    ).toBeVisible();
   });
 });
 
@@ -127,8 +165,12 @@ test.describe("Select", () => {
     await page.goto("/");
   });
 
-  test("jurisdiction select is visible in the filters panel with default value", async ({ page }) => {
-    const jurisdictionSelect = page.getByRole("combobox", { name: /jurisdiction/i });
+  test("jurisdiction select is visible in the filters panel with default value", async ({
+    page,
+  }) => {
+    const jurisdictionSelect = page.getByRole("combobox", {
+      name: /jurisdiction/i,
+    });
     await expect(jurisdictionSelect).toBeVisible();
     // Default jurisdiction is "all" per constants.js
     await expect(jurisdictionSelect).toHaveValue("all");

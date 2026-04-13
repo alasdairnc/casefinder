@@ -8,7 +8,7 @@ function renderDashboard() {
   return render(
     <ThemeProvider>
       <RetrievalHealthDashboard onNavigateHome={() => {}} />
-    </ThemeProvider>
+    </ThemeProvider>,
   );
 }
 
@@ -121,7 +121,9 @@ function makeHealthResponse(overrides = {}) {
 }
 
 function extractIssueOrder(container) {
-  const matches = [...container.textContent.matchAll(/([a-z_]+)\s*·\s*\d+\s*requests/g)];
+  const matches = [
+    ...container.textContent.matchAll(/([a-z_]+)\s*·\s*\d+\s*requests/g),
+  ];
   return matches.map((m) => m[1]);
 }
 
@@ -136,7 +138,7 @@ describe("RetrievalHealthDashboard all-time issue trends", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => makeHealthResponse(),
-      })
+      }),
     );
 
     const { container } = renderDashboard();
@@ -201,7 +203,7 @@ describe("RetrievalHealthDashboard all-time issue trends", () => {
               lastEventAt: new Date().toISOString(),
             },
           }),
-      })
+      }),
     );
 
     const { container } = renderDashboard();
@@ -235,13 +237,15 @@ describe("RetrievalHealthDashboard all-time issue trends", () => {
               },
             ],
           }),
-      })
+      }),
     );
 
     renderDashboard();
 
     await screen.findByText("Issue Alert Summary");
     expect(screen.getByText("robbery · 8 requests")).toBeTruthy();
-    expect(screen.getByText("No-verified at 90.0% (threshold 85.0%)")).toBeTruthy();
+    expect(
+      screen.getByText("No-verified at 90.0% (threshold 85.0%)"),
+    ).toBeTruthy();
   });
 });

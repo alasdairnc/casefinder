@@ -22,7 +22,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "robbery_positive_control",
-    scenario: "A person threatened me and took my wallet by force near a bus stop.",
+    scenario:
+      "A person threatened me and took my wallet by force near a bus stop.",
     expectedPrimary: "robbery",
     expectedResult: "nonzero_required",
     shouldInclude: ["robbery", "s. 343"],
@@ -34,7 +35,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v McCraw, [1991] 3 SCR 72",
         title: "R v McCraw",
-        ratio: "Robbery analysis focuses on force or threats used to take property under s. 343.",
+        ratio:
+          "Robbery analysis focuses on force or threats used to take property under s. 343.",
         tags: ["robbery", "s. 343", "violence", "threat"],
         topics: ["robbery", "force", "property"],
         year: 1991,
@@ -43,7 +45,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "search_positive_hunter",
-    scenario: "Police searched my phone without a warrant after they stopped me.",
+    scenario:
+      "Police searched my phone without a warrant after they stopped me.",
     expectedPrimary: "charter_search_seizure",
     expectedResult: "nonzero_required",
     shouldInclude: ["Hunter", "search"],
@@ -55,7 +58,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "Hunter v Southam Inc, [1984] 2 SCR 145",
         title: "Hunter v Southam Inc",
-        ratio: "Foundational Charter s. 8 case requiring prior authorization for most searches.",
+        ratio:
+          "Foundational Charter s. 8 case requiring prior authorization for most searches.",
         tags: ["charter", "s. 8", "search", "warrant"],
         topics: ["search", "seizure", "privacy"],
         year: 1984,
@@ -64,7 +68,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "delay_positive_jordan",
-    scenario: "My trial has been delayed for over three years and keeps getting adjourned.",
+    scenario:
+      "My trial has been delayed for over three years and keeps getting adjourned.",
     expectedPrimary: "trial_delay",
     expectedResult: "nonzero_required",
     shouldInclude: ["Jordan", "11(b)"],
@@ -76,7 +81,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Jordan, 2016 SCC 27",
         title: "R v Jordan",
-        ratio: "Sets Charter section 11(b) ceilings for unreasonable trial delay.",
+        ratio:
+          "Sets Charter section 11(b) ceilings for unreasonable trial delay.",
         tags: ["charter", "11(b)", "trial delay"],
         topics: ["trial delay", "reasonable time"],
         year: 2016,
@@ -97,7 +103,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Stewart, [1988] 1 SCR 963",
         title: "R v Stewart",
-        ratio: "Theft requires dishonest taking or conversion of property under s. 322.",
+        ratio:
+          "Theft requires dishonest taking or conversion of property under s. 322.",
         tags: ["theft", "s. 322", "dishonesty", "property"],
         topics: ["theft", "property", "consent"],
         year: 1988,
@@ -110,7 +117,13 @@ export const RETRIEVAL_FAILURE_SET = [
     expectedPrimary: "robbery",
     expectedResult: "zero_expected",
     shouldInclude: [],
-    shouldExclude: ["R v Jordan", "R. v. Jordan", "R v Cody", "11(b)", "trial delay"],
+    shouldExclude: [
+      "R v Jordan",
+      "R. v. Jordan",
+      "R v Cody",
+      "11(b)",
+      "trial delay",
+    ],
     expectedKeywords: [],
     minResults: 0,
     maxResults: 0,
@@ -190,7 +203,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "traffic_minor_hape",
-    scenario: "I was pulled over for going 1 km/h over the speed limit. What case law applies?",
+    scenario:
+      "I was pulled over for going 1 km/h over the speed limit. What case law applies?",
     expectedPrimary: "minor_traffic_stop",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -211,7 +225,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "traffic_minor_grant",
-    scenario: "Routine speeding stop. I got a ticket but there was no search or arrest.",
+    scenario:
+      "Routine speeding stop. I got a ticket but there was no search or arrest.",
     expectedPrimary: "minor_traffic_stop",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -232,7 +247,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "traffic_minor_oakes",
-    scenario: "I was stopped for a tiny speed overage and want to know if an old SCC landmark applies.",
+    scenario:
+      "I was stopped for a tiny speed overage and want to know if an old SCC landmark applies.",
     expectedPrimary: "minor_traffic_stop",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -253,7 +269,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "robbery_bus_knife_positive",
-    scenario: "Someone pulled a knife on me and took my phone at a bus platform.",
+    scenario:
+      "Someone pulled a knife on me and took my phone at a bus platform.",
     expectedPrimary: "robbery",
     expectedResult: "nonzero_required",
     shouldInclude: ["robbery", "threat"],
@@ -265,7 +282,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v McCraw, [1991] 3 SCR 72",
         title: "R v McCraw",
-        ratio: "Robbery analysis focuses on force or threats used to take property under s. 343.",
+        ratio:
+          "Robbery analysis focuses on force or threats used to take property under s. 343.",
         tags: ["robbery", "s. 343", "violence", "threat"],
         topics: ["robbery", "force", "property"],
         year: 1991,
@@ -286,7 +304,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Stewart, [1988] 1 SCR 963",
         title: "R v Stewart",
-        ratio: "Theft requires dishonest taking or conversion of property under s. 322.",
+        ratio:
+          "Theft requires dishonest taking or conversion of property under s. 322.",
         tags: ["theft", "s. 322", "dishonesty", "property"],
         topics: ["theft", "property", "consent"],
         year: 1988,
@@ -295,7 +314,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "search_home_warrant_positive",
-    scenario: "Officers entered my home and searched my computer without a warrant.",
+    scenario:
+      "Officers entered my home and searched my computer without a warrant.",
     expectedPrimary: "charter_search_seizure",
     expectedResult: "nonzero_required",
     shouldInclude: ["search", "warrant"],
@@ -307,7 +327,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "Hunter v Southam Inc, [1984] 2 SCR 145",
         title: "Hunter v Southam Inc",
-        ratio: "Foundational Charter s. 8 case requiring prior authorization for most searches.",
+        ratio:
+          "Foundational Charter s. 8 case requiring prior authorization for most searches.",
         tags: ["charter", "s. 8", "search", "warrant"],
         topics: ["search", "seizure", "privacy"],
         year: 1984,
@@ -316,7 +337,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "trial_delay_four_year_positive",
-    scenario: "My criminal trial delay is over four years with repeated adjournments.",
+    scenario:
+      "My criminal trial delay is over four years with repeated adjournments.",
     expectedPrimary: "trial_delay",
     expectedResult: "nonzero_required",
     shouldInclude: ["Jordan", "11(b)"],
@@ -328,7 +350,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Jordan, 2016 SCC 27",
         title: "R v Jordan",
-        ratio: "Sets Charter section 11(b) ceilings for unreasonable trial delay.",
+        ratio:
+          "Sets Charter section 11(b) ceilings for unreasonable trial delay.",
         tags: ["charter", "11(b)", "trial delay"],
         topics: ["trial delay", "reasonable time"],
         year: 2016,
@@ -337,7 +360,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "roadside_counsel_variant_positive",
-    scenario: "At a roadside detention they kept questioning me and would not let me call counsel.",
+    scenario:
+      "At a roadside detention they kept questioning me and would not let me call counsel.",
     expectedPrimary: "charter_counsel",
     expectedResult: "nonzero_required",
     shouldInclude: ["counsel", "roadside"],
@@ -358,7 +382,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "traffic_ticket_only_zero",
-    scenario: "I got a simple speeding ticket and there was no detention, search, or arrest.",
+    scenario:
+      "I got a simple speeding ticket and there was no detention, search, or arrest.",
     expectedPrimary: "minor_traffic_stop",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -379,7 +404,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "camera_ticket_zero",
-    scenario: "A speed camera mailed me a ticket. No officer stopped me and there was no search.",
+    scenario:
+      "A speed camera mailed me a ticket. No officer stopped me and there was no search.",
     expectedPrimary: "minor_traffic_stop",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -400,7 +426,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "neighbor_noise_zero",
-    scenario: "My neighbor keeps blasting loud music late at night and I want legal options.",
+    scenario:
+      "My neighbor keeps blasting loud music late at night and I want legal options.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -421,7 +448,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "landlord_deposit_zero",
-    scenario: "My landlord will not return my rent deposit and I want to know what to file.",
+    scenario:
+      "My landlord will not return my rent deposit and I want to know what to file.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -442,7 +470,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "peace_bond_neighbor_zero",
-    scenario: "My ex keeps showing up outside my building. I want to know if I can get a peace bond.",
+    scenario:
+      "My ex keeps showing up outside my building. I want to know if I can get a peace bond.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -463,7 +492,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "jaywalking_ticket_zero",
-    scenario: "I got a jaywalking ticket downtown. There was no search, detention, or force.",
+    scenario:
+      "I got a jaywalking ticket downtown. There was no search, detention, or force.",
     expectedPrimary: "minor_traffic_stop",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -475,7 +505,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v McCraw, [1991] 3 SCR 72",
         title: "R v McCraw",
-        ratio: "Robbery analysis focuses on force or threats used to take property under s. 343.",
+        ratio:
+          "Robbery analysis focuses on force or threats used to take property under s. 343.",
         tags: ["robbery", "s. 343", "violence", "threat"],
         topics: ["robbery", "force", "property"],
         year: 1991,
@@ -484,7 +515,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "lost_wallet_zero",
-    scenario: "I lost my wallet on the subway and I am wondering what legal process applies.",
+    scenario:
+      "I lost my wallet on the subway and I am wondering what legal process applies.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -505,7 +537,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "roadside_counsel_positive_control",
-    scenario: "I was detained at a roadside stop and couldn't call a lawyer for hours.",
+    scenario:
+      "I was detained at a roadside stop and couldn't call a lawyer for hours.",
     expectedPrimary: "charter_counsel",
     expectedResult: "nonzero_required",
     shouldInclude: ["Woods", "counsel"],
@@ -526,7 +559,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "impaired_stop_breath_demand_positive",
-    scenario: "Police stopped me at a ride check, demanded a roadside breath sample, and detained me when I asked why.",
+    scenario:
+      "Police stopped me at a ride check, demanded a roadside breath sample, and detained me when I asked why.",
     expectedPrimary: "impaired_driving",
     expectedResult: "nonzero_required",
     shouldInclude: ["Grant", "detention"],
@@ -538,7 +572,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Grant, 2009 SCC 32",
         title: "R v Grant",
-        ratio: "Detention framework under Charter section 9 and exclusion analysis.",
+        ratio:
+          "Detention framework under Charter section 9 and exclusion analysis.",
         tags: ["charter", "detention", "s. 9", "roadside"],
         topics: ["detention", "charter rights"],
         year: 2009,
@@ -547,7 +582,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "impaired_refusal_lawful_demand_positive",
-    scenario: "After an impaired driving stop, I refused a lawful breath demand because I wanted a lawyer first.",
+    scenario:
+      "After an impaired driving stop, I refused a lawful breath demand because I wanted a lawyer first.",
     expectedPrimary: "impaired_driving",
     expectedResult: "nonzero_required",
     shouldInclude: ["Woods", "counsel"],
@@ -568,7 +604,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "impaired_phone_search_positive",
-    scenario: "During an impaired stop, officers searched my phone without a warrant after taking me to the station.",
+    scenario:
+      "During an impaired stop, officers searched my phone without a warrant after taking me to the station.",
     expectedPrimary: "impaired_driving",
     expectedResult: "nonzero_required",
     shouldInclude: ["Grant", "warrant"],
@@ -589,7 +626,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "drug_trafficking_street_sale_positive",
-    scenario: "I was arrested after police said I sold fentanyl near a transit station.",
+    scenario:
+      "I was arrested after police said I sold fentanyl near a transit station.",
     expectedPrimary: "drug_trafficking",
     expectedResult: "nonzero_required",
     shouldInclude: ["CDSA", "trafficking"],
@@ -601,8 +639,9 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Smith, 2015 SCC 34",
         title: "R v Smith",
-        ratio: "Trafficking analysis under the Controlled Drugs and Substances Act.",
-        tags: ["cdsa", "trafficking", "drug"],
+        ratio:
+          "Trafficking analysis under the Controlled Drugs and Substances Act.",
+        tags: ["CDSA", "trafficking", "drug"],
         topics: ["drug offences", "trafficking"],
         year: 2015,
       },
@@ -610,7 +649,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "drug_trafficking_chat_logs_positive",
-    scenario: "Police found chat messages about quantities and prices and charged me with trafficking cocaine.",
+    scenario:
+      "Police found chat messages about quantities and prices and charged me with trafficking cocaine.",
     expectedPrimary: "drug_trafficking",
     expectedResult: "nonzero_required",
     shouldInclude: ["CDSA", "intent"],
@@ -623,7 +663,7 @@ export const RETRIEVAL_FAILURE_SET = [
         citation: "R v Pham, 2013 SCC 15",
         title: "R v Pham",
         ratio: "Drug trafficking and proportionality in sentencing context.",
-        tags: ["cdsa", "drug trafficking", "cocaine"],
+        tags: ["CDSA", "drug trafficking", "cocaine"],
         topics: ["drug offences", "sentencing"],
         year: 2013,
       },
@@ -631,7 +671,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "sexual_assault_consent_positive",
-    scenario: "I was charged after a complainant said there was no consent during sexual touching.",
+    scenario:
+      "I was charged after a complainant said there was no consent during sexual touching.",
     expectedPrimary: "sexual_assault",
     expectedResult: "nonzero_required",
     shouldInclude: ["consent", "sexual assault"],
@@ -652,7 +693,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "sexual_assault_mistaken_belief_positive",
-    scenario: "The allegation says I ignored clear no's and now I am claiming mistaken belief in consent.",
+    scenario:
+      "The allegation says I ignored clear no's and now I am claiming mistaken belief in consent.",
     expectedPrimary: "sexual_assault",
     expectedResult: "nonzero_required",
     shouldInclude: ["consent", "mistaken belief"],
@@ -664,7 +706,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Barton, 2019 SCC 33",
         title: "R v Barton",
-        ratio: "Modern consent and sexual assault framework including legal constraints on mistaken belief.",
+        ratio:
+          "Modern consent and sexual assault framework including legal constraints on mistaken belief.",
         tags: ["sexual assault", "consent", "s. 273"],
         topics: ["consent", "sexual assault"],
         year: 2019,
@@ -673,7 +716,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "assault_bodily_harm_broken_nose_positive",
-    scenario: "I punched someone during an argument and they suffered a broken nose and stitches.",
+    scenario:
+      "I punched someone during an argument and they suffered a broken nose and stitches.",
     expectedPrimary: "assault_bodily_harm",
     expectedResult: "nonzero_required",
     shouldInclude: ["bodily harm", "s. 267"],
@@ -694,7 +738,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "assault_with_weapon_knife_positive",
-    scenario: "During a fight I brandished a knife and now I am charged with assault with a weapon.",
+    scenario:
+      "During a fight I brandished a knife and now I am charged with assault with a weapon.",
     expectedPrimary: "assault_with_weapon",
     expectedResult: "nonzero_required",
     shouldInclude: ["weapon", "s. 267"],
@@ -715,7 +760,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "charter_detention_only_positive",
-    scenario: "Officers boxed in my car and questioned me for twenty minutes without saying I was free to leave.",
+    scenario:
+      "Officers boxed in my car and questioned me for twenty minutes without saying I was free to leave.",
     expectedPrimary: "charter_detention",
     expectedResult: "nonzero_required",
     shouldInclude: ["Grant", "detention"],
@@ -736,7 +782,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "peace_bond_repeated_threats_positive",
-    scenario: "My ex keeps threatening me in messages and I need to know how a peace bond application works.",
+    scenario:
+      "My ex keeps threatening me in messages and I need to know how a peace bond application works.",
     expectedPrimary: "peace_bond",
     expectedResult: "nonzero_required",
     shouldInclude: ["peace bond", "s. 810"],
@@ -748,7 +795,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Budreo, [2000] OJ No 4475",
         title: "R v Budreo",
-        ratio: "Charter and procedural context around peace bond-style preventive orders.",
+        ratio:
+          "Charter and procedural context around peace bond-style preventive orders.",
         tags: ["peace bond", "s. 810", "preventive"],
         topics: ["peace bond", "public safety"],
         year: 2000,
@@ -757,7 +805,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "mixed_delay_plus_counsel_positive",
-    scenario: "My case has taken three years and I was also denied access to counsel right after arrest.",
+    scenario:
+      "My case has taken three years and I was also denied access to counsel right after arrest.",
     expectedPrimary: "charter_counsel",
     expectedResult: "nonzero_required",
     shouldInclude: ["Woods", "counsel"],
@@ -798,7 +847,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v McCraw, [1991] 3 SCR 72",
         title: "R v McCraw",
-        ratio: "Robbery analysis focuses on force or threats used to take property.",
+        ratio:
+          "Robbery analysis focuses on force or threats used to take property.",
         tags: ["robbery", "s. 343", "force", "threat"],
         topics: ["robbery", "violence"],
         year: 1991,
@@ -819,7 +869,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Stewart, [1988] 1 SCR 963",
         title: "R v Stewart",
-        ratio: "Theft requires dishonest taking or conversion of property under section 322.",
+        ratio:
+          "Theft requires dishonest taking or conversion of property under section 322.",
         tags: ["theft", "s. 322", "dishonesty"],
         topics: ["theft", "property"],
         year: 1988,
@@ -828,7 +879,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "impaired_minor_ticket_negative",
-    scenario: "I got a speeding ticket for 5 km over and there was no detention, search, or breath demand.",
+    scenario:
+      "I got a speeding ticket for 5 km over and there was no detention, search, or breath demand.",
     expectedPrimary: "minor_traffic_stop",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -849,7 +901,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "simple_possession_not_trafficking_negative",
-    scenario: "I had a tiny amount of cannabis for personal use and no evidence of selling.",
+    scenario:
+      "I had a tiny amount of cannabis for personal use and no evidence of selling.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -870,7 +923,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "bar_fight_self_defence_negative",
-    scenario: "I pushed someone away in a bar fight because they swung first and I left immediately.",
+    scenario:
+      "I pushed someone away in a bar fight because they swung first and I left immediately.",
     expectedPrimary: "assault_bodily_harm",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -891,7 +945,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "detention_mislabeled_as_search_negative",
-    scenario: "An officer asked me for ID briefly on the sidewalk and then let me continue walking.",
+    scenario:
+      "An officer asked me for ID briefly on the sidewalk and then let me continue walking.",
     expectedPrimary: "charter_detention",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -912,7 +967,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "landlord_repair_dispute_negative",
-    scenario: "My landlord will not fix mold and I want to file at the housing board.",
+    scenario:
+      "My landlord will not fix mold and I want to file at the housing board.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -933,7 +989,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "workplace_harassment_policy_negative",
-    scenario: "My manager is bullying me and HR has not enforced workplace policy.",
+    scenario:
+      "My manager is bullying me and HR has not enforced workplace policy.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -954,7 +1011,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "online_defamation_civil_negative",
-    scenario: "Someone posted false statements about me online and I want a civil remedy.",
+    scenario:
+      "Someone posted false statements about me online and I want a civil remedy.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -975,7 +1033,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "neighbor_tree_damage_civil_negative",
-    scenario: "A neighbor's tree branch damaged my fence and we are arguing about costs.",
+    scenario:
+      "A neighbor's tree branch damaged my fence and we are arguing about costs.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -1017,7 +1076,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "ambulance_bill_dispute_negative",
-    scenario: "I disagree with an ambulance bill and want to challenge the charge.",
+    scenario:
+      "I disagree with an ambulance bill and want to challenge the charge.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -1038,7 +1098,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "student_plagiarism_policy_negative",
-    scenario: "My college flagged plagiarism and I need to appeal the academic decision.",
+    scenario:
+      "My college flagged plagiarism and I need to appeal the academic decision.",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -1059,7 +1120,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "parking_ticket_late_fee_negative",
-    scenario: "I paid a parking ticket late and now there is an extra municipal fee.",
+    scenario:
+      "I paid a parking ticket late and now there is an extra municipal fee.",
     expectedPrimary: "minor_traffic_stop",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -1080,7 +1142,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "ambiguous_can_i_be_charged_negative",
-    scenario: "Can I be charged for what happened yesterday if things got heated?",
+    scenario:
+      "Can I be charged for what happened yesterday if things got heated?",
     expectedPrimary: "general_criminal",
     expectedResult: "zero_expected",
     shouldInclude: [],
@@ -1114,16 +1177,34 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Gladue, [1999] 1 SCR 688",
         title: "R v Gladue",
-        ratio: "Landmark sentencing case on consideration of Indigenous circumstances under s. 718.2(e).",
-        tags: ["gladue report", "aboriginal", "incarceration principles", "restorative justice", "sentencing"],
-        topics: ["sentencing", "indigenous", "gladue", "criminal code 718.2(e)"],
+        ratio:
+          "Landmark sentencing case on consideration of Indigenous circumstances under s. 718.2(e).",
+        tags: [
+          "gladue report",
+          "aboriginal",
+          "incarceration principles",
+          "restorative justice",
+          "sentencing",
+        ],
+        topics: [
+          "sentencing",
+          "indigenous",
+          "gladue",
+          "criminal code 718.2(e)",
+        ],
         year: 1999,
       },
       {
         citation: "R v Ipeelee, 2012 SCC 13",
         title: "R v Ipeelee",
-        ratio: "Reaffirms and expands Gladue: Indigenous sentencing principles apply in every sentencing context.",
-        tags: ["gladue analysis", "aboriginal", "breach of condition", "sentencing"],
+        ratio:
+          "Reaffirms and expands Gladue: Indigenous sentencing principles apply in every sentencing context.",
+        tags: [
+          "gladue analysis",
+          "aboriginal",
+          "breach of condition",
+          "sentencing",
+        ],
         topics: ["sentencing", "indigenous", "gladue"],
         year: 2012,
       },
@@ -1131,7 +1212,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "break_in_occupied_house_not_zero",
-    scenario: "A person was found inside an occupied house at 2 a.m. with stolen electronics. The homeowner was home during the break-in and called 911.",
+    scenario:
+      "A person was found inside an occupied house at 2 a.m. with stolen electronics. The homeowner was home during the break-in and called 911.",
     expectedPrimary: "break_and_enter",
     expectedResult: "nonzero_required",
     shouldInclude: ["theft", "property"],
@@ -1143,7 +1225,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Stewart, [1988] 1 SCR 963",
         title: "R v Stewart",
-        ratio: "Theft requires dishonest taking or conversion of property under s. 322.",
+        ratio:
+          "Theft requires dishonest taking or conversion of property under s. 322.",
         tags: ["theft", "s. 322", "dishonesty", "property", "stolen"],
         topics: ["theft", "property", "stolen"],
         year: 1988,
@@ -1152,7 +1235,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "assault_punched_broken_nose_not_zero",
-    scenario: "During an argument, the accused punched the victim several times causing a broken nose and requiring hospital treatment.",
+    scenario:
+      "During an argument, the accused punched the victim several times causing a broken nose and requiring hospital treatment.",
     expectedPrimary: "assault_bodily_harm",
     expectedResult: "nonzero_required",
     shouldInclude: ["bodily harm"],
@@ -1164,7 +1248,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Jobidon, [1991] 2 SCR 714",
         title: "R v Jobidon",
-        ratio: "Limits of consent in assault causing bodily harm. Bodily harm and assault analysis.",
+        ratio:
+          "Limits of consent in assault causing bodily harm. Bodily harm and assault analysis.",
         tags: ["assault", "bodily harm", "public policy"],
         topics: ["assault", "bodily harm"],
         year: 1991,
@@ -1173,7 +1258,8 @@ export const RETRIEVAL_FAILURE_SET = [
   },
   {
     id: "residential_break_in_back_window_not_zero",
-    scenario: "A person broke into a residential home at night through a back window and stole jewelry and electronics.",
+    scenario:
+      "A person broke into a residential home at night through a back window and stole jewelry and electronics.",
     expectedPrimary: "break_and_enter",
     expectedResult: "nonzero_required",
     shouldInclude: ["s. 348", "theft"],
@@ -1185,7 +1271,8 @@ export const RETRIEVAL_FAILURE_SET = [
       {
         citation: "R v Stewart, [1988] 1 SCR 963",
         title: "R v Stewart",
-        ratio: "Theft requires dishonest taking or conversion of property under s. 322. Stolen property analysis.",
+        ratio:
+          "Theft requires dishonest taking or conversion of property under s. 322. Stolen property analysis.",
         tags: ["theft", "s. 322", "property", "stolen", "taking"],
         topics: ["theft", "property", "stolen"],
         year: 1988,

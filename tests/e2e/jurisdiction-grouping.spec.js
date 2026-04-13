@@ -27,7 +27,8 @@ const MOCK_ANALYZE_RESPONSE = {
     },
   ],
   charter: [],
-  analysis: "This scenario involves statutes from ON, BC, AB, and Federal jurisdictions.",
+  analysis:
+    "This scenario involves statutes from ON, BC, AB, and Federal jurisdictions.",
   suggestions: [
     { type: "canlii", label: "traffic safety act", term: "traffic safety act" },
     { type: "canlii", label: "motor vehicle act", term: "motor vehicle act" },
@@ -76,12 +77,18 @@ test.describe("Jurisdiction Grouping Expansion", () => {
     await page.goto("/");
   });
 
-  test("groups statutes by ON, BC, AB, and Federal jurisdictions", async ({ page }) => {
-    await page.locator('[data-testid="scenario-input"]').fill("testing provincial grouping");
+  test("groups statutes by ON, BC, AB, and Federal jurisdictions", async ({
+    page,
+  }) => {
+    await page
+      .locator('[data-testid="scenario-input"]')
+      .fill("testing provincial grouping");
     await page.locator('[data-testid="research-submit"]').click();
 
     // Check for grouping headers
-    await expect(page.getByText("Ontario Statutes")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Ontario Statutes")).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByText("British Columbia Statutes")).toBeVisible();
     await expect(page.getByText("Alberta Statutes")).toBeVisible();
     await expect(page.getByText("Federal Statutes")).toBeVisible();
@@ -90,6 +97,8 @@ test.describe("Jurisdiction Grouping Expansion", () => {
     await expect(page.getByText("Highway Traffic Act, s. 53")).toBeVisible();
     await expect(page.getByText("Motor Vehicle Act, s. 144")).toBeVisible();
     await expect(page.getByText("Traffic Safety Act, s. 115")).toBeVisible();
-    await expect(page.getByText("Controlled Drugs and Substances Act, s. 4")).toBeVisible();
+    await expect(
+      page.getByText("Controlled Drugs and Substances Act, s. 4"),
+    ).toBeVisible();
   });
 });

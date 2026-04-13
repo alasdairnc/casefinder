@@ -7,7 +7,17 @@ export default defineConfig({
   fullyParallel: isLiveMode ? false : true,
   forbidOnly: !!process.env.CI,
   retries: isLiveMode ? 1 : process.env.CI ? 2 : 0,
-  reporter: [["html", { outputFolder: isLiveMode ? "playwright-report-live" : "playwright-report", open: "never" }]],
+  reporter: [
+    [
+      "html",
+      {
+        outputFolder: isLiveMode
+          ? "playwright-report-live"
+          : "playwright-report",
+        open: "never",
+      },
+    ],
+  ],
   timeout: isLiveMode ? 90000 : undefined,
   use: {
     baseURL: isLiveMode ? "https://www.casedive.ca" : "http://localhost:5173",

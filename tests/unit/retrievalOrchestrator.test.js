@@ -23,7 +23,10 @@ describe("runCaseLawRetrieval", () => {
 
   it("throws timeout error with isTimeout=true when budget is exceeded", async () => {
     const retrieveFn = vi.fn(
-      () => new Promise((resolve) => setTimeout(() => resolve({ cases: [], meta: {} }), 20))
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ cases: [], meta: {} }), 20),
+        ),
     );
 
     await expect(
@@ -33,7 +36,7 @@ describe("runCaseLawRetrieval", () => {
         apiKey: "test-key",
         timeoutMs: 1,
         retrieveFn,
-      })
+      }),
     ).rejects.toMatchObject({ message: "Retrieval timeout", isTimeout: true });
   });
 });

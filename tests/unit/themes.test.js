@@ -2,9 +2,20 @@ import { describe, it, expect } from "vitest";
 import { themes } from "../../src/lib/themes.js";
 
 const REQUIRED_KEYS = [
-  "bg", "bgAlt", "text", "textSecondary", "textTertiary", "textFaint",
-  "border", "borderLight", "accent", "accentOlive",
-  "cardBg", "inputBg", "buttonBg", "buttonText",
+  "bg",
+  "bgAlt",
+  "text",
+  "textSecondary",
+  "textTertiary",
+  "textFaint",
+  "border",
+  "borderLight",
+  "accent",
+  "accentOlive",
+  "cardBg",
+  "inputBg",
+  "buttonBg",
+  "buttonText",
 ];
 
 function hexToRgb(hex) {
@@ -14,9 +25,9 @@ function hexToRgb(hex) {
 
 function luminance(hex) {
   const [r, g, b] = hexToRgb(hex).map((channel) =>
-    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
   );
-  return (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 function contrastRatio(foreground, background) {
@@ -56,11 +67,18 @@ describe("themes", () => {
   it.each([
     ["light", themes.light],
     ["dark", themes.dark],
-  ])("%s theme keeps readable text contrast on primary surfaces", (_, theme) => {
-    for (const surface of [theme.bg, theme.bgAlt, theme.cardBg]) {
-      expect(contrastRatio(theme.text, surface)).toBeGreaterThanOrEqual(7);
-      expect(contrastRatio(theme.textSecondary, surface)).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio(theme.textTertiary, surface)).toBeGreaterThanOrEqual(4.5);
-    }
-  });
+  ])(
+    "%s theme keeps readable text contrast on primary surfaces",
+    (_, theme) => {
+      for (const surface of [theme.bg, theme.bgAlt, theme.cardBg]) {
+        expect(contrastRatio(theme.text, surface)).toBeGreaterThanOrEqual(7);
+        expect(
+          contrastRatio(theme.textSecondary, surface),
+        ).toBeGreaterThanOrEqual(4.5);
+        expect(
+          contrastRatio(theme.textTertiary, surface),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    },
+  );
 });

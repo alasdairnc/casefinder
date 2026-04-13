@@ -193,33 +193,69 @@ describe("buildCitationIdentityKey", () => {
 // ---------------------------------------------------------------------------
 describe("buildCaseId", () => {
   it("builds standard neutral case ID", () => {
-    expect(buildCaseId({ year: "2016", courtCode: "SCC", number: "27", isLegacy: false }))
-      .toBe("2016scc27");
+    expect(
+      buildCaseId({
+        year: "2016",
+        courtCode: "SCC",
+        number: "27",
+        isLegacy: false,
+      }),
+    ).toBe("2016scc27");
   });
 
   it("builds legacy CanLII case ID", () => {
-    expect(buildCaseId({ year: "1988", courtCode: "SCC", number: "90", isLegacy: true }))
-      .toBe("1988canlii90");
+    expect(
+      buildCaseId({
+        year: "1988",
+        courtCode: "SCC",
+        number: "90",
+        isLegacy: true,
+      }),
+    ).toBe("1988canlii90");
   });
 
   it("returns null when number is missing for non-legacy", () => {
-    expect(buildCaseId({ year: "2020", courtCode: "SCC", number: null, isLegacy: false }))
-      .toBeNull();
+    expect(
+      buildCaseId({
+        year: "2020",
+        courtCode: "SCC",
+        number: null,
+        isLegacy: false,
+      }),
+    ).toBeNull();
   });
 
   it("returns null when year is missing", () => {
-    expect(buildCaseId({ year: null, courtCode: "SCC", number: "27", isLegacy: false }))
-      .toBeNull();
+    expect(
+      buildCaseId({
+        year: null,
+        courtCode: "SCC",
+        number: "27",
+        isLegacy: false,
+      }),
+    ).toBeNull();
   });
 
   it("lowercases the court code in the ID", () => {
-    expect(buildCaseId({ year: "2020", courtCode: "ONCA", number: "123", isLegacy: false }))
-      .toBe("2020onca123");
+    expect(
+      buildCaseId({
+        year: "2020",
+        courtCode: "ONCA",
+        number: "123",
+        isLegacy: false,
+      }),
+    ).toBe("2020onca123");
   });
 
   it("uses canlii format for legacy citations regardless of court alias", () => {
-    expect(buildCaseId({ year: "1988", courtCode: "CSC", number: "90", isLegacy: true }))
-      .toBe("1988canlii90");
+    expect(
+      buildCaseId({
+        year: "1988",
+        courtCode: "CSC",
+        number: "90",
+        isLegacy: true,
+      }),
+    ).toBe("1988canlii90");
   });
 });
 
@@ -242,7 +278,9 @@ describe("buildApiUrl", () => {
 describe("buildCaseUrl", () => {
   it("builds correct web URL", () => {
     const url = buildCaseUrl("ca/scc", "2016", "2016scc27");
-    expect(url).toBe("https://www.canlii.org/en/ca/scc/doc/2016/2016scc27/2016scc27.html");
+    expect(url).toBe(
+      "https://www.canlii.org/en/ca/scc/doc/2016/2016scc27/2016scc27.html",
+    );
   });
 });
 
@@ -276,11 +314,15 @@ describe("partiesMatch", () => {
   });
 
   it("returns true for partial match on one token", () => {
-    expect(partiesMatch("R v Jordan", "Jordan v Canada (Attorney General)")).toBe(true);
+    expect(
+      partiesMatch("R v Jordan", "Jordan v Canada (Attorney General)"),
+    ).toBe(true);
   });
 
   it("returns false when no meaningful tokens match", () => {
-    expect(partiesMatch("R v Smith", "H.M.B. Holdings Ltd v Canada")).toBe(false);
+    expect(partiesMatch("R v Smith", "H.M.B. Holdings Ltd v Canada")).toBe(
+      false,
+    );
   });
 
   it("ignores stop words like r, v, the", () => {
@@ -319,23 +361,32 @@ describe("lookupCase", () => {
   });
 
   it("returns not_found when API responds 404", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ status: 404, ok: false }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ status: 404, ok: false }),
+    );
     const result = await lookupCase("2016 SCC 27", "mykey");
     expect(result.status).toBe("not_found");
   });
 
   it("returns error when API responds with non-ok status", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ status: 500, ok: false }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ status: 500, ok: false }),
+    );
     const result = await lookupCase("2016 SCC 27", "mykey");
     expect(result.status).toBe("error");
   });
 
   it("returns verified when API confirms case and parties match", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      status: 200,
-      ok: true,
-      json: async () => ({ title: "R v Jordan" }),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        status: 200,
+        ok: true,
+        json: async () => ({ title: "R v Jordan" }),
+      }),
+    );
     const result = await lookupCase("R v Jordan, 2016 SCC 27", "mykey");
     expect(result.status).toBe("verified");
     expect(result.url).toContain("canlii.org");
@@ -343,17 +394,23 @@ describe("lookupCase", () => {
   });
 
   it("returns not_found when API title does not match submitted parties", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      status: 200,
-      ok: true,
-      json: async () => ({ title: "H.M.B. Holdings Ltd v Canada" }),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        status: 200,
+        ok: true,
+        json: async () => ({ title: "H.M.B. Holdings Ltd v Canada" }),
+      }),
+    );
     const result = await lookupCase("R v Smith, 2016 SCC 27", "mykey");
     expect(result.status).toBe("not_found");
   });
 
   it("returns error when fetch throws (network error)", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("network error")),
+    );
     const result = await lookupCase("2016 SCC 27", "mykey");
     expect(result.status).toBe("error");
   });

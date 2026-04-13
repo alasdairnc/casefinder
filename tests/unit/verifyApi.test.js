@@ -68,7 +68,12 @@ describe("verify handler", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCheckRateLimit.mockResolvedValue({ allowed: true, limit: 60, remaining: 59, reset: 123 });
+    mockCheckRateLimit.mockResolvedValue({
+      allowed: true,
+      limit: 60,
+      remaining: 59,
+      reset: 123,
+    });
     process.env.CANLII_API_KEY = "test-key";
   });
 
@@ -100,7 +105,9 @@ describe("verify handler", () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(415);
-    expect(res.body).toEqual({ error: "Content-Type must be application/json" });
+    expect(res.body).toEqual({
+      error: "Content-Type must be application/json",
+    });
     expect(mockCheckRateLimit).not.toHaveBeenCalled();
   });
 
@@ -119,14 +126,21 @@ describe("verify handler", () => {
   });
 
   it("returns 429 when verify rate limit is exceeded", async () => {
-    mockCheckRateLimit.mockResolvedValue({ allowed: false, limit: 60, remaining: 0, reset: 123 });
+    mockCheckRateLimit.mockResolvedValue({
+      allowed: false,
+      limit: 60,
+      remaining: 0,
+      reset: 123,
+    });
     const req = createReq({ body: { citations: ["2016 SCC 27"] } });
     const res = createRes();
 
     await handler(req, res);
 
     expect(res.statusCode).toBe(429);
-    expect(res.body).toEqual({ error: "Rate limit exceeded. Please try again later." });
+    expect(res.body).toEqual({
+      error: "Rate limit exceeded. Please try again later.",
+    });
   });
 
   it("returns error status when upstream responds with non-JSON content type", async () => {
@@ -174,11 +188,7 @@ describe("verify handler", () => {
 
     const req = createReq({
       body: {
-        citations: [
-          "2016 SCC 27",
-          "not a citation",
-          "2020 ZZZZ 99",
-        ],
+        citations: ["2016 SCC 27", "not a citation", "2020 ZZZZ 99"],
       },
     });
     const res = createRes();
@@ -186,7 +196,10 @@ describe("verify handler", () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body["2016 SCC 27"]).toMatchObject({ status: "verified", title: "R v Jordan" });
+    expect(res.body["2016 SCC 27"]).toMatchObject({
+      status: "verified",
+      title: "R v Jordan",
+    });
     expect(res.body["not a citation"]).toMatchObject({ status: "unparseable" });
     expect(res.body["2020 ZZZZ 99"]).toMatchObject({ status: "unknown_court" });
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);

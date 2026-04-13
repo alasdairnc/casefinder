@@ -1,12 +1,14 @@
 import { test, expect } from "@playwright/test";
 
 const MOCK_ANALYZE_RESPONSE = {
-  summary: "A person entered a residential property at night without permission and stole jewelry.",
+  summary:
+    "A person entered a residential property at night without permission and stole jewelry.",
   criminal_code: [
     {
       citation: "s. 348(1)(b)",
       title: "Breaking and Entering",
-      summary: "Breaking and entering a place with intent to commit an indictable offence.",
+      summary:
+        "Breaking and entering a place with intent to commit an indictable offence.",
     },
     {
       citation: "s. 334(b)",
@@ -21,14 +23,20 @@ const MOCK_ANALYZE_RESPONSE = {
       summary: "Sentencing principles for residential break and enter.",
       court: "BCCA",
       year: "2014",
-      matched_content: "Residential break and enter sentencing principles tied to the user scenario.",
+      matched_content:
+        "Residential break and enter sentencing principles tied to the user scenario.",
     },
   ],
   civil_law: [],
   charter: [],
-  analysis: "This scenario involves a classic residential break and enter with theft.",
+  analysis:
+    "This scenario involves a classic residential break and enter with theft.",
   suggestions: [
-    { type: "canlii", label: "residential break and enter", term: "residential break and enter" },
+    {
+      type: "canlii",
+      label: "residential break and enter",
+      term: "residential break and enter",
+    },
     { type: "canlii", label: "theft under 5000", term: "theft under 5000" },
   ],
 };
@@ -37,7 +45,8 @@ const MOCK_VERIFY_RESPONSE = {
   "R v Dorfer, 2014 BCCA 449": {
     status: "verified",
     url: "https://www.canlii.org/en/bc/bcca/doc/2014/2014bcca449/2014bcca449.html",
-    searchUrl: "https://www.canlii.org/en/#search/text=R+v+Dorfer+2014+BCCA+449",
+    searchUrl:
+      "https://www.canlii.org/en/#search/text=R+v+Dorfer+2014+BCCA+449",
     title: "R v Dorfer",
   },
 };
@@ -67,9 +76,11 @@ test.describe("Search flow", () => {
         body: JSON.stringify({
           facts: "The accused entered a home at night and stole jewelry.",
           held: "The court upheld the sentence for the residential break and enter.",
-          ratio: "Residential break and enter engages denunciation and deterrence.",
+          ratio:
+            "Residential break and enter engages denunciation and deterrence.",
           keyQuote: "Residential break and enter is a serious offence.",
-          significance: "The case is often cited for sentencing principles in home invasion cases.",
+          significance:
+            "The case is often cited for sentencing principles in home invasion cases.",
         }),
       });
     });
@@ -77,31 +88,56 @@ test.describe("Search flow", () => {
   });
 
   test("submits scenario and shows results", async ({ page }) => {
-    await page.locator("textarea").fill("A person broke into a house at night and stole jewelry");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("textarea")
+      .fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("A person entered a residential property")).toBeVisible();
+    await expect(
+      page.getByText("Scenario Summary", { exact: true }),
+    ).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByText("A person entered a residential property"),
+    ).toBeVisible();
   });
 
   test("shows criminal code section", async ({ page }) => {
-    await page.locator("textarea").fill("A person broke into a house at night and stole jewelry");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("textarea")
+      .fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByText("Scenario Summary", { exact: true }),
+    ).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/s\. 348/)).toBeVisible();
     await expect(page.getByText(/Breaking and entering/)).toBeVisible();
   });
 
   test("shows case law section with verified citation", async ({ page }) => {
-    await page.locator("textarea").fill("A person broke into a house at night and stole jewelry");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("textarea")
+      .fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByText("Scenario Summary", { exact: true }),
+    ).toBeVisible({ timeout: 10000 });
     await expect(caseTitle(page)).toBeVisible();
   });
 
-  test("sends citation batch to verify and renders the verified badge", async ({ page }) => {
+  test("sends citation batch to verify and renders the verified badge", async ({
+    page,
+  }) => {
     let verifyPayload;
 
     await page.unroute("/api/verify");
@@ -114,31 +150,55 @@ test.describe("Search flow", () => {
       });
     });
 
-    await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator('[data-testid="scenario-input"]')
+      .fill("A person broke into a house at night and stole jewelry");
     await page.locator('[data-testid="research-submit"]').click();
 
     await expect(caseTitle(page)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole("link", { name: /Verified on CanLII/i })).toBeVisible();
-    
+    await expect(
+      page.getByRole("link", { name: /Verified on CanLII/i }),
+    ).toBeVisible();
+
     expect(verifyPayload).toEqual({
       citations: ["s. 348(1)(b)", "s. 334(b)", "R v Dorfer, 2014 BCCA 449"],
     });
   });
 
   test("shows legal analysis", async ({ page }) => {
-    await page.locator("textarea").fill("A person broke into a house at night and stole jewelry");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("textarea")
+      .fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("Legal Analysis")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("This scenario involves a classic residential break and enter with theft.")).toBeVisible();
+    await expect(page.getByText("Legal Analysis")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(
+      page.getByText(
+        "This scenario involves a classic residential break and enter with theft.",
+      ),
+    ).toBeVisible();
   });
 
   test("shows suggested links", async ({ page }) => {
-    await page.locator("textarea").fill("A person broke into a house at night and stole jewelry");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("textarea")
+      .fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("Suggested Links")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole("link", { name: /residential break and enter/i })).toBeVisible();
+    await expect(page.getByText("Suggested Links")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(
+      page.getByRole("link", { name: /residential break and enter/i }),
+    ).toBeVisible();
   });
 
   test("shows suggested links including statutes", async ({ page }) => {
@@ -150,22 +210,37 @@ test.describe("Search flow", () => {
         body: JSON.stringify({
           ...MOCK_ANALYZE_RESPONSE,
           suggestions: [
-            { type: "canlii", label: "residential break and enter", term: "residential break and enter" },
+            {
+              type: "canlii",
+              label: "residential break and enter",
+              term: "residential break and enter",
+            },
             { type: "criminal_code", label: "s. 348", citation: "s. 348" },
-            { type: "provincial_statute", label: "HTA s. 128", citation: "Highway Traffic Act (ON), s. 128" },
+            {
+              type: "provincial_statute",
+              label: "HTA s. 128",
+              citation: "Highway Traffic Act (ON), s. 128",
+            },
           ],
         }),
       });
     });
 
     await page.locator("textarea").fill("test statute links");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("Suggested Links")).toBeVisible({ timeout: 10000 });
-    
+    await expect(page.getByText("Suggested Links")).toBeVisible({
+      timeout: 10000,
+    });
+
     // Check for CanLII link
-    await expect(page.getByRole("link", { name: /residential break and enter/i })).toBeVisible();
-    
+    await expect(
+      page.getByRole("link", { name: /residential break and enter/i }),
+    ).toBeVisible();
+
     // Check for Criminal Code link (should point to justice laws)
     const ccLink = page.getByRole("link", { name: "s. 348 ↗" });
     await expect(ccLink).toBeVisible();
@@ -180,10 +255,14 @@ test.describe("Search flow", () => {
   });
 
   test("Cmd+Enter submits the form", async ({ page }) => {
-    await page.locator("textarea").fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator("textarea")
+      .fill("A person broke into a house at night and stole jewelry");
     await page.locator("textarea").press("Meta+Enter");
 
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByText("Scenario Summary", { exact: true }),
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("sends trimmed analyze payload with filters", async ({ page }) => {
@@ -200,10 +279,14 @@ test.describe("Search flow", () => {
     });
 
     await page.goto("/");
-    await page.locator('[data-testid="scenario-input"]').fill("  A person broke into a house at night and stole jewelry  ");
+    await page
+      .locator('[data-testid="scenario-input"]')
+      .fill("  A person broke into a house at night and stole jewelry  ");
     await page.locator('[data-testid="research-submit"]').click();
 
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByText("Scenario Summary", { exact: true }),
+    ).toBeVisible({ timeout: 10000 });
     expect(analyzePayload).toEqual({
       scenario: "A person broke into a house at night and stole jewelry",
       filters: {
@@ -220,7 +303,9 @@ test.describe("Search flow", () => {
     });
   });
 
-  test("opens case summary modal and sends expected payload", async ({ page }) => {
+  test("opens case summary modal and sends expected payload", async ({
+    page,
+  }) => {
     let caseSummaryPayload;
 
     await page.unroute("/api/case-summary");
@@ -232,14 +317,18 @@ test.describe("Search flow", () => {
         body: JSON.stringify({
           facts: "The accused entered a home at night and stole jewelry.",
           held: "The court upheld the sentence for the residential break and enter.",
-          ratio: "Residential break and enter engages denunciation and deterrence.",
+          ratio:
+            "Residential break and enter engages denunciation and deterrence.",
           keyQuote: "Residential break and enter is a serious offence.",
-          significance: "The case is often cited for sentencing principles in home invasion cases.",
+          significance:
+            "The case is often cited for sentencing principles in home invasion cases.",
         }),
       });
     });
 
-    await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator('[data-testid="scenario-input"]')
+      .fill("A person broke into a house at night and stole jewelry");
     await page.locator('[data-testid="research-submit"]').click();
 
     await expect(caseTitle(page)).toBeVisible({ timeout: 10000 });
@@ -247,14 +336,17 @@ test.describe("Search flow", () => {
 
     await expect(page.getByText("Facts")).toBeVisible();
     await expect(page.getByText("Ratio Decidendi")).toBeVisible();
-    await expect(page.getByText("Residential break and enter is a serious offence.")).toBeVisible();
+    await expect(
+      page.getByText("Residential break and enter is a serious offence."),
+    ).toBeVisible();
     expect(caseSummaryPayload).toEqual({
       citation: "R v Dorfer, 2014 BCCA 449",
       title: "R v Dorfer",
       court: "BCCA",
       year: "2014",
       summary: "Sentencing principles for residential break and enter.",
-      matchedContent: "Residential break and enter sentencing principles tied to the user scenario.",
+      matchedContent:
+        "Residential break and enter sentencing principles tied to the user scenario.",
     });
   });
 
@@ -264,15 +356,21 @@ test.describe("Search flow", () => {
       await route.fulfill({
         status: 503,
         contentType: "application/json",
-        body: JSON.stringify({ error: "Summary service temporarily unavailable." }),
+        body: JSON.stringify({
+          error: "Summary service temporarily unavailable.",
+        }),
       });
     });
 
-    await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator('[data-testid="scenario-input"]')
+      .fill("A person broke into a house at night and stole jewelry");
     await page.locator('[data-testid="research-submit"]').click();
 
     await expect(caseTitle(page)).toBeVisible({ timeout: 10000 });
     await caseTitle(page).click();
-    await expect(page.getByText("Summary service temporarily unavailable.")).toBeVisible();
+    await expect(
+      page.getByText("Summary service temporarily unavailable."),
+    ).toBeVisible();
   });
 });

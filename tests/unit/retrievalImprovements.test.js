@@ -13,7 +13,9 @@ describe("buildRetrievalImprovements", () => {
 
     expect(improvements).toHaveLength(1);
     expect(improvements[0].classId).toBe("trial_delay");
-    expect(improvements[0].suggestedTerms.some((t) => t.includes("Jordan"))).toBe(true);
+    expect(
+      improvements[0].suggestedTerms.some((t) => t.includes("Jordan")),
+    ).toBe(true);
   });
 
   it("aggregates repeated failures for same scenario", () => {

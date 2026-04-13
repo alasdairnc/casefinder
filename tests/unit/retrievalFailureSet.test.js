@@ -10,8 +10,10 @@ afterEach(() => {
 
 describe("retrieval failure set", () => {
   it("keeps the labeled false-positive scenarios empty and preserves the positive control", async () => {
-    const { retrieveVerifiedCaseLaw } = await import("../../api/_caseLawRetrieval.js");
-    const { MASTER_CASE_LAW_DB } = await import("../../src/lib/caselaw/index.js");
+    const { retrieveVerifiedCaseLaw } =
+      await import("../../api/_caseLawRetrieval.js");
+    const { MASTER_CASE_LAW_DB } =
+      await import("../../src/lib/caselaw/index.js");
     const originalCases = [...MASTER_CASE_LAW_DB];
 
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -33,7 +35,10 @@ describe("retrieval failure set", () => {
         });
 
         const expectedResult =
-          testCase.expectedResult || ((testCase.maxResults || 0) === 0 ? "zero_expected" : "nonzero_required");
+          testCase.expectedResult ||
+          ((testCase.maxResults || 0) === 0
+            ? "zero_expected"
+            : "nonzero_required");
 
         if (expectedResult === "zero_expected") {
           expect(cases).toEqual([]);
@@ -52,11 +57,13 @@ describe("retrieval failure set", () => {
 
         if (meta.fallbackPathUsed) {
           expect(meta.fallbackDiagnostics).toBeTruthy();
-          expect(typeof meta.fallbackDiagnostics.fallbackTriggerReason).toBe("string");
-          expect(meta.fallbackDiagnostics.fallbackTriggerReason.length).toBeGreaterThan(0);
+          expect(typeof meta.fallbackDiagnostics.fallbackTriggerReason).toBe(
+            "string",
+          );
+          expect(
+            meta.fallbackDiagnostics.fallbackTriggerReason.length,
+          ).toBeGreaterThan(0);
         }
-
-        
       }
     } finally {
       MASTER_CASE_LAW_DB.splice(0, MASTER_CASE_LAW_DB.length, ...originalCases);

@@ -8,8 +8,12 @@ test.describe("Home page", () => {
   test("loads and shows core UI elements", async ({ page }) => {
     await expect(page.getByAltText(/casedive/i)).toBeVisible();
     await expect(page.locator('[data-testid="scenario-input"]')).toBeVisible();
-    await expect(page.getByPlaceholder("Describe your legal scenario in plain language…")).toBeVisible();
-    await expect(page.locator("button").filter({ hasText: /research/i })).toBeVisible();
+    await expect(
+      page.getByPlaceholder("Describe your legal scenario in plain language…"),
+    ).toBeVisible();
+    await expect(
+      page.locator("button").filter({ hasText: /research/i }),
+    ).toBeVisible();
   });
 
   test("shows character count near input limit", async ({ page }) => {
@@ -18,9 +22,15 @@ test.describe("Home page", () => {
   });
 
   test("filters are visible with default values", async ({ page }) => {
-    await expect(page.getByRole("combobox", { name: /jurisdiction/i })).toHaveValue("all");
-    await expect(page.getByRole("combobox", { name: /court level/i })).toHaveValue("all");
-    await expect(page.getByRole("combobox", { name: /date range/i })).toHaveValue("all");
+    await expect(
+      page.getByRole("combobox", { name: /jurisdiction/i }),
+    ).toHaveValue("all");
+    await expect(
+      page.getByRole("combobox", { name: /court level/i }),
+    ).toHaveValue("all");
+    await expect(
+      page.getByRole("combobox", { name: /date range/i }),
+    ).toHaveValue("all");
   });
 
   test("dark/light mode toggle works", async ({ page }) => {
@@ -31,12 +41,16 @@ test.describe("Home page", () => {
     expect(newText).not.toBe(initialText);
   });
 
-  test("research button is disabled when scenario is empty", async ({ page }) => {
+  test("research button is disabled when scenario is empty", async ({
+    page,
+  }) => {
     const btn = page.locator("button").filter({ hasText: /research/i });
     await expect(btn).toBeDisabled();
   });
 
   test("shows disclaimer in footer", async ({ page }) => {
-    await expect(page.getByText(/Educational tool only .* not legal advice/i)).toBeVisible();
+    await expect(
+      page.getByText(/Educational tool only .* not legal advice/i),
+    ).toBeVisible();
   });
 });

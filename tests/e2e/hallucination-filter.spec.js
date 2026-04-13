@@ -11,7 +11,10 @@ const BASE_ANALYZE = {
 
 async function expectAmberVerificationBanner(page, verified, total, removed) {
   // Safari may normalize em/en dashes differently; allow either dash and flexible spacing.
-  const pattern = new RegExp(`${verified} of ${total} verified\\s*[—-]\\s*${removed} unconfirmed removed`, "i");
+  const pattern = new RegExp(
+    `${verified} of ${total} verified\\s*[—-]\\s*${removed} unconfirmed removed`,
+    "i",
+  );
   await expect(page.getByText(pattern)).toBeVisible({ timeout: 10000 });
 }
 
@@ -28,10 +31,14 @@ test.describe("Hallucination filtering", () => {
         body: JSON.stringify({
           ...BASE_ANALYZE,
           case_law: [
-            { citation: "R v Fake, 2099 ONCA 999", title: "R v Fake", description: "Hallucinated case." },
+            {
+              citation: "R v Fake, 2099 ONCA 999",
+              title: "R v Fake",
+              description: "Hallucinated case.",
+            },
           ],
         }),
-      })
+      }),
     );
     await page.route("/api/verify", (route) =>
       route.fulfill({
@@ -43,18 +50,29 @@ test.describe("Hallucination filtering", () => {
             searchUrl: "https://www.canlii.org/en/#search/text=R+v+Fake",
           },
         }),
-      })
+      }),
     );
 
     await gotoHome(page);
     await page.locator("textarea").fill("test scenario");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("Scenario Summary", { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByText("Scenario Summary", { exact: true }),
+    ).toBeVisible({ timeout: 10000 });
     await page.waitForTimeout(500);
 
-    await expect(page.getByText("R v Fake, 2099 ONCA 999", { exact: true })).toHaveCount(0);
-    await expect(page.getByText(/None of the suggested case law citations were verified on CanLII/i)).toBeVisible();
+    await expect(
+      page.getByText("R v Fake, 2099 ONCA 999", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText(
+        /None of the suggested case law citations were verified on CanLII/i,
+      ),
+    ).toBeVisible();
   });
 
   test("shows verified citation and green banner", async ({ page }) => {
@@ -65,10 +83,14 @@ test.describe("Hallucination filtering", () => {
         body: JSON.stringify({
           ...BASE_ANALYZE,
           case_law: [
-            { citation: "R v Dorfer, 2014 BCCA 449", title: "R v Dorfer", description: "Real case." },
+            {
+              citation: "R v Dorfer, 2014 BCCA 449",
+              title: "R v Dorfer",
+              description: "Real case.",
+            },
           ],
         }),
-      })
+      }),
     );
     await page.route("/api/verify", (route) =>
       route.fulfill({
@@ -82,15 +104,22 @@ test.describe("Hallucination filtering", () => {
             title: "R v Dorfer",
           },
         }),
-      })
+      }),
     );
 
     await gotoHome(page);
     await page.locator("textarea").fill("test scenario");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("R v Dorfer, 2014 BCCA 449")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("1 of 1 citation verified on CanLII")).toBeVisible();
+    await expect(page.getByText("R v Dorfer, 2014 BCCA 449")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(
+      page.getByText("1 of 1 citation verified on CanLII"),
+    ).toBeVisible();
   });
 
   test("shows amber banner when some citations removed", async ({ page }) => {
@@ -101,29 +130,52 @@ test.describe("Hallucination filtering", () => {
         body: JSON.stringify({
           ...BASE_ANALYZE,
           case_law: [
-            { citation: "R v Dorfer, 2014 BCCA 449", title: "R v Dorfer", description: "Real case." },
-            { citation: "R v Fake, 2099 ONCA 999", title: "R v Fake", description: "Hallucinated." },
+            {
+              citation: "R v Dorfer, 2014 BCCA 449",
+              title: "R v Dorfer",
+              description: "Real case.",
+            },
+            {
+              citation: "R v Fake, 2099 ONCA 999",
+              title: "R v Fake",
+              description: "Hallucinated.",
+            },
           ],
         }),
-      })
+      }),
     );
     await page.route("/api/verify", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          "R v Dorfer, 2014 BCCA 449": { status: "verified", url: "https://www.canlii.org/en/bc/bcca/doc/2014/2014bcca449/2014bcca449.html", searchUrl: "https://www.canlii.org/en/#search/text=R+v+Dorfer", title: "R v Dorfer" },
-          "R v Fake, 2099 ONCA 999": { status: "not_found", searchUrl: "https://www.canlii.org/en/#search/text=R+v+Fake" },
+          "R v Dorfer, 2014 BCCA 449": {
+            status: "verified",
+            url: "https://www.canlii.org/en/bc/bcca/doc/2014/2014bcca449/2014bcca449.html",
+            searchUrl: "https://www.canlii.org/en/#search/text=R+v+Dorfer",
+            title: "R v Dorfer",
+          },
+          "R v Fake, 2099 ONCA 999": {
+            status: "not_found",
+            searchUrl: "https://www.canlii.org/en/#search/text=R+v+Fake",
+          },
         }),
-      })
+      }),
     );
 
     await gotoHome(page);
     await page.locator("textarea").fill("test scenario");
-    await page.locator("button").filter({ hasText: /research/i }).click();
+    await page
+      .locator("button")
+      .filter({ hasText: /research/i })
+      .click();
 
-    await expect(page.getByText("R v Dorfer, 2014 BCCA 449")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("R v Dorfer, 2014 BCCA 449")).toBeVisible({
+      timeout: 10000,
+    });
     await expectAmberVerificationBanner(page, 1, 2, 1);
-    await expect(page.getByText("R v Fake, 2099 ONCA 999", { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByText("R v Fake, 2099 ONCA 999", { exact: true }),
+    ).toHaveCount(0);
   });
 });

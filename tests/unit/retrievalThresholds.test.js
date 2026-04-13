@@ -15,15 +15,19 @@ describe("evaluateRetrievalAlerts", () => {
             errorRate: 0,
             noVerifiedRate: 0.1,
             avgVerifiedPerRequest: 1.2,
-            fallbackPathRate: RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h + 0.05,
-            avgRelevanceScore: RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h + 0.5,
+            fallbackPathRate:
+              RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h + 0.05,
+            avgRelevanceScore:
+              RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h + 0.5,
           },
           latencyMs: { p95: 900 },
         },
       },
     });
 
-    expect(alerts.some((a) => a.id === "retrieval_fallback_path_rate_1h")).toBe(true);
+    expect(alerts.some((a) => a.id === "retrieval_fallback_path_rate_1h")).toBe(
+      true,
+    );
   });
 
   it("emits low-relevance alert when 1h relevance average drops below threshold", () => {
@@ -36,14 +40,17 @@ describe("evaluateRetrievalAlerts", () => {
             noVerifiedRate: 0.1,
             avgVerifiedPerRequest: 1.2,
             fallbackPathRate: 0.1,
-            avgRelevanceScore: RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h - 0.5,
+            avgRelevanceScore:
+              RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h - 0.5,
           },
           latencyMs: { p95: 900 },
         },
       },
     });
 
-    expect(alerts.some((a) => a.id === "retrieval_avg_relevance_score_1h")).toBe(true);
+    expect(
+      alerts.some((a) => a.id === "retrieval_avg_relevance_score_1h"),
+    ).toBe(true);
   });
 
   it("does not emit phase-4 alerts under threshold", () => {
@@ -55,16 +62,22 @@ describe("evaluateRetrievalAlerts", () => {
             errorRate: 0,
             noVerifiedRate: 0.1,
             avgVerifiedPerRequest: 1.2,
-            fallbackPathRate: RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h - 0.1,
-            avgRelevanceScore: RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h + 0.1,
+            fallbackPathRate:
+              RETRIEVAL_ALERT_THRESHOLDS.fallbackPathRate1h - 0.1,
+            avgRelevanceScore:
+              RETRIEVAL_ALERT_THRESHOLDS.avgRelevanceScoreMin1h + 0.1,
           },
           latencyMs: { p95: 900 },
         },
       },
     });
 
-    expect(alerts.some((a) => a.id === "retrieval_fallback_path_rate_1h")).toBe(false);
-    expect(alerts.some((a) => a.id === "retrieval_avg_relevance_score_1h")).toBe(false);
+    expect(alerts.some((a) => a.id === "retrieval_fallback_path_rate_1h")).toBe(
+      false,
+    );
+    expect(
+      alerts.some((a) => a.id === "retrieval_avg_relevance_score_1h"),
+    ).toBe(false);
   });
 
   it("emits by-issue no-verified alert when issue has enough volume and sustained degradation", () => {
@@ -85,7 +98,8 @@ describe("evaluateRetrievalAlerts", () => {
               {
                 issuePrimary: "robbery",
                 requests: RETRIEVAL_ALERT_THRESHOLDS.issueMinRequests1h,
-                noVerifiedRate: RETRIEVAL_ALERT_THRESHOLDS.issueNoVerifiedRate1h + 0.05,
+                noVerifiedRate:
+                  RETRIEVAL_ALERT_THRESHOLDS.issueNoVerifiedRate1h + 0.05,
                 errorRate: 0.1,
               },
             ],
@@ -94,7 +108,9 @@ describe("evaluateRetrievalAlerts", () => {
       },
     });
 
-    const issueAlert = alerts.find((a) => a.id === "retrieval_issue_no_verified_rate_1h_robbery");
+    const issueAlert = alerts.find(
+      (a) => a.id === "retrieval_issue_no_verified_rate_1h_robbery",
+    );
     expect(issueAlert).toBeTruthy();
     expect(issueAlert).toMatchObject({
       metric: "issueNoVerifiedRate",
@@ -130,7 +146,13 @@ describe("evaluateRetrievalAlerts", () => {
       },
     });
 
-    expect(alerts.some((a) => a.id.includes("retrieval_issue_no_verified_rate_1h_theft"))).toBe(false);
-    expect(alerts.some((a) => a.id.includes("retrieval_issue_error_rate_1h_theft"))).toBe(false);
+    expect(
+      alerts.some((a) =>
+        a.id.includes("retrieval_issue_no_verified_rate_1h_theft"),
+      ),
+    ).toBe(false);
+    expect(
+      alerts.some((a) => a.id.includes("retrieval_issue_error_rate_1h_theft")),
+    ).toBe(false);
   });
 });

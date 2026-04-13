@@ -1,7 +1,11 @@
 // @vitest-environment happy-dom
 import { describe, it, expect } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { ThemeProvider, useTheme, useThemeActions } from "../../src/lib/ThemeContext.jsx";
+import {
+  ThemeProvider,
+  useTheme,
+  useThemeActions,
+} from "../../src/lib/ThemeContext.jsx";
 import { themes } from "../../src/lib/themes.js";
 
 const wrapper = ({ children }) => <ThemeProvider>{children}</ThemeProvider>;
@@ -20,7 +24,7 @@ describe("ThemeContext", () => {
   it("toggleTheme switches to dark theme", () => {
     const { result } = renderHook(
       () => ({ theme: useTheme(), actions: useThemeActions() }),
-      { wrapper }
+      { wrapper },
     );
 
     act(() => {
@@ -34,7 +38,7 @@ describe("ThemeContext", () => {
   it("toggleTheme switches back to light theme on second call", () => {
     const { result } = renderHook(
       () => ({ theme: useTheme(), actions: useThemeActions() }),
-      { wrapper }
+      { wrapper },
     );
 
     act(() => result.current.actions.toggleTheme());
@@ -46,13 +50,13 @@ describe("ThemeContext", () => {
 
   it("useTheme throws when called outside ThemeProvider", () => {
     expect(() => renderHook(() => useTheme())).toThrow(
-      "useTheme must be used within ThemeProvider"
+      "useTheme must be used within ThemeProvider",
     );
   });
 
   it("useThemeActions throws when called outside ThemeProvider", () => {
     expect(() => renderHook(() => useThemeActions())).toThrow(
-      "useThemeActions must be used within ThemeProvider"
+      "useThemeActions must be used within ThemeProvider",
     );
   });
 });

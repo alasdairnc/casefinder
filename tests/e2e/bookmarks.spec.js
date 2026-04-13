@@ -1,18 +1,33 @@
 import { test, expect } from "@playwright/test";
 
 const MOCK_ANALYZE_RESPONSE = {
-  summary: "A person entered a residential property at night without permission and stole jewelry.",
+  summary:
+    "A person entered a residential property at night without permission and stole jewelry.",
   criminal_code: [
-    { citation: "s. 348(1)(b)", title: "Breaking and Entering", summary: "Breaking and entering a place with intent to commit an indictable offence." },
+    {
+      citation: "s. 348(1)(b)",
+      title: "Breaking and Entering",
+      summary:
+        "Breaking and entering a place with intent to commit an indictable offence.",
+    },
   ],
   case_law: [
-    { citation: "R v Dorfer, 2014 BCCA 449", title: "R v Dorfer", description: "Sentencing principles for residential break and enter." },
+    {
+      citation: "R v Dorfer, 2014 BCCA 449",
+      title: "R v Dorfer",
+      description: "Sentencing principles for residential break and enter.",
+    },
   ],
   civil_law: [],
   charter: [],
-  analysis: "This scenario involves a classic residential break and enter with theft.",
+  analysis:
+    "This scenario involves a classic residential break and enter with theft.",
   suggestions: [
-    { type: "canlii", label: "residential break and enter", term: "residential break and enter" },
+    {
+      type: "canlii",
+      label: "residential break and enter",
+      term: "residential break and enter",
+    },
   ],
 };
 
@@ -28,10 +43,18 @@ const MOCK_VERIFY_RESPONSE = {
 test.describe("Bookmarks", () => {
   test.beforeEach(async ({ page }) => {
     await page.route("/api/analyze", async (route) => {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MOCK_ANALYZE_RESPONSE) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_ANALYZE_RESPONSE),
+      });
     });
     await page.route("/api/verify", async (route) => {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MOCK_VERIFY_RESPONSE) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_VERIFY_RESPONSE),
+      });
     });
     // Clear localStorage before each test
     await page.goto("/");
@@ -40,32 +63,46 @@ test.describe("Bookmarks", () => {
   });
 
   async function runSearch(page) {
-    await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator('[data-testid="scenario-input"]')
+      .fill("A person broke into a house at night and stole jewelry");
     await page.locator('[data-testid="research-submit"]').click();
-    await expect(page.locator('[data-testid="results-section"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="results-section"]')).toBeVisible({
+      timeout: 10000,
+    });
   }
 
-  test("bookmark button appears on result cards after search", async ({ page }) => {
+  test("bookmark button appears on result cards after search", async ({
+    page,
+  }) => {
     await runSearch(page);
     const addBtn = page.locator('[data-testid="bookmark-add"]').first();
     await expect(addBtn).toBeVisible();
   });
 
-  test("clicking bookmark fills the icon and switches to remove state", async ({ page }) => {
+  test("clicking bookmark fills the icon and switches to remove state", async ({
+    page,
+  }) => {
     await runSearch(page);
     const addBtn = page.locator('[data-testid="bookmark-add"]').first();
     await addBtn.click();
-    await expect(page.locator('[data-testid="bookmark-remove"]').first()).toBeVisible();
+    await expect(
+      page.locator('[data-testid="bookmark-remove"]').first(),
+    ).toBeVisible();
   });
 
-  test("bookmark count badge appears in header after bookmarking", async ({ page }) => {
+  test("bookmark count badge appears in header after bookmarking", async ({
+    page,
+  }) => {
     await runSearch(page);
     await page.locator('[data-testid="bookmark-add"]').first().click();
     // Badge should show 1
     await expect(page.locator("text=1").first()).toBeVisible();
   });
 
-  test("BookmarksPanel shows saved citation after bookmarking", async ({ page }) => {
+  test("BookmarksPanel shows saved citation after bookmarking", async ({
+    page,
+  }) => {
     await runSearch(page);
     await page.locator('[data-testid="bookmark-add"]').first().click();
     // Open bookmarks panel via header button

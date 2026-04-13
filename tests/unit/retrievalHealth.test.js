@@ -72,7 +72,12 @@ describe("retrieval-health handler", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCheckRateLimit.mockResolvedValue({ allowed: true, limit: 60, remaining: 59, reset: 123 });
+    mockCheckRateLimit.mockResolvedValue({
+      allowed: true,
+      limit: 60,
+      remaining: 59,
+      reset: 123,
+    });
     mockGetRetrievalHealthSnapshot.mockResolvedValue({
       generatedAt: new Date(0).toISOString(),
       retentionMs: 86_400_000,
@@ -89,7 +94,9 @@ describe("retrieval-health handler", () => {
         },
       ],
     });
-    mockGetTrendlineSnapshots.mockResolvedValue([{ ts: 1, errorRate: null, noVerifiedRate: null, avgLatencyMs: null }]);
+    mockGetTrendlineSnapshots.mockResolvedValue([
+      { ts: 1, errorRate: null, noVerifiedRate: null, avgLatencyMs: null },
+    ]);
     mockGetFailureScenarioPage.mockResolvedValue({
       items: [
         {
@@ -126,7 +133,7 @@ describe("retrieval-health handler", () => {
       req,
       res,
       "GET, OPTIONS",
-      "Authorization, Content-Type"
+      "Authorization, Content-Type",
     );
   });
 
@@ -141,14 +148,24 @@ describe("retrieval-health handler", () => {
   });
 
   it("returns 429 when rate limit is exceeded", async () => {
-    mockCheckRateLimit.mockResolvedValue({ allowed: false, limit: 60, remaining: 0, reset: 123 });
-    const req = { method: "GET", headers: { authorization: "Bearer test-token" } };
+    mockCheckRateLimit.mockResolvedValue({
+      allowed: false,
+      limit: 60,
+      remaining: 0,
+      reset: 123,
+    });
+    const req = {
+      method: "GET",
+      headers: { authorization: "Bearer test-token" },
+    };
     const res = createRes();
 
     await handler(req, res);
 
     expect(res.statusCode).toBe(429);
-    expect(res.body).toEqual({ error: "Rate limit exceeded. Please try again later." });
+    expect(res.body).toEqual({
+      error: "Rate limit exceeded. Please try again later.",
+    });
   });
 
   it("returns 401 when auth token is missing or invalid", async () => {
@@ -163,7 +180,10 @@ describe("retrieval-health handler", () => {
 
   it("returns 401 when token is not configured", async () => {
     process.env.RETRIEVAL_HEALTH_TOKEN = "";
-    const req = { method: "GET", headers: { authorization: "Bearer anything" } };
+    const req = {
+      method: "GET",
+      headers: { authorization: "Bearer anything" },
+    };
     const res = createRes();
 
     await handler(req, res);
@@ -174,7 +194,10 @@ describe("retrieval-health handler", () => {
 
   it("returns health snapshot payload for authorized requests", async () => {
     mockEvaluateRetrievalAlerts.mockReturnValue([{ code: "high_error_rate" }]);
-    const req = { method: "GET", headers: { authorization: "Bearer test-token" } };
+    const req = {
+      method: "GET",
+      headers: { authorization: "Bearer test-token" },
+    };
     const res = createRes();
 
     await handler(req, res);
@@ -210,7 +233,9 @@ describe("retrieval-health handler", () => {
         limit: 20,
         offset: 0,
       },
-      trendline: [{ ts: 1, errorRate: null, noVerifiedRate: null, avgLatencyMs: null }],
+      trendline: [
+        { ts: 1, errorRate: null, noVerifiedRate: null, avgLatencyMs: null },
+      ],
       alerts: [{ code: "high_error_rate" }],
       thresholds: {
         highErrorRate: 0.2,
@@ -221,7 +246,9 @@ describe("retrieval-health handler", () => {
     expect(res.headers["X-RateLimit-Limit"]).toBe("60");
     expect(res.headers["X-Content-Type-Options"]).toBe("nosniff");
     expect(res.headers["X-Frame-Options"]).toBe("DENY");
-    expect(res.headers["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
+    expect(res.headers["Referrer-Policy"]).toBe(
+      "strict-origin-when-cross-origin",
+    );
     expect(res.headers["Content-Security-Policy"]).toBe("default-src 'none'");
   });
 
@@ -246,7 +273,10 @@ describe("retrieval-health handler", () => {
     const upstreamError = new Error("bad request");
     upstreamError.status = 400;
     mockGetRetrievalHealthSnapshot.mockRejectedValue(upstreamError);
-    const req = { method: "GET", headers: { authorization: "Bearer test-token" } };
+    const req = {
+      method: "GET",
+      headers: { authorization: "Bearer test-token" },
+    };
     const res = createRes();
 
     await handler(req, res);
@@ -259,7 +289,10 @@ describe("retrieval-health handler", () => {
     const upstreamError = new Error("upstream failed");
     upstreamError.status = 503;
     mockGetRetrievalHealthSnapshot.mockRejectedValue(upstreamError);
-    const req = { method: "GET", headers: { authorization: "Bearer test-token" } };
+    const req = {
+      method: "GET",
+      headers: { authorization: "Bearer test-token" },
+    };
     const res = createRes();
 
     await handler(req, res);

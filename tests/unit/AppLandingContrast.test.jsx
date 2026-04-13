@@ -20,9 +20,9 @@ function parseCssColor(color) {
 
 function luminance(color) {
   const [r, g, b] = parseCssColor(color).map((channel) =>
-    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
   );
-  return (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 function contrastRatio(foreground, background) {
@@ -44,7 +44,7 @@ describe("App landing contrast", () => {
 
     const exampleLabel = screen.getByText("Try an example");
     const helperCopy = screen.getByText(
-      "Educational tool only — not legal advice. Always consult a qualified lawyer. Citations verified against CanLII where possible."
+      "Educational tool only — not legal advice. Always consult a qualified lawyer. Citations verified against CanLII where possible.",
     );
     const toggleToDark = screen.getByRole("button", { name: "Dark" });
 
@@ -59,9 +59,9 @@ describe("App landing contrast", () => {
     expectReadable(screen.getByText("Try an example"), themes.dark.bg);
     expectReadable(
       screen.getByText(
-        "Educational tool only — not legal advice. Always consult a qualified lawyer. Citations verified against CanLII where possible."
+        "Educational tool only — not legal advice. Always consult a qualified lawyer. Citations verified against CanLII where possible.",
       ),
-      themes.dark.bg
+      themes.dark.bg,
     );
     expectReadable(toggleToLight, themes.dark.bg);
   });

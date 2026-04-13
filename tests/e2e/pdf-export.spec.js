@@ -1,18 +1,33 @@
 import { test, expect } from "@playwright/test";
 
 const MOCK_ANALYZE_RESPONSE = {
-  summary: "A person entered a residential property at night without permission and stole jewelry.",
+  summary:
+    "A person entered a residential property at night without permission and stole jewelry.",
   criminal_code: [
-    { citation: "s. 348(1)(b)", title: "Breaking and Entering", summary: "Breaking and entering a place with intent to commit an indictable offence." },
+    {
+      citation: "s. 348(1)(b)",
+      title: "Breaking and Entering",
+      summary:
+        "Breaking and entering a place with intent to commit an indictable offence.",
+    },
   ],
   case_law: [
-    { citation: "R v Dorfer, 2014 BCCA 449", title: "R v Dorfer", description: "Sentencing principles for residential break and enter." },
+    {
+      citation: "R v Dorfer, 2014 BCCA 449",
+      title: "R v Dorfer",
+      description: "Sentencing principles for residential break and enter.",
+    },
   ],
   civil_law: [],
   charter: [],
-  analysis: "This scenario involves a classic residential break and enter with theft.",
+  analysis:
+    "This scenario involves a classic residential break and enter with theft.",
   suggestions: [
-    { type: "canlii", label: "residential break and enter", term: "residential break and enter" },
+    {
+      type: "canlii",
+      label: "residential break and enter",
+      term: "residential break and enter",
+    },
   ],
 };
 
@@ -28,26 +43,42 @@ const MOCK_VERIFY_RESPONSE = {
 test.describe("PDF Export", () => {
   test.beforeEach(async ({ page }) => {
     await page.route("/api/analyze", async (route) => {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MOCK_ANALYZE_RESPONSE) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_ANALYZE_RESPONSE),
+      });
     });
     await page.route("/api/verify", async (route) => {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MOCK_VERIFY_RESPONSE) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_VERIFY_RESPONSE),
+      });
     });
     await page.goto("/");
   });
 
   async function runSearch(page) {
-    await page.locator('[data-testid="scenario-input"]').fill("A person broke into a house at night and stole jewelry");
+    await page
+      .locator('[data-testid="scenario-input"]')
+      .fill("A person broke into a house at night and stole jewelry");
     await page.locator('[data-testid="research-submit"]').click();
-    await expect(page.locator('[data-testid="results-section"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="results-section"]')).toBeVisible({
+      timeout: 10000,
+    });
   }
 
-  test("Export PDF button is visible after search results load", async ({ page }) => {
+  test("Export PDF button is visible after search results load", async ({
+    page,
+  }) => {
     await runSearch(page);
     await expect(page.locator('[data-testid="export-pdf-btn"]')).toBeVisible();
   });
 
-  test("clicking Export PDF fires request to /api/export-pdf", async ({ page }) => {
+  test("clicking Export PDF fires request to /api/export-pdf", async ({
+    page,
+  }) => {
     let pdfRequested = false;
     let pdfPayload;
     await page.route("/api/export-pdf", async (route) => {
@@ -68,12 +99,14 @@ test.describe("PDF Export", () => {
     expect(pdfRequested).toBe(true);
     expect(pdfPayload).toEqual({
       scenario: "A person broke into a house at night and stole jewelry",
-      summary: "A person entered a residential property at night without permission and stole jewelry.",
+      summary:
+        "A person entered a residential property at night without permission and stole jewelry.",
       criminal_code: [
         {
           citation: "s. 348(1)(b)",
           title: "Breaking and Entering",
-          summary: "Breaking and entering a place with intent to commit an indictable offence.",
+          summary:
+            "Breaking and entering a place with intent to commit an indictable offence.",
         },
       ],
       case_law: [
@@ -85,12 +118,15 @@ test.describe("PDF Export", () => {
       ],
       civil_law: [],
       charter: [],
-      analysis: "This scenario involves a classic residential break and enter with theft.",
+      analysis:
+        "This scenario involves a classic residential break and enter with theft.",
       verifications: MOCK_VERIFY_RESPONSE,
     });
   });
 
-  test("no error message shown after successful PDF export", async ({ page }) => {
+  test("no error message shown after successful PDF export", async ({
+    page,
+  }) => {
     await page.route("/api/export-pdf", async (route) => {
       await route.fulfill({
         status: 200,
@@ -104,10 +140,14 @@ test.describe("PDF Export", () => {
     await page.waitForTimeout(500);
 
     // No error message should be visible
-    await expect(page.locator("text=/pdf error|export failed/i")).not.toBeVisible();
+    await expect(
+      page.locator("text=/pdf error|export failed/i"),
+    ).not.toBeVisible();
   });
 
-  test("shows export failed state when PDF export request errors", async ({ page }) => {
+  test("shows export failed state when PDF export request errors", async ({
+    page,
+  }) => {
     await page.route("/api/export-pdf", async (route) => {
       await route.fulfill({
         status: 500,
@@ -119,6 +159,8 @@ test.describe("PDF Export", () => {
     await runSearch(page);
     await page.locator('[data-testid="export-pdf-btn"]').click();
 
-    await expect(page.locator('[data-testid="export-pdf-btn"]')).toHaveText("Export failed");
+    await expect(page.locator('[data-testid="export-pdf-btn"]')).toHaveText(
+      "Export failed",
+    );
   });
 });

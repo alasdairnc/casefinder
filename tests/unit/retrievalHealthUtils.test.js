@@ -52,7 +52,11 @@ describe("retrievalHealthUtils", () => {
     const status = statusFromData({
       alerts: [],
       totalStoredEvents: 10,
-      thresholds: { errorRate1h: 0.1, noVerifiedRate1h: 0.3, p95LatencyMs1h: 3000 },
+      thresholds: {
+        errorRate1h: 0.1,
+        noVerifiedRate1h: 0.3,
+        p95LatencyMs1h: 3000,
+      },
       windows: {
         "1h": {
           rates: { errorRate: 0.02, noVerifiedRate: 0.1 },

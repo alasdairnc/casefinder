@@ -9,7 +9,8 @@ async function loadStore() {
 
 describe("retrieval health store recent failures", () => {
   it("includes cache-backed zero-result events in recent failures", async () => {
-    const { recordRetrievalMetricsEvent, getRetrievalHealthSnapshot } = await loadStore();
+    const { recordRetrievalMetricsEvent, getRetrievalHealthSnapshot } =
+      await loadStore();
     const futureNow = Date.now() + 60_000;
 
     await recordRetrievalMetricsEvent({
@@ -34,7 +35,8 @@ describe("retrieval health store recent failures", () => {
   });
 
   it("aggregates by-issue rates and concept rescues in window snapshots", async () => {
-    const { recordRetrievalMetricsEvent, getRetrievalHealthSnapshot } = await loadStore();
+    const { recordRetrievalMetricsEvent, getRetrievalHealthSnapshot } =
+      await loadStore();
     const futureNow = Date.now() + 60_000;
 
     await recordRetrievalMetricsEvent({
@@ -103,7 +105,8 @@ describe("retrieval health store recent failures", () => {
   });
 
   it("returns paginated failure archive pages", async () => {
-    const { recordRetrievalMetricsEvent, getFailureScenarioPage } = await loadStore();
+    const { recordRetrievalMetricsEvent, getFailureScenarioPage } =
+      await loadStore();
     const now = Date.now();
 
     await recordRetrievalMetricsEvent({
@@ -136,7 +139,10 @@ describe("retrieval health store recent failures", () => {
       scenarioSnippet: "third scenario",
     });
 
-    const firstPage = await getFailureScenarioPage({ nowMs: now + 60_000, limit: 2 });
+    const firstPage = await getFailureScenarioPage({
+      nowMs: now + 60_000,
+      limit: 2,
+    });
     expect(firstPage.items).toHaveLength(2);
     expect(firstPage.hasMore).toBe(true);
     expect(firstPage.nextOffset).toBe(2);

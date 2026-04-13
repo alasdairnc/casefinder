@@ -48,7 +48,9 @@ describe("Filter Tuning System", () => {
     });
 
     it("should have diverse scenario coverage", () => {
-      const primaryIssues = new Set(TEST_SCENARIOS.map(s => s.expectedPrimary));
+      const primaryIssues = new Set(
+        TEST_SCENARIOS.map((s) => s.expectedPrimary),
+      );
       expect(primaryIssues.size).toBeGreaterThan(5); // At least 5 different issue types
     });
   });

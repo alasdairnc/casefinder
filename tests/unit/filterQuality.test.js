@@ -49,7 +49,12 @@ describe("filter-quality handler", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCheckRateLimit.mockResolvedValue({ allowed: true, limit: 60, remaining: 59, reset: 123 });
+    mockCheckRateLimit.mockResolvedValue({
+      allowed: true,
+      limit: 60,
+      remaining: 59,
+      reset: 123,
+    });
     process.env.RETRIEVAL_HEALTH_TOKEN = "test-token";
   });
 
@@ -69,7 +74,10 @@ describe("filter-quality handler", () => {
 
   it("returns 401 when the token is not configured", async () => {
     process.env.RETRIEVAL_HEALTH_TOKEN = "";
-    const req = { method: "GET", headers: { authorization: "Bearer test-token" } };
+    const req = {
+      method: "GET",
+      headers: { authorization: "Bearer test-token" },
+    };
     const res = createRes();
 
     await handler(req, res);
@@ -79,18 +87,31 @@ describe("filter-quality handler", () => {
   });
 
   it("returns 429 when rate limit is exceeded", async () => {
-    mockCheckRateLimit.mockResolvedValue({ allowed: false, limit: 60, remaining: 0, reset: 123 });
-    const req = { method: "GET", headers: { authorization: "Bearer test-token" } };
+    mockCheckRateLimit.mockResolvedValue({
+      allowed: false,
+      limit: 60,
+      remaining: 0,
+      reset: 123,
+    });
+    const req = {
+      method: "GET",
+      headers: { authorization: "Bearer test-token" },
+    };
     const res = createRes();
 
     await handler(req, res);
 
     expect(res.statusCode).toBe(429);
-    expect(res.body).toEqual({ error: "Rate limit exceeded. Please try again later." });
+    expect(res.body).toEqual({
+      error: "Rate limit exceeded. Please try again later.",
+    });
   });
 
   it("returns the dashboard payload for authorized requests", async () => {
-    const req = { method: "GET", headers: { authorization: "Bearer test-token" } };
+    const req = {
+      method: "GET",
+      headers: { authorization: "Bearer test-token" },
+    };
     const res = createRes();
 
     await handler(req, res);

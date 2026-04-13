@@ -40,7 +40,9 @@ describe("withRequestDedup", () => {
     });
     const succeeding = vi.fn(async () => "ok");
 
-    await expect(withRequestDedup("retry-key", failing)).rejects.toThrow("boom");
+    await expect(withRequestDedup("retry-key", failing)).rejects.toThrow(
+      "boom",
+    );
 
     const result = await withRequestDedup("retry-key", succeeding);
     expect(result).toBe("ok");

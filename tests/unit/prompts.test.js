@@ -119,7 +119,12 @@ describe("buildSystemPrompt", () => {
 
   it("injects law type restrictions when some types are disabled", () => {
     const prompt = buildSystemPrompt({
-      lawTypes: { criminal_code: true, case_law: false, civil_law: false, charter: true },
+      lawTypes: {
+        criminal_code: true,
+        case_law: false,
+        civil_law: false,
+        charter: true,
+      },
     });
     expect(prompt).toContain("Only include results for");
     expect(prompt).toContain("Criminal Code sections");
@@ -130,7 +135,12 @@ describe("buildSystemPrompt", () => {
 
   it("does not inject law type instructions when all types are enabled", () => {
     const prompt = buildSystemPrompt({
-      lawTypes: { criminal_code: true, case_law: true, civil_law: true, charter: true },
+      lawTypes: {
+        criminal_code: true,
+        case_law: true,
+        civil_law: true,
+        charter: true,
+      },
     });
     expect(prompt).not.toContain("Only include results for");
   });

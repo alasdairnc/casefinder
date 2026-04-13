@@ -3,11 +3,19 @@ import { isValidUrl } from "../../src/lib/validateUrl.js";
 
 describe("isValidUrl", () => {
   it("accepts a valid canlii.org URL", () => {
-    expect(isValidUrl("https://www.canlii.org/en/ca/scc/doc/2016/2016scc27/2016scc27.html")).toBe(true);
+    expect(
+      isValidUrl(
+        "https://www.canlii.org/en/ca/scc/doc/2016/2016scc27/2016scc27.html",
+      ),
+    ).toBe(true);
   });
 
   it("accepts a valid laws-lois.justice.gc.ca URL", () => {
-    expect(isValidUrl("https://laws-lois.justice.gc.ca/eng/acts/c-46/section-348.html")).toBe(true);
+    expect(
+      isValidUrl(
+        "https://laws-lois.justice.gc.ca/eng/acts/c-46/section-348.html",
+      ),
+    ).toBe(true);
   });
 
   it("rejects http (non-https) URLs", () => {

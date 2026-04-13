@@ -47,7 +47,7 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     const jordan = cases.find((c) => c.citation === "R v Jordan, 2016 SCC 27");
     expect(jordan).toBeTruthy();
     expect(jordan.url_canlii).toBe(
-      "https://www.canlii.org/en/ca/scc/doc/2016/2016scc27/2016scc27.html"
+      "https://www.canlii.org/en/ca/scc/doc/2016/2016scc27/2016scc27.html",
     );
   });
 
@@ -96,7 +96,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
 
     expect(cases.length).toBeGreaterThan(0);
     expect(meta.fallbackPathUsed).toBe(true);
-    expect(["local_fallback", "post_verify_local_fallback"]).toContain(meta.fallbackReason);
+    expect(["local_fallback", "post_verify_local_fallback"]).toContain(
+      meta.fallbackReason,
+    );
   });
 
   it("seeds Jordan for trial-delay scenarios without explicit AI citations", async () => {
@@ -109,7 +111,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     });
 
     expect(cases.length).toBeGreaterThan(0);
-    expect(cases.some((c) => String(c.citation || "").includes("Jordan"))).toBe(true);
+    expect(cases.some((c) => String(c.citation || "").includes("Jordan"))).toBe(
+      true,
+    );
     expect(meta.retrievalPass).toBe("landmark_seed");
   });
 
@@ -124,7 +128,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
 
     expect(cases.length).toBeGreaterThan(0);
     expect(
-      cases.some((c) => /Hunter|Grant|Marakah|Vu/.test(String(c.citation || "")))
+      cases.some((c) =>
+        /Hunter|Grant|Marakah|Vu/.test(String(c.citation || "")),
+      ),
     ).toBe(true);
     expect(meta.retrievalPass).toBe("landmark_seed");
   });
@@ -139,13 +145,17 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     });
 
     expect(typeof meta.retrievalPass).toBe("string");
-    expect(["landmark_seed", "local_fallback", "semantic_fallback", "semantic_primary"]).toContain(
-      meta.retrievalPass
-    );
+    expect([
+      "landmark_seed",
+      "local_fallback",
+      "semantic_fallback",
+      "semantic_primary",
+    ]).toContain(meta.retrievalPass);
   });
 
   it("classifies minor traffic stop scenarios and avoids broad case-law fallbacks", async () => {
-    const { MASTER_CASE_LAW_DB } = await import("../../src/lib/caselaw/index.js");
+    const { MASTER_CASE_LAW_DB } =
+      await import("../../src/lib/caselaw/index.js");
     const originalCases = [...MASTER_CASE_LAW_DB];
     MASTER_CASE_LAW_DB.length = 0;
 
@@ -177,7 +187,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     });
 
     expect(cases.length).toBeGreaterThan(0);
-    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(false);
+    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(
+      false,
+    );
   });
 
   it("returns threat/harassment-relevant cases without generic Charter fallback", async () => {
@@ -190,7 +202,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     });
 
     expect(cases.length).toBeGreaterThan(0);
-    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(false);
+    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(
+      false,
+    );
   });
 
   it("returns dangerous-driving-relevant fallback without Oakes noise", async () => {
@@ -203,7 +217,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     });
 
     expect(cases.length).toBeGreaterThan(0);
-    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(false);
+    expect(cases.some((c) => /Oakes/.test(String(c.citation || "")))).toBe(
+      false,
+    );
   });
 
   it("rescues AI citations via concept overlap when token overlap is zero", async () => {
@@ -228,7 +244,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
 
     expect(cases.length).toBeGreaterThan(0);
     expect(meta.prefilterDiagnostics.passedByConceptRescue).toBeGreaterThan(0);
-    expect(meta.prefilterDiagnostics.reasonCounts.token_overlap_failed).toBeGreaterThan(0);
+    expect(
+      meta.prefilterDiagnostics.reasonCounts.token_overlap_failed,
+    ).toBeGreaterThan(0);
   });
 
   it("reports no_ai_citations fallback trigger reason", async () => {
@@ -241,11 +259,14 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     });
 
     expect(meta.fallbackPathUsed).toBe(true);
-    expect(meta.fallbackDiagnostics.fallbackTriggerReason).toBe("no_ai_citations");
+    expect(meta.fallbackDiagnostics.fallbackTriggerReason).toBe(
+      "no_ai_citations",
+    );
   });
 
   it("captures semantic-filter drop diagnostics when candidates are incompatible", async () => {
-    const { MASTER_CASE_LAW_DB } = await import("../../src/lib/caselaw/index.js");
+    const { MASTER_CASE_LAW_DB } =
+      await import("../../src/lib/caselaw/index.js");
     const originalCases = [...MASTER_CASE_LAW_DB];
     MASTER_CASE_LAW_DB.length = 0;
 
@@ -263,7 +284,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
         maxResults: 3,
       });
 
-      expect(meta.prefilterDiagnostics.totalAiCandidatesParsed).toBeGreaterThan(0);
+      expect(meta.prefilterDiagnostics.totalAiCandidatesParsed).toBeGreaterThan(
+        0,
+      );
       expect(meta.prefilterDiagnostics.rejected).toBeGreaterThan(0);
       expect(meta.fallbackDiagnostics.semanticFilteredCount).toBe(0);
     } finally {
@@ -280,7 +303,8 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
 
     const { meta } = await retrieveVerifiedCaseLaw({
       apiKey: "test-key",
-      scenario: "Someone repeatedly texted me threats and said they would hurt me",
+      scenario:
+        "Someone repeatedly texted me threats and said they would hurt me",
       aiCaseLaw: [
         {
           citation: "2016 SCC 27",
@@ -292,13 +316,16 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     });
 
     expect(meta.fallbackPathUsed).toBe(true);
-    expect(meta.fallbackDiagnostics.fallbackTriggerReason).toBe("verification_failed_all");
+    expect(meta.fallbackDiagnostics.fallbackTriggerReason).toBe(
+      "verification_failed_all",
+    );
   });
 
   it("classifies breath-demand roadside scenario as impaired_driving", async () => {
     const { meta } = await retrieveVerifiedCaseLaw({
       apiKey: "test-key",
-      scenario: "I was pulled over at a checkpoint and given a breathalyzer demand",
+      scenario:
+        "I was pulled over at a checkpoint and given a breathalyzer demand",
       aiCaseLaw: [],
       landmarkMatches: [],
       maxResults: 3,
@@ -310,7 +337,8 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
   it("classifies peace bond scenarios using s. 810 signal", async () => {
     const { meta } = await retrieveVerifiedCaseLaw({
       apiKey: "test-key",
-      scenario: "I was served with a peace bond under s. 810 and told to sign recognizance terms",
+      scenario:
+        "I was served with a peace bond under s. 810 and told to sign recognizance terms",
       aiCaseLaw: [],
       landmarkMatches: [],
       maxResults: 3,
@@ -331,7 +359,8 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
 
     const detentionResult = await retrieveVerifiedCaseLaw({
       apiKey: "test-key",
-      scenario: "I was arbitrarily detained without clear grounds under Charter rights",
+      scenario:
+        "I was arbitrarily detained without clear grounds under Charter rights",
       aiCaseLaw: [],
       landmarkMatches: [],
       maxResults: 3,
@@ -356,9 +385,9 @@ describe("retrieveVerifiedCaseLaw landmark URL handling", () => {
     expect(
       cases.some((c) =>
         /break|enter|theft|stolen|home|house|intent|s\.|348|s\s+348/i.test(
-          String((c.summary || "") + (c.title || ""))
-        )
-      )
+          String((c.summary || "") + (c.title || "")),
+        ),
+      ),
     ).toBe(true);
   });
 });
