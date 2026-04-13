@@ -1,5 +1,10 @@
 // /api/case-summary.js — Generate structured case summary via Claude
-import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
+import {
+  redis,
+  checkRateLimit,
+  getClientIp,
+  rateLimitHeaders,
+} from "./_rateLimit.js";
 import { randomUUID, createHash } from "crypto";
 import {
   applyStandardApiHeaders,
@@ -81,7 +86,11 @@ async function callAnthropic(caseText, apiKey) {
           content: [
             {
               type: "document",
-              source: { type: "text", media_type: "text/plain", data: caseText },
+              source: {
+                type: "text",
+                media_type: "text/plain",
+                data: caseText,
+              },
               citations: { enabled: true },
             },
             {
@@ -96,7 +105,9 @@ async function callAnthropic(caseText, apiKey) {
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    const err = new Error(errData.error?.message || `Anthropic API error: ${response.status}`);
+    const err = new Error(
+      errData.error?.message || `Anthropic API error: ${response.status}`,
+    );
     err.status = response.status;
     throw err;
   }
@@ -111,22 +122,27 @@ async function callAnthropic(caseText, apiKey) {
       citationBlocks.push(block);
     }
   }
-  return { text: textContent.replace(/```json|```/g, "").trim(), citations: citationBlocks };
+  return {
+    text: textContent.replace(/```json|```/g, "").trim(),
+    citations: citationBlocks,
+  };
 }
 
 export default async function handler(req, res) {
-  const requestId = req.headers['x-vercel-id'] || randomUUID();
+  const requestId = req.headers["x-vercel-id"] || randomUUID();
   const startMs = Date.now();
   logRequestStart(req, "case-summary", requestId);
   applyStandardApiHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
   if (handleOptionsAndMethod(req, res, "POST")) return;
-  if (!validateJsonRequest(req, res, {
-    requestId,
-    endpoint: "case-summary",
-    maxBytes: 50_000,
-    logValidationError,
-  })) {
+  if (
+    !validateJsonRequest(req, res, {
+      requestId,
+      endpoint: "case-summary",
+      maxBytes: 50_000,
+      logValidationError,
+    })
+  ) {
     return;
   }
 
@@ -135,21 +151,40 @@ export default async function handler(req, res) {
   const rlHeaders = rateLimitHeaders(rlResult);
   Object.entries(rlHeaders).forEach(([k, v]) => res.setHeader(k, v));
   if (!rlResult.allowed) {
-    return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
+    return res
+      .status(429)
+      .json({ error: "Rate limit exceeded. Please try again later." });
   }
 
-  const { citation, title, court, year, summary, matchedContent } = req.body || {};
+  const { citation, title, court, year, summary, matchedContent } =
+    req.body || {};
 
   if (!citation || typeof citation !== "string") {
-    logValidationError(requestId, "case-summary", "citation is required", "citation");
+    logValidationError(
+      requestId,
+      "case-summary",
+      "citation is required",
+      "citation",
+    );
     return res.status(400).json({ error: "citation is required" });
   }
 
-  const MAX_LENGTHS = { title: 300, court: 100, year: 10, summary: 2000, matchedContent: 3000 };
+  const MAX_LENGTHS = {
+    title: 300,
+    court: 100,
+    year: 10,
+    summary: 2000,
+    matchedContent: 3000,
+  };
   const body = req.body || {};
   for (const [field, max] of Object.entries(MAX_LENGTHS)) {
     if (body[field] !== undefined && typeof body[field] !== "string") {
-      logValidationError(requestId, "case-summary", `${field} must be a string`, field);
+      logValidationError(
+        requestId,
+        "case-summary",
+        `${field} must be a string`,
+        field,
+      );
       return res.status(400).json({ error: `${field} must be a string` });
     }
     if (body[field] && body[field].length > max) {
@@ -162,12 +197,21 @@ export default async function handler(req, res) {
   if (redis) {
     try {
       const timeoutGet = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS),
       );
       const cached = await Promise.race([redis.get(cacheKey), timeoutGet]);
       if (cached) {
-        logSuccess(requestId, "case-summary", 200, Date.now() - startMs, rlResult, { cached: true });
-        return res.status(200).json(typeof cached === "string" ? JSON.parse(cached) : cached);
+        logSuccess(
+          requestId,
+          "case-summary",
+          200,
+          Date.now() - startMs,
+          rlResult,
+          { cached: true },
+        );
+        return res
+          .status(200)
+          .json(typeof cached === "string" ? JSON.parse(cached) : cached);
       }
     } catch (err) {}
   }
@@ -178,7 +222,9 @@ export default async function handler(req, res) {
     court ? `Court: ${sanitizeUserInput(court)}` : null,
     year ? `Year: ${sanitizeUserInput(year)}` : null,
     summary ? `Existing summary: ${sanitizeUserInput(summary)}` : null,
-    matchedContent ? `Matched context: ${sanitizeUserInput(matchedContent)}` : null,
+    matchedContent
+      ? `Matched context: ${sanitizeUserInput(matchedContent)}`
+      : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -186,28 +232,57 @@ export default async function handler(req, res) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      logValidationError(requestId, "case-summary", "ANTHROPIC_API_KEY is not configured", "environment");
-      return res.status(503).json({ error: "Summary service temporarily unavailable." });
+      logValidationError(
+        requestId,
+        "case-summary",
+        "ANTHROPIC_API_KEY is not configured",
+        "environment",
+      );
+      return res
+        .status(503)
+        .json({ error: "Summary service temporarily unavailable." });
     }
 
     const anthropicStartMs = Date.now();
     const dedupeKey = `inflight:case-summary:${cacheKey}`;
-    const { text: raw, citations } = await withRequestDedup(dedupeKey, () => callAnthropic(caseText, apiKey));
+    const { text: raw, citations } = await withRequestDedup(dedupeKey, () =>
+      callAnthropic(caseText, apiKey),
+    );
     const anthropicDurationMs = Date.now() - anthropicStartMs;
-    logExternalApiCall(requestId, "case-summary", "anthropic", 200, anthropicDurationMs);
+    logExternalApiCall(
+      requestId,
+      "case-summary",
+      "anthropic",
+      200,
+      anthropicDurationMs,
+    );
 
     let result;
     try {
       result = JSON.parse(raw);
     } catch {
-      logValidationError(requestId, "case-summary", "Could not parse structured summary", "ai_output");
-      return res.status(422).json({ error: "Could not parse structured summary." });
+      logValidationError(
+        requestId,
+        "case-summary",
+        "Could not parse structured summary",
+        "ai_output",
+      );
+      return res
+        .status(422)
+        .json({ error: "Could not parse structured summary." });
     }
 
     const normalized = normalizeSummaryResult(result);
     if (!normalized) {
-      logValidationError(requestId, "case-summary", "Structured summary did not match expected schema", "ai_output");
-      return res.status(422).json({ error: "Structured summary was incomplete." });
+      logValidationError(
+        requestId,
+        "case-summary",
+        "Structured summary did not match expected schema",
+        "ai_output",
+      );
+      return res
+        .status(422)
+        .json({ error: "Structured summary was incomplete." });
     }
 
     const responsePayload = { ...normalized, citations };
@@ -215,18 +290,32 @@ export default async function handler(req, res) {
     if (redis) {
       try {
         const timeoutSet = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS),
         );
-        await Promise.race([redis.setex(cacheKey, 7 * 24 * 60 * 60, JSON.stringify(responsePayload)), timeoutSet]);
+        await Promise.race([
+          redis.setex(
+            cacheKey,
+            7 * 24 * 60 * 60,
+            JSON.stringify(responsePayload),
+          ),
+          timeoutSet,
+        ]);
       } catch (err) {}
     }
 
     logSuccess(requestId, "case-summary", 200, Date.now() - startMs, rlResult);
     return res.status(200).json(responsePayload);
   } catch (err) {
-    const statusCode = err.status ? (err.status >= 500 ? 502 : err.status) : 500;
+    const statusCode = err.status
+      ? err.status >= 500
+        ? 502
+        : err.status
+      : 500;
     logError(requestId, "case-summary", err, statusCode, Date.now() - startMs);
-    if (err.status) return res.status(statusCode).json({ error: "Summary service temporarily unavailable." });
+    if (err.status)
+      return res
+        .status(statusCode)
+        .json({ error: "Summary service temporarily unavailable." });
     return res.status(500).json({ error: "Internal server error" });
   }
 }

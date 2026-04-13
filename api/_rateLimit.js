@@ -15,19 +15,15 @@ export let redis = null;
 
 // Support both direct Upstash env vars and Vercel KV integration env vars.
 const redisUrl =
-  process.env.UPSTASH_REDIS_REST_URL ||
-  process.env.KV_REST_API_URL ||
-  "";
+  process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || "";
 const redisToken =
-  process.env.UPSTASH_REDIS_REST_TOKEN ||
-  process.env.KV_REST_API_TOKEN ||
-  "";
+  process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || "";
 
 export const redisConfigSource = process.env.UPSTASH_REDIS_REST_URL
   ? "UPSTASH_REDIS_REST_*"
   : process.env.KV_REST_API_URL
-  ? "KV_REST_API_*"
-  : "none";
+    ? "KV_REST_API_*"
+    : "none";
 
 // Initialize Redis client only if credentials are provided
 if (redisUrl && redisToken) {
@@ -50,13 +46,16 @@ export async function checkRateLimit(ip, endpoint) {
   const now = Date.now();
   const prefix = endpoint ? `rl:${endpoint}` : "rl";
   const key = `${prefix}:${ip ?? "unknown"}`;
-  const maxRequests = endpoint === "retrieval-health" ? RETRIEVAL_HEALTH_MAX_REQUESTS : MAX_REQUESTS;
+  const maxRequests =
+    endpoint === "retrieval-health"
+      ? RETRIEVAL_HEALTH_MAX_REQUESTS
+      : MAX_REQUESTS;
 
   try {
     // Try Redis if available
     if (redis) {
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)
+        setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS),
       );
       const hitsJson = await Promise.race([redis.get(key), timeout]);
       let hits = hitsJson ? JSON.parse(hitsJson) : [];
@@ -73,13 +72,21 @@ export async function checkRateLimit(ip, endpoint) {
       hits.push(now);
       await Promise.race([
         redis.setex(key, Math.ceil(WINDOW_MS / 1000), JSON.stringify(hits)),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Redis timeout")), REDIS_TIMEOUT_MS)),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Redis timeout")),
+            REDIS_TIMEOUT_MS,
+          ),
+        ),
       ]);
 
       return { allowed: true, remaining: maxRequests - hits.length };
     }
   } catch (err) {
-    console.error("Redis rate limit check failed, falling back to in-memory:", err.message);
+    console.error(
+      "Redis rate limit check failed, falling back to in-memory:",
+      err.message,
+    );
   }
 
   // Fallback: in-memory store (development or Redis unavailable)
@@ -130,7 +137,9 @@ export function rateLimitHeaders(result) {
   if (result.resetAt) {
     const resetEpoch = Math.ceil(new Date(result.resetAt).getTime() / 1000);
     headers["X-RateLimit-Reset"] = String(resetEpoch);
-    headers["Retry-After"] = String(Math.max(0, resetEpoch - Math.ceil(Date.now() / 1000)));
+    headers["Retry-After"] = String(
+      Math.max(0, resetEpoch - Math.ceil(Date.now() / 1000)),
+    );
   }
   return headers;
 }

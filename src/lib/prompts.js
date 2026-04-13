@@ -7,19 +7,19 @@ const courtMap = {
 
 // Maps province names → preferred court codes for the jurisdiction filter instruction
 const JURISDICTION_COURTS = {
-  "Ontario":                   "ONCA, ONSC, ONCJ",
-  "British Columbia":          "BCCA, BCSC, BCPC",
-  "Alberta":                   "ABCA, ABKB, ABPC",
-  "Quebec":                    "QCCA, QCCS, QCCQ",
-  "Manitoba":                  "MBCA, MBQB, MBPC",
-  "Saskatchewan":              "SKCA, SKQB, SKPC",
-  "Nova Scotia":               "NSCA, NSSC, NSPC",
-  "New Brunswick":             "NBCA, NBQB, NBPC",
+  Ontario: "ONCA, ONSC, ONCJ",
+  "British Columbia": "BCCA, BCSC, BCPC",
+  Alberta: "ABCA, ABKB, ABPC",
+  Quebec: "QCCA, QCCS, QCCQ",
+  Manitoba: "MBCA, MBQB, MBPC",
+  Saskatchewan: "SKCA, SKQB, SKPC",
+  "Nova Scotia": "NSCA, NSSC, NSPC",
+  "New Brunswick": "NBCA, NBQB, NBPC",
   "Newfoundland and Labrador": "NLCA, NLSC, NLPC",
-  "Prince Edward Island":      "PECA",
+  "Prince Edward Island": "PECA",
 };
 
-const yearMap = { "5": 5, "10": 10, "20": 20 };
+const yearMap = { 5: 5, 10: 10, 20: 20 };
 
 export function buildSystemPrompt(filters = {}) {
   let filterInstructions = "";
@@ -35,7 +35,8 @@ export function buildSystemPrompt(filters = {}) {
   }
   if (filters.dateRange && filters.dateRange !== "all") {
     const years = yearMap[filters.dateRange];
-    if (years) filterInstructions += ` Focus on cases from the last ${years} years.`;
+    if (years)
+      filterInstructions += ` Focus on cases from the last ${years} years.`;
   }
 
   // Determine which law types are enabled

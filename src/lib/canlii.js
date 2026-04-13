@@ -6,42 +6,100 @@ const CANLII_WEB = "https://www.canlii.org";
 
 // Maps court abbreviations → CanLII web URL path (jurisdiction/court)
 export const COURT_WEB_MAP = {
-  SCC: "ca/scc",   CSC: "ca/scc",
-  FCA: "ca/fca",   FCC: "ca/fct",   FCT: "ca/fct",
-  ONCA: "on/onca", ONSC: "on/onsc", ONCJ: "on/oncj", ONDC: "on/ondc",
-  BCCA: "bc/bcca", BCSC: "bc/bcsc", BCPC: "bc/bcpc",
-  ABCA: "ab/abca", ABKB: "ab/abkb", ABQB: "ab/abqb", ABPC: "ab/abpc",
-  QCCA: "qc/qcca", QCCS: "qc/qccs", QCCQ: "qc/qccq",
-  MBCA: "mb/mbca", MBQB: "mb/mbqb", MBPC: "mb/mbpc",
-  SKCA: "sk/skca", SKQB: "sk/skqb", SKPC: "sk/skpc",
-  NSCA: "ns/nsca", NSSC: "ns/nssc", NSPC: "ns/nspc",
-  NBCA: "nb/nbca", NBQB: "nb/nbqb", NBPC: "nb/nbpc",
-  PECA: "pe/peca", PEICA: "pe/peca",
-  NLCA: "nl/nlca", NLSC: "nl/nlsc", NLPC: "nl/nlpc",
-  NWTCA: "nt/nwtca", NWTSC: "nt/nwtsc",
-  NUCJ: "nu/nucj",  NUCI: "nu/nucj",
-  YKCA: "yk/ykca",  YKSC: "yk/yksc", YKPC: "yk/ykpc",
-  TCC: "ca/tcc",    CMAC: "ca/cmac",
+  SCC: "ca/scc",
+  CSC: "ca/scc",
+  FCA: "ca/fca",
+  FCC: "ca/fct",
+  FCT: "ca/fct",
+  ONCA: "on/onca",
+  ONSC: "on/onsc",
+  ONCJ: "on/oncj",
+  ONDC: "on/ondc",
+  BCCA: "bc/bcca",
+  BCSC: "bc/bcsc",
+  BCPC: "bc/bcpc",
+  ABCA: "ab/abca",
+  ABKB: "ab/abkb",
+  ABQB: "ab/abqb",
+  ABPC: "ab/abpc",
+  QCCA: "qc/qcca",
+  QCCS: "qc/qccs",
+  QCCQ: "qc/qccq",
+  MBCA: "mb/mbca",
+  MBQB: "mb/mbqb",
+  MBPC: "mb/mbpc",
+  SKCA: "sk/skca",
+  SKQB: "sk/skqb",
+  SKPC: "sk/skpc",
+  NSCA: "ns/nsca",
+  NSSC: "ns/nssc",
+  NSPC: "ns/nspc",
+  NBCA: "nb/nbca",
+  NBQB: "nb/nbqb",
+  NBPC: "nb/nbpc",
+  PECA: "pe/peca",
+  PEICA: "pe/peca",
+  NLCA: "nl/nlca",
+  NLSC: "nl/nlsc",
+  NLPC: "nl/nlpc",
+  NWTCA: "nt/nwtca",
+  NWTSC: "nt/nwtsc",
+  NUCJ: "nu/nucj",
+  NUCI: "nu/nucj",
+  YKCA: "yk/ykca",
+  YKSC: "yk/yksc",
+  YKPC: "yk/ykpc",
+  TCC: "ca/tcc",
+  CMAC: "ca/cmac",
 };
 
 // Maps court abbreviations → CanLII API database ID (flat, from /v1/caseBrowse/en/)
 export const COURT_API_MAP = {
-  SCC: "csc-scc",  CSC: "csc-scc",
-  FCA: "fca",      FCC: "fct",      FCT: "fct",
-  ONCA: "onca",    ONSC: "onsc",    ONCJ: "oncj",    ONDC: "ondc",
-  BCCA: "bcca",    BCSC: "bcsc",    BCPC: "bcpc",
-  ABCA: "abca",    ABKB: "abkb",    ABQB: "abqb",    ABPC: "abpc",
-  QCCA: "qcca",    QCCS: "qccs",    QCCQ: "qccq",
-  MBCA: "mbca",    MBQB: "mbqb",    MBPC: "mbpc",
-  SKCA: "skca",    SKQB: "skqb",    SKPC: "skpc",
-  NSCA: "nsca",    NSSC: "nssc",    NSPC: "nspc",
-  NBCA: "nbca",    NBQB: "nbqb",    NBPC: "nbpc",
-  PECA: "peca",    PEICA: "peca",
-  NLCA: "nlca",    NLSC: "nlsc",    NLPC: "nlpc",
-  NWTCA: "nwtca",  NWTSC: "nwtsc",
-  NUCJ: "nucj",    NUCI: "nucj",
-  YKCA: "ykca",    YKSC: "yksc",    YKPC: "ykpc",
-  TCC: "tcc",      CMAC: "cmac",
+  SCC: "csc-scc",
+  CSC: "csc-scc",
+  FCA: "fca",
+  FCC: "fct",
+  FCT: "fct",
+  ONCA: "onca",
+  ONSC: "onsc",
+  ONCJ: "oncj",
+  ONDC: "ondc",
+  BCCA: "bcca",
+  BCSC: "bcsc",
+  BCPC: "bcpc",
+  ABCA: "abca",
+  ABKB: "abkb",
+  ABQB: "abqb",
+  ABPC: "abpc",
+  QCCA: "qcca",
+  QCCS: "qccs",
+  QCCQ: "qccq",
+  MBCA: "mbca",
+  MBQB: "mbqb",
+  MBPC: "mbpc",
+  SKCA: "skca",
+  SKQB: "skqb",
+  SKPC: "skpc",
+  NSCA: "nsca",
+  NSSC: "nssc",
+  NSPC: "nspc",
+  NBCA: "nbca",
+  NBQB: "nbqb",
+  NBPC: "nbpc",
+  PECA: "peca",
+  PEICA: "peca",
+  NLCA: "nlca",
+  NLSC: "nlsc",
+  NLPC: "nlpc",
+  NWTCA: "nwtca",
+  NWTSC: "nwtsc",
+  NUCJ: "nucj",
+  NUCI: "nucj",
+  YKCA: "ykca",
+  YKSC: "yksc",
+  YKPC: "ykpc",
+  TCC: "tcc",
+  CMAC: "cmac",
 };
 
 // Keep COURT_DB_MAP as alias for backwards compat
@@ -55,10 +113,32 @@ function normalizeCitationInput(citation) {
 
 function normalizePartiesKey(parties) {
   const STOP_WORDS = new Set([
-    "r", "v", "the", "her", "his", "majesty", "queen", "king",
-    "attorney", "general", "and", "of", "in", "a", "an",
-    "ltd", "inc", "corp", "co", "et", "al",
-    "des", "du", "le", "la", "les",
+    "r",
+    "v",
+    "the",
+    "her",
+    "his",
+    "majesty",
+    "queen",
+    "king",
+    "attorney",
+    "general",
+    "and",
+    "of",
+    "in",
+    "a",
+    "an",
+    "ltd",
+    "inc",
+    "corp",
+    "co",
+    "et",
+    "al",
+    "des",
+    "du",
+    "le",
+    "la",
+    "les",
   ]);
 
   return String(parties || "")
@@ -99,7 +179,9 @@ export function parseCitation(citation) {
   const trimmed = normalizeCitationInput(citation);
 
   // 1. Standard neutral citation: "Parties, YYYY COURT NUM" or bare "YYYY COURT NUM"
-  const neutral = trimmed.match(/^(?:(.+?)(?:,\s*|\s+))?(\d{4})\s+([A-Z]{2,8})\s+(\d+)$/);
+  const neutral = trimmed.match(
+    /^(?:(.+?)(?:,\s*|\s+))?(\d{4})\s+([A-Z]{2,8})\s+(\d+)$/,
+  );
   if (neutral) {
     const [, parties, year, courtCode, number] = neutral;
     const upper = courtCode.toUpperCase();
@@ -115,7 +197,9 @@ export function parseCitation(citation) {
   }
 
   // 2. CanLII neutral citation: "Parties, YYYY CanLII NUM (COURT)" or bare "YYYY CanLII NUM (COURT)"
-  const canliiNeutral = trimmed.match(/^(?:(.+?)(?:,\s*|\s+))?(\d{4})\s+CanLII\s+(\d+)\s+\(([A-Z]{2,8})\)$/i);
+  const canliiNeutral = trimmed.match(
+    /^(?:(.+?)(?:,\s*|\s+))?(\d{4})\s+CanLII\s+(\d+)\s+\(([A-Z]{2,8})\)$/i,
+  );
   if (canliiNeutral) {
     const [, parties, year, number, courtCode] = canliiNeutral;
     const upper = courtCode.toUpperCase();
@@ -131,7 +215,9 @@ export function parseCitation(citation) {
   }
 
   // 3. SCR citation: "Parties, [YYYY] N SCR NNN" or "YYYY N SCR NNN"
-  const scr = trimmed.match(/^(?:(.+?)(?:,\s*|\s+))?\[?(\d{4})\]?\s+\d+\s+SCR\s+\d+$/i);
+  const scr = trimmed.match(
+    /^(?:(.+?)(?:,\s*|\s+))?\[?(\d{4})\]?\s+\d+\s+SCR\s+\d+$/i,
+  );
   if (scr) {
     const [, parties, year] = scr;
     return {
@@ -193,14 +279,37 @@ export function partiesMatch(submittedParties, canliiTitle) {
   if (!canliiTitle) return false;
 
   const STOP_WORDS = new Set([
-    "r", "v", "the", "her", "his", "majesty", "queen", "king",
-    "attorney", "general", "and", "of", "in", "a", "an",
-    "ltd", "inc", "corp", "co", "et", "al",
-    "des", "du", "le", "la", "les",
+    "r",
+    "v",
+    "the",
+    "her",
+    "his",
+    "majesty",
+    "queen",
+    "king",
+    "attorney",
+    "general",
+    "and",
+    "of",
+    "in",
+    "a",
+    "an",
+    "ltd",
+    "inc",
+    "corp",
+    "co",
+    "et",
+    "al",
+    "des",
+    "du",
+    "le",
+    "la",
+    "les",
   ]);
 
   const tokenize = (s) =>
-    s.toLowerCase()
+    s
+      .toLowerCase()
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)
       .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
@@ -231,7 +340,12 @@ export async function lookupCase(citation, apiKey) {
     return { status: "unknown_court", searchUrl: buildSearchUrl(citation) };
   }
 
-  const caseId = buildCaseId({ year: parsed.year, courtCode: parsed.courtCode, number: parsed.number, isLegacy: parsed.isLegacy });
+  const caseId = buildCaseId({
+    year: parsed.year,
+    courtCode: parsed.courtCode,
+    number: parsed.number,
+    isLegacy: parsed.isLegacy,
+  });
   if (!caseId) {
     return { status: "unparseable", searchUrl: buildSearchUrl(citation) };
   }

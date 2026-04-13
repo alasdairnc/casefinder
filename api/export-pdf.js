@@ -1,7 +1,12 @@
 // /api/export-pdf.js — Vercel Serverless Function
 // Generates a branded CaseDive PDF from analysis results.
 
-import { redis, checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
+import {
+  redis,
+  checkRateLimit,
+  getClientIp,
+  rateLimitHeaders,
+} from "./_rateLimit.js";
 import PDFDocument from "pdfkit";
 import { randomUUID, createHash } from "crypto";
 import {
@@ -30,8 +35,8 @@ function sanitizePdfText(str) {
   if (typeof str !== "string") return "";
   return str
     .replace(/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/g, "") // control chars (keep \n \t)
-    .replace(/%%EOF/gi, "")                               // PDF end-of-file marker
-    .slice(0, 20_000);                                    // hard cap per field
+    .replace(/%%EOF/gi, "") // PDF end-of-file marker
+    .slice(0, 20_000); // hard cap per field
 }
 
 // Strip HTML tags and sanitize a string field for PDF insertion.
@@ -40,9 +45,9 @@ function cleanField(str) {
   return sanitizePdfText(str.replace(/<\/?[^>]+>/g, ""));
 }
 
-const MAX_SUMMARY_LEN   = 5_000;
-const MAX_ANALYSIS_LEN  = 10_000;
-const MAX_ARRAY_ITEMS   = 20;
+const MAX_SUMMARY_LEN = 5_000;
+const MAX_ANALYSIS_LEN = 10_000;
+const MAX_ARRAY_ITEMS = 20;
 const MAX_CASE_LAW_ITEMS = 10;
 
 const SECTIONS = [
@@ -59,23 +64,30 @@ function hexToRgb(hex) {
 
 function drawDivider(doc, margin) {
   const [r, g, b] = hexToRgb(BORDER);
-  doc.moveTo(margin, doc.y).lineTo(doc.page.width - margin, doc.y).strokeColor(r, g, b).lineWidth(0.5).stroke();
+  doc
+    .moveTo(margin, doc.y)
+    .lineTo(doc.page.width - margin, doc.y)
+    .strokeColor(r, g, b)
+    .lineWidth(0.5)
+    .stroke();
   doc.moveDown(0.5);
 }
 
 export default async function handler(req, res) {
-  const requestId = req.headers['x-vercel-id'] || randomUUID();
+  const requestId = req.headers["x-vercel-id"] || randomUUID();
   const startMs = Date.now();
   logRequestStart(req, "export-pdf", requestId);
   applyStandardApiHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
   if (handleOptionsAndMethod(req, res, "POST")) return;
-  if (!validateJsonRequest(req, res, {
-    requestId,
-    endpoint: "export-pdf",
-    maxBytes: 200_000,
-    logValidationError,
-  })) {
+  if (
+    !validateJsonRequest(req, res, {
+      requestId,
+      endpoint: "export-pdf",
+      maxBytes: 200_000,
+      logValidationError,
+    })
+  ) {
     return;
   }
 
@@ -84,12 +96,19 @@ export default async function handler(req, res) {
   const rlHeaders = rateLimitHeaders(rlResult);
   Object.entries(rlHeaders).forEach(([k, v]) => res.setHeader(k, v));
   if (!rlResult.allowed) {
-    return res.status(429).json({ error: "Rate limit exceeded. Please try again later." });
+    return res
+      .status(429)
+      .json({ error: "Rate limit exceeded. Please try again later." });
   }
 
   const body = req.body;
   if (!body || typeof body !== "object") {
-    logValidationError(requestId, "export-pdf", "Request body is required", "body");
+    logValidationError(
+      requestId,
+      "export-pdf",
+      "Request body is required",
+      "body",
+    );
     return res.status(400).json({ error: "Request body is required" });
   }
 
@@ -97,38 +116,75 @@ export default async function handler(req, res) {
   if (redis) {
     try {
       const timeoutGet = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS),
       );
       const cached = await Promise.race([redis.get(cacheKey), timeoutGet]);
       if (cached) {
         const pdfBuffer = Buffer.from(cached, "base64");
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", 'attachment; filename="casedive-analysis.pdf"');
+        res.setHeader(
+          "Content-Disposition",
+          'attachment; filename="casedive-analysis.pdf"',
+        );
         res.setHeader("Content-Length", pdfBuffer.length);
-        logSuccess(requestId, "export-pdf", 200, Date.now() - startMs, rlResult, { cached: true, pdfSize: pdfBuffer.length });
+        logSuccess(
+          requestId,
+          "export-pdf",
+          200,
+          Date.now() - startMs,
+          rlResult,
+          { cached: true, pdfSize: pdfBuffer.length },
+        );
         return res.status(200).send(pdfBuffer);
       }
     } catch (err) {}
   }
 
-  let { scenario, summary, criminal_code, case_law, civil_law, charter, analysis, verifications } = body;
+  let {
+    scenario,
+    summary,
+    criminal_code,
+    case_law,
+    civil_law,
+    charter,
+    analysis,
+    verifications,
+  } = body;
   scenario = cleanField(scenario || "").slice(0, 2_000);
 
-  if (!summary && !analysis && !criminal_code && !case_law && !civil_law && !charter) {
-    logValidationError(requestId, "export-pdf", "Results data is required", "data");
+  if (
+    !summary &&
+    !analysis &&
+    !criminal_code &&
+    !case_law &&
+    !civil_law &&
+    !charter
+  ) {
+    logValidationError(
+      requestId,
+      "export-pdf",
+      "Results data is required",
+      "data",
+    );
     return res.status(400).json({ error: "Results data is required" });
   }
 
   // Sanitize and cap all text fields before PDF insertion
-  summary  = cleanField(summary).slice(0, MAX_SUMMARY_LEN);
+  summary = cleanField(summary).slice(0, MAX_SUMMARY_LEN);
   analysis = cleanField(analysis).slice(0, MAX_ANALYSIS_LEN);
-  if (Array.isArray(criminal_code)) criminal_code = criminal_code.slice(0, MAX_ARRAY_ITEMS);
-  if (Array.isArray(case_law))      case_law      = case_law.slice(0, MAX_CASE_LAW_ITEMS);
-  if (Array.isArray(civil_law))     civil_law      = civil_law.slice(0, MAX_ARRAY_ITEMS);
-  if (Array.isArray(charter))       charter        = charter.slice(0, MAX_ARRAY_ITEMS);
+  if (Array.isArray(criminal_code))
+    criminal_code = criminal_code.slice(0, MAX_ARRAY_ITEMS);
+  if (Array.isArray(case_law)) case_law = case_law.slice(0, MAX_CASE_LAW_ITEMS);
+  if (Array.isArray(civil_law)) civil_law = civil_law.slice(0, MAX_ARRAY_ITEMS);
+  if (Array.isArray(charter)) charter = charter.slice(0, MAX_ARRAY_ITEMS);
 
-  const verifs = verifications && typeof verifications === "object" ? verifications : {};
-  const dateStr = new Date().toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
+  const verifs =
+    verifications && typeof verifications === "object" ? verifications : {};
+  const dateStr = new Date().toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   // Build PDF in memory
   const chunks = [];
@@ -231,15 +287,21 @@ export default async function handler(req, res) {
       }
 
       const citation = sanitizePdfText(item.citation || item.section || "");
-      const summary_text = sanitizePdfText(item.summary || item.description || "");
-      const isVerified = key === "case_law" && verifs[citation]?.status === "verified";
+      const summary_text = sanitizePdfText(
+        item.summary || item.description || "",
+      );
+      const isVerified =
+        key === "case_law" && verifs[citation]?.status === "verified";
 
       // Citation line
       doc
         .font("Times-Bold")
         .fontSize(11)
         .fillColor(tr, tg, tb)
-        .text(citation, margin, doc.y, { continued: isVerified, width: pageWidth });
+        .text(citation, margin, doc.y, {
+          continued: isVerified,
+          width: pageWidth,
+        });
 
       if (isVerified) {
         doc
@@ -255,7 +317,10 @@ export default async function handler(req, res) {
           .font("Times-Roman")
           .fontSize(11)
           .fillColor(tr, tg, tb)
-          .text(summary_text, margin, doc.y + 2, { width: pageWidth, lineGap: 2 });
+          .text(summary_text, margin, doc.y + 2, {
+            width: pageWidth,
+            lineGap: 2,
+          });
       }
 
       doc.moveDown(0.8);
@@ -276,16 +341,16 @@ export default async function handler(req, res) {
 
     // Accent bar
     const [abr, abg, abb] = hexToRgb(ACCENT);
-    doc
-      .rect(margin, doc.y, 2, 14)
-      .fillColor(abr, abg, abb)
-      .fill();
+    doc.rect(margin, doc.y, 2, 14).fillColor(abr, abg, abb).fill();
 
     doc
       .font("Times-Roman")
       .fontSize(12)
       .fillColor(tr, tg, tb)
-      .text(analysis, margin + 14, doc.y, { width: pageWidth - 14, lineGap: 3 });
+      .text(analysis, margin + 14, doc.y, {
+        width: pageWidth - 14,
+        lineGap: 3,
+      });
 
     doc.moveDown(1);
   }
@@ -303,7 +368,7 @@ export default async function handler(req, res) {
       "Educational tool only — not legal advice. Verify citations at canlii.org",
       margin,
       footerY,
-      { width: pageWidth, align: "center" }
+      { width: pageWidth, align: "center" },
     );
 
   doc.end();
@@ -315,16 +380,24 @@ export default async function handler(req, res) {
   if (redis) {
     try {
       const timeoutSet = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+        setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS),
       );
-      await Promise.race([redis.setex(cacheKey, 7 * 24 * 60 * 60, pdfBuffer.toString("base64")), timeoutSet]);
+      await Promise.race([
+        redis.setex(cacheKey, 7 * 24 * 60 * 60, pdfBuffer.toString("base64")),
+        timeoutSet,
+      ]);
     } catch (err) {}
   }
 
   res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", 'attachment; filename="casedive-analysis.pdf"');
+  res.setHeader(
+    "Content-Disposition",
+    'attachment; filename="casedive-analysis.pdf"',
+  );
   res.setHeader("Content-Length", pdfBuffer.length);
-  
-  logSuccess(requestId, "export-pdf", 200, Date.now() - startMs, rlResult, { pdfSize: pdfBuffer.length });
+
+  logSuccess(requestId, "export-pdf", 200, Date.now() - startMs, rlResult, {
+    pdfSize: pdfBuffer.length,
+  });
   return res.status(200).send(pdfBuffer);
 }

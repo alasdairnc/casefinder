@@ -1,11 +1,59 @@
 // Shared text utilities for retrieval and ranking pipelines.
 
 export const RANK_STOP_WORDS = new Set([
-  "the", "and", "for", "with", "that", "this", "from", "into", "were", "was", "when", "where",
-  "while", "have", "has", "had", "over", "under", "they", "their", "them", "than", "then", "been",
-  "about", "would", "could", "should", "after", "before", "because", "through", "between",
-  "driver", "person", "police", "case", "law", "court", "officer", "crown", "defendant", "accused",
-  "facts", "held", "found", "order", "section", "said", "made", "day", "time", "year",
+  "the",
+  "and",
+  "for",
+  "with",
+  "that",
+  "this",
+  "from",
+  "into",
+  "were",
+  "was",
+  "when",
+  "where",
+  "while",
+  "have",
+  "has",
+  "had",
+  "over",
+  "under",
+  "they",
+  "their",
+  "them",
+  "than",
+  "then",
+  "been",
+  "about",
+  "would",
+  "could",
+  "should",
+  "after",
+  "before",
+  "because",
+  "through",
+  "between",
+  "driver",
+  "person",
+  "police",
+  "case",
+  "law",
+  "court",
+  "officer",
+  "crown",
+  "defendant",
+  "accused",
+  "facts",
+  "held",
+  "found",
+  "order",
+  "section",
+  "said",
+  "made",
+  "day",
+  "time",
+  "year",
 ]);
 
 export const SIMPLE_STOP_WORDS = new Set([
@@ -80,7 +128,12 @@ export function normalizeForMatch(text) {
 
 export function tokenizeWithExpansion(
   text,
-  { stopWords = new Set(), minLength = 3, returnType = "array", includeDelayAliases = false } = {}
+  {
+    stopWords = new Set(),
+    minLength = 3,
+    returnType = "array",
+    includeDelayAliases = false,
+  } = {},
 ) {
   const rawTokens = String(text || "")
     .toLowerCase()
@@ -97,12 +150,18 @@ export function tokenizeWithExpansion(
   for (const token of rawTokens) {
     expanded.add(token);
 
-    if (token.endsWith("ies") && token.length > 4) expanded.add(`${token.slice(0, -3)}y`);
-    if (token.endsWith("ied") && token.length > 4) expanded.add(`${token.slice(0, -3)}y`);
-    if (token.endsWith("ed") && token.length > 4) expanded.add(token.slice(0, -2));
-    if (token.endsWith("ing") && token.length > 5) expanded.add(token.slice(0, -3));
-    if (token.endsWith("es") && token.length > 4) expanded.add(token.slice(0, -2));
-    if (token.endsWith("s") && token.length > 4) expanded.add(token.slice(0, -1));
+    if (token.endsWith("ies") && token.length > 4)
+      expanded.add(`${token.slice(0, -3)}y`);
+    if (token.endsWith("ied") && token.length > 4)
+      expanded.add(`${token.slice(0, -3)}y`);
+    if (token.endsWith("ed") && token.length > 4)
+      expanded.add(token.slice(0, -2));
+    if (token.endsWith("ing") && token.length > 5)
+      expanded.add(token.slice(0, -3));
+    if (token.endsWith("es") && token.length > 4)
+      expanded.add(token.slice(0, -2));
+    if (token.endsWith("s") && token.length > 4)
+      expanded.add(token.slice(0, -1));
 
     const aliasList = aliases[token];
     if (Array.isArray(aliasList)) {

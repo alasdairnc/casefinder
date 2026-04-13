@@ -27,9 +27,12 @@ export function logRequestStart(req, endpoint, requestId) {
       endpoint,
       method: req.method,
       url: req.url,
-      clientIp: req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown",
-      userAgent: req.headers["user-agent"] ? req.headers["user-agent"].substring(0, 100) : "unknown",
-    })
+      clientIp:
+        req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown",
+      userAgent: req.headers["user-agent"]
+        ? req.headers["user-agent"].substring(0, 100)
+        : "unknown",
+    }),
   );
 }
 
@@ -49,7 +52,7 @@ export function logRateLimitCheck(requestId, endpoint, rlResult, clientIp) {
       clientIp,
       rateLimitRemaining: rlResult.remaining,
       rateLimitResetAt: rlResult.resetAt,
-    })
+    }),
   );
 }
 
@@ -68,7 +71,7 @@ export function logValidationError(requestId, endpoint, message, field = null) {
       endpoint,
       message,
       field,
-    })
+    }),
   );
 }
 
@@ -85,7 +88,7 @@ export function logCacheHit(requestId, endpoint, cacheKey) {
       event: "cache_hit",
       endpoint,
       cacheKeyHash: cacheKey.substring(0, 16), // log first 16 chars only
-    })
+    }),
   );
 }
 
@@ -100,7 +103,7 @@ export function logCacheMiss(requestId, endpoint) {
       requestId,
       event: "cache_miss",
       endpoint,
-    })
+    }),
   );
 }
 
@@ -113,7 +116,14 @@ export function logCacheMiss(requestId, endpoint) {
  * @param {number} durationMs - Request duration in milliseconds
  * @param {Object} opts - Optional additional data
  */
-export function logExternalApiCall(requestId, endpoint, apiName, statusCode, durationMs, opts = {}) {
+export function logExternalApiCall(
+  requestId,
+  endpoint,
+  apiName,
+  statusCode,
+  durationMs,
+  opts = {},
+) {
   console.log(
     createLog({
       requestId,
@@ -123,7 +133,7 @@ export function logExternalApiCall(requestId, endpoint, apiName, statusCode, dur
       statusCode,
       durationMs,
       ...opts,
-    })
+    }),
   );
 }
 
@@ -136,7 +146,14 @@ export function logExternalApiCall(requestId, endpoint, apiName, statusCode, dur
  * @param {Object} rlResult - Rate limit result (has remaining count)
  * @param {Object} opts - Optional additional data (e.g., itemCount, cacheUsed)
  */
-export function logSuccess(requestId, endpoint, statusCode, durationMs, rlResult, opts = {}) {
+export function logSuccess(
+  requestId,
+  endpoint,
+  statusCode,
+  durationMs,
+  rlResult,
+  opts = {},
+) {
   console.log(
     createLog({
       requestId,
@@ -146,7 +163,7 @@ export function logSuccess(requestId, endpoint, statusCode, durationMs, rlResult
       durationMs,
       rateLimitRemaining: rlResult.remaining,
       ...opts,
-    })
+    }),
   );
 }
 
@@ -159,7 +176,14 @@ export function logSuccess(requestId, endpoint, statusCode, durationMs, rlResult
  * @param {number} durationMs - Request duration in milliseconds
  * @param {Object} opts - Optional additional data (e.g., errorType, isRetry)
  */
-export function logError(requestId, endpoint, error, statusCode, durationMs, opts = {}) {
+export function logError(
+  requestId,
+  endpoint,
+  error,
+  statusCode,
+  durationMs,
+  opts = {},
+) {
   console.log(
     createLog({
       requestId,
@@ -171,7 +195,7 @@ export function logError(requestId, endpoint, error, statusCode, durationMs, opt
       errorType: error.constructor.name,
       errorStatus: error.status || null,
       ...opts,
-    })
+    }),
   );
 }
 
@@ -181,5 +205,7 @@ export function logError(requestId, endpoint, error, statusCode, durationMs, opt
  * @returns {string} Client IP address
  */
 export function getClientIpForLogging(req) {
-  return req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown";
+  return (
+    req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown"
+  );
 }

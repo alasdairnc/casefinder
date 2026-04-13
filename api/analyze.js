@@ -6,7 +6,12 @@ import { initSentry, Sentry } from "./_sentry.js";
 initSentry();
 import { buildSystemPrompt } from "../src/lib/prompts.js";
 import { MASTER_CASE_LAW_DB } from "../src/lib/caselaw/index.js";
-import { checkRateLimit, getClientIp, rateLimitHeaders, redis } from "./_rateLimit.js";
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitHeaders,
+  redis,
+} from "./_rateLimit.js";
 import { runCaseLawRetrieval } from "./_retrievalOrchestrator.js";
 import { logRetrievalMetrics } from "./_retrievalMetrics.js";
 import {
@@ -38,7 +43,11 @@ function logRetrievalMetricsAsync(payload) {
   Promise.resolve(logRetrievalMetrics(payload)).catch(() => {});
 }
 
-function computeTelemetryReason({ retrievalError = false, reason = "", finalCaseLawCount = 0 }) {
+function computeTelemetryReason({
+  retrievalError = false,
+  reason = "",
+  finalCaseLawCount = 0,
+}) {
   if (retrievalError === true) return "retrieval_error";
   if (reason === "missing_api_key") return "missing_api_key";
   return finalCaseLawCount > 0 ? "verified_results" : "no_verified";
@@ -54,12 +63,19 @@ const CACHE_TTL_S = ANALYZE_CACHE_TTL_SECONDS;
 
 function cacheKey(scenario, filters) {
   return (
-    "cache:analyze:v3:" + createHash("sha256").update(scenario + JSON.stringify(filters)).digest("hex")
+    "cache:analyze:v3:" +
+    createHash("sha256")
+      .update(scenario + JSON.stringify(filters))
+      .digest("hex")
   );
 }
 
 function ensureMetaContainer(result) {
-  if (!result.meta || typeof result.meta !== "object" || Array.isArray(result.meta)) {
+  if (
+    !result.meta ||
+    typeof result.meta !== "object" ||
+    Array.isArray(result.meta)
+  ) {
     result.meta = {};
   }
   return result.meta;
@@ -80,14 +96,18 @@ async function callAnthropic(messages, system, apiKey) {
     body: JSON.stringify({
       model: ANTHROPIC_MODEL_ID,
       max_tokens: 1800,
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+      system: [
+        { type: "text", text: system, cache_control: { type: "ephemeral" } },
+      ],
       messages,
     }),
   });
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    const err = new Error(errData.error?.message || `Anthropic API error: ${response.status}`);
+    const err = new Error(
+      errData.error?.message || `Anthropic API error: ${response.status}`,
+    );
     err.status = response.status;
     throw err;
   }
@@ -112,36 +132,86 @@ function detectScenarioIssueForRanking(scenarioTokens) {
   const hasAny = (tokens) => tokens.some((t) => has(t));
 
   if (
-    (has("km/h") || (hasAny(["pulled", "roadside", "traffic"]) && hasAny(["speed", "speeding"]))) &&
+    (has("km/h") ||
+      (hasAny(["pulled", "roadside", "traffic"]) &&
+        hasAny(["speed", "speeding"]))) &&
     hasAny(["limit", "speed", "speeding", "ticket", "citation", "fine", "over"])
-  ) return "minor_traffic_stop";
-  if (hasAny(["delay", "adjourned", "adjournment", "backlog", "11b", "jordan", "cody"])) return "trial_delay";
-  if (hasAny(["counsel", "lawyer"]) && hasAny(["detained", "detention", "arrested", "arrest"])) return "charter_counsel";
-  if (hasAny(["search", "seizure", "warrant", "privacy", "phone", "device"])) return "charter_search_seizure";
-  if (hasAny(["detained", "detention", "arbitrary", "arrested", "arrest"])) return "charter_detention";
-  if (hasAny(["impaired", "drunk", "breath", "breathalyzer", "ride", "over80"])) return "impaired_driving";
+  )
+    return "minor_traffic_stop";
+  if (
+    hasAny([
+      "delay",
+      "adjourned",
+      "adjournment",
+      "backlog",
+      "11b",
+      "jordan",
+      "cody",
+    ])
+  )
+    return "trial_delay";
+  if (
+    hasAny(["counsel", "lawyer"]) &&
+    hasAny(["detained", "detention", "arrested", "arrest"])
+  )
+    return "charter_counsel";
+  if (hasAny(["search", "seizure", "warrant", "privacy", "phone", "device"]))
+    return "charter_search_seizure";
+  if (hasAny(["detained", "detention", "arbitrary", "arrested", "arrest"]))
+    return "charter_detention";
+  if (hasAny(["impaired", "drunk", "breath", "breathalyzer", "ride", "over80"]))
+    return "impaired_driving";
   if (hasAny(["robbery", "robbed", "mugged", "mugging"])) return "robbery";
-  if (hasAny(["theft", "steal", "stolen", "shoplifting", "shoplift"])) return "theft";
-  if (hasAny(["drug", "cocaine", "fentanyl", "trafficking", "cdsa"])) return "drug_trafficking";
+  if (hasAny(["theft", "steal", "stolen", "shoplifting", "shoplift"]))
+    return "theft";
+  if (hasAny(["drug", "cocaine", "fentanyl", "trafficking", "cdsa"]))
+    return "drug_trafficking";
   if (hasAny(["sexual", "rape", "consent"])) return "sexual_assault";
-  if (hasAny(["assault", "punch", "stab", "weapon", "knife", "fight"])) return "assault";
+  if (hasAny(["assault", "punch", "stab", "weapon", "knife", "fight"]))
+    return "assault";
   return "general_criminal";
 }
 
 function detectCaseDomainsForRanking(item) {
-  const text = `${item?.citation || ""} ${item?.summary || ""} ${item?.matched_content || ""}`.toLowerCase();
+  const text =
+    `${item?.citation || ""} ${item?.summary || ""} ${item?.matched_content || ""}`.toLowerCase();
   const out = new Set();
 
-  if (/\b(jordan|cody|11\(b\)|11b|trial\s+delay|reasonable\s+time|adjournment)\b/.test(text)) out.add("trial_delay");
-  if (/\b(counsel|lawyer|10\(b\)|right\s+to\s+counsel|informational\s+duty|woods)\b/.test(text)) out.add("charter_counsel");
-  if (/\b(search|seizure|warrant|privacy|hunter|marakah|vu|s\.\s*8|section\s*8)\b/.test(text)) out.add("charter_search_seizure");
-  if (/\b(detention|arbitrary|grant|s\.\s*9|section\s*9)\b/.test(text)) out.add("charter_detention");
-  if (/\b(impaired|breath|breathalyzer|roadside|over\s*80)\b/.test(text)) out.add("impaired_driving");
-  if (/\b(robbery|robbed|mugging|mugged|s\.\s*343)\b/.test(text)) out.add("robbery");
+  if (
+    /\b(jordan|cody|11\(b\)|11b|trial\s+delay|reasonable\s+time|adjournment)\b/.test(
+      text,
+    )
+  )
+    out.add("trial_delay");
+  if (
+    /\b(counsel|lawyer|10\(b\)|right\s+to\s+counsel|informational\s+duty|woods)\b/.test(
+      text,
+    )
+  )
+    out.add("charter_counsel");
+  if (
+    /\b(search|seizure|warrant|privacy|hunter|marakah|vu|s\.\s*8|section\s*8)\b/.test(
+      text,
+    )
+  )
+    out.add("charter_search_seizure");
+  if (/\b(detention|arbitrary|grant|s\.\s*9|section\s*9)\b/.test(text))
+    out.add("charter_detention");
+  if (/\b(impaired|breath|breathalyzer|roadside|over\s*80)\b/.test(text))
+    out.add("impaired_driving");
+  if (/\b(robbery|robbed|mugging|mugged|s\.\s*343)\b/.test(text))
+    out.add("robbery");
   if (/\b(theft|stolen|shoplift|s\.\s*322)\b/.test(text)) out.add("theft");
-  if (/\b(cdsa|trafficking|drug|narcotic|possession|s\.\s*5)\b/.test(text)) out.add("drug_trafficking");
-  if (/\b(sexual\s+assault|consent|complainant|s\.\s*271)\b/.test(text)) out.add("sexual_assault");
-  if (/\b(assault|bodily\s+harm|weapon|self-defence|self\s*defence|s\.\s*267)\b/.test(text)) out.add("assault");
+  if (/\b(cdsa|trafficking|drug|narcotic|possession|s\.\s*5)\b/.test(text))
+    out.add("drug_trafficking");
+  if (/\b(sexual\s+assault|consent|complainant|s\.\s*271)\b/.test(text))
+    out.add("sexual_assault");
+  if (
+    /\b(assault|bodily\s+harm|weapon|self-defence|self\s*defence|s\.\s*267)\b/.test(
+      text,
+    )
+  )
+    out.add("assault");
 
   return out;
 }
@@ -149,16 +219,40 @@ function detectCaseDomainsForRanking(item) {
 function caseCompatibleWithScenarioIssue(issue, caseDomains) {
   if (issue === "general_criminal") return true;
   if (!(caseDomains instanceof Set) || caseDomains.size === 0) {
-    const strictUnknownDomainIssues = new Set(["theft", "robbery", "trial_delay", "minor_traffic_stop", "charter_counsel"]);
+    const strictUnknownDomainIssues = new Set([
+      "theft",
+      "robbery",
+      "trial_delay",
+      "minor_traffic_stop",
+      "charter_counsel",
+    ]);
     return !strictUnknownDomainIssues.has(issue);
   }
 
   const compatibility = {
     trial_delay: new Set(["trial_delay"]),
-    charter_counsel: new Set(["charter_counsel", "charter_detention", "impaired_driving"]),
-    charter_search_seizure: new Set(["charter_search_seizure", "charter_detention", "impaired_driving"]),
-    charter_detention: new Set(["charter_detention", "charter_search_seizure", "charter_counsel", "impaired_driving"]),
-    impaired_driving: new Set(["impaired_driving", "charter_detention", "charter_counsel", "charter_search_seizure"]),
+    charter_counsel: new Set([
+      "charter_counsel",
+      "charter_detention",
+      "impaired_driving",
+    ]),
+    charter_search_seizure: new Set([
+      "charter_search_seizure",
+      "charter_detention",
+      "impaired_driving",
+    ]),
+    charter_detention: new Set([
+      "charter_detention",
+      "charter_search_seizure",
+      "charter_counsel",
+      "impaired_driving",
+    ]),
+    impaired_driving: new Set([
+      "impaired_driving",
+      "charter_detention",
+      "charter_counsel",
+      "charter_search_seizure",
+    ]),
     robbery: new Set(["robbery", "theft", "assault"]),
     theft: new Set(["theft", "robbery"]),
     drug_trafficking: new Set(["drug_trafficking"]),
@@ -175,7 +269,8 @@ function caseCompatibleWithScenarioIssue(issue, caseDomains) {
 }
 
 function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
-  const haystack = `${item?.citation || ""} ${item?.summary || ""} ${item?.matched_content || ""}`.toLowerCase();
+  const haystack =
+    `${item?.citation || ""} ${item?.summary || ""} ${item?.matched_content || ""}`.toLowerCase();
   const haystackTokens = new Set(tokenizeForRanking(haystack));
 
   let overlap = 0;
@@ -186,11 +281,19 @@ function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   let score = overlap * 4;
 
   const caseDomains = detectCaseDomainsForRanking(item);
-  const compatible = caseCompatibleWithScenarioIssue(scenarioIssue, caseDomains);
+  const compatible = caseCompatibleWithScenarioIssue(
+    scenarioIssue,
+    caseDomains,
+  );
   if (!compatible) score -= 10;
 
   // Domain-specific boosts for common impaired-driving / search-and-seizure scenarios.
-  const impairedScenario = scenarioTokens.has("ride") || scenarioTokens.has("breath") || scenarioTokens.has("breathalyzer") || scenarioTokens.has("impaired") || scenarioTokens.has("drunk");
+  const impairedScenario =
+    scenarioTokens.has("ride") ||
+    scenarioTokens.has("breath") ||
+    scenarioTokens.has("breathalyzer") ||
+    scenarioTokens.has("impaired") ||
+    scenarioTokens.has("drunk");
   if (impairedScenario) {
     if (/\bcharter\b/.test(haystack)) score += 2;
     if (/\bdetention\b|\barrest\b/.test(haystack)) score += 2;
@@ -203,7 +306,10 @@ function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   if (bloodScenario && /\bblood\b/.test(haystack)) score += 2;
 
   // Assault scenarios
-  const assaultScenario = scenarioTokens.has("assault") || scenarioTokens.has("struck") || scenarioTokens.has("punch");
+  const assaultScenario =
+    scenarioTokens.has("assault") ||
+    scenarioTokens.has("struck") ||
+    scenarioTokens.has("punch");
   if (assaultScenario) {
     if (/\bbodily\s+harm\b/.test(haystack)) score += 3;
     if (/\bweapon\b/.test(haystack)) score += 2;
@@ -212,7 +318,11 @@ function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   }
 
   // Search and seizure scenarios
-  const searchScenario = scenarioTokens.has("search") || scenarioTokens.has("seizure") || scenarioTokens.has("warrant") || scenarioTokens.has("privacy");
+  const searchScenario =
+    scenarioTokens.has("search") ||
+    scenarioTokens.has("seizure") ||
+    scenarioTokens.has("warrant") ||
+    scenarioTokens.has("privacy");
   if (searchScenario) {
     if (/\bsearch\b/.test(haystack)) score += 3;
     if (/\bseizure\b/.test(haystack)) score += 3;
@@ -222,7 +332,12 @@ function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   }
 
   // Drug / CDSA scenarios
-  const drugScenario = scenarioTokens.has("drug") || scenarioTokens.has("cocaine") || scenarioTokens.has("fentanyl") || scenarioTokens.has("trafficking") || scenarioTokens.has("cdsa");
+  const drugScenario =
+    scenarioTokens.has("drug") ||
+    scenarioTokens.has("cocaine") ||
+    scenarioTokens.has("fentanyl") ||
+    scenarioTokens.has("trafficking") ||
+    scenarioTokens.has("cdsa");
   if (drugScenario) {
     if (/\btraffick\w*\b/.test(haystack)) score += 3;
     if (/\bcdsa\b|\bcontrolled\s+substance\b/.test(haystack)) score += 3;
@@ -231,7 +346,11 @@ function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   }
 
   // Theft / robbery scenarios
-  const theftScenario = scenarioTokens.has("theft") || scenarioTokens.has("steal") || scenarioTokens.has("robbery") || scenarioTokens.has("stolen");
+  const theftScenario =
+    scenarioTokens.has("theft") ||
+    scenarioTokens.has("steal") ||
+    scenarioTokens.has("robbery") ||
+    scenarioTokens.has("stolen");
   if (theftScenario) {
     if (/\btheft\b/.test(haystack)) score += 2;
     if (/\brobbery\b/.test(haystack)) score += 3;
@@ -239,7 +358,8 @@ function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   }
 
   // Sexual assault scenarios
-  const sexualScenario = scenarioTokens.has("sexual") || scenarioTokens.has("rape");
+  const sexualScenario =
+    scenarioTokens.has("sexual") || scenarioTokens.has("rape");
   if (sexualScenario) {
     if (/\bconsent\b/.test(haystack)) score += 3;
     if (/\bcomplainant\b/.test(haystack)) score += 2;
@@ -247,7 +367,10 @@ function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   }
 
   // Charter scenarios
-  const charterScenario = scenarioTokens.has("charter") || scenarioTokens.has("rights") || scenarioTokens.has("detention");
+  const charterScenario =
+    scenarioTokens.has("charter") ||
+    scenarioTokens.has("rights") ||
+    scenarioTokens.has("detention");
   if (charterScenario) {
     if (/\bcharter\b/.test(haystack)) score += 3;
     if (/\bsection\s+[89]\b|\bs\.\s*[89]\b/.test(haystack)) score += 2;
@@ -256,7 +379,11 @@ function scoreRetrievedCase(scenarioTokens, scenarioIssue, item) {
   }
 
   // Homicide / manslaughter scenarios
-  const homicideScenario = scenarioTokens.has("murder") || scenarioTokens.has("manslaughter") || scenarioTokens.has("homicide") || scenarioTokens.has("kill");
+  const homicideScenario =
+    scenarioTokens.has("murder") ||
+    scenarioTokens.has("manslaughter") ||
+    scenarioTokens.has("homicide") ||
+    scenarioTokens.has("kill");
   if (homicideScenario) {
     if (/\bmurder\b/.test(haystack)) score += 3;
     if (/\bmanslaughter\b/.test(haystack)) score += 3;
@@ -281,8 +408,12 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
   const cases = Array.isArray(retrievedCases) ? [...retrievedCases] : [];
   const scenarioTokens = new Set(tokenizeForRanking(scenario));
   const scenarioIssue = detectScenarioIssueForRanking(scenarioTokens);
-  const minOverlap = scenarioTokens.size >= 8 ? 3 : scenarioTokens.size >= 4 ? 2 : 1;
-  const strictNoFallbackIssues = new Set(["minor_traffic_stop", "charter_counsel"]);
+  const minOverlap =
+    scenarioTokens.size >= 8 ? 3 : scenarioTokens.size >= 4 ? 2 : 1;
+  const strictNoFallbackIssues = new Set([
+    "minor_traffic_stop",
+    "charter_counsel",
+  ]);
 
   const compatibleCases = cases.filter((c) => {
     const candidateDomains = detectCaseDomainsForRanking(c);
@@ -296,7 +427,8 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
     for (const token of scenarioTokens) {
       if (haystack.includes(token)) overlapCount++;
     }
-    const strongScore = scoreRetrievedCase(scenarioTokens, scenarioIssue, c) >= 10;
+    const strongScore =
+      scoreRetrievedCase(scenarioTokens, scenarioIssue, c) >= 10;
     return overlapCount >= minOverlap || strongScore;
   });
 
@@ -304,10 +436,17 @@ function selectTopRetrievedCases(scenario, retrievedCases, limit = 3) {
     return [];
   }
 
-  const pool = filtered.length > 0 ? filtered : compatibleCases.length > 0 ? compatibleCases : cases;
+  const pool =
+    filtered.length > 0
+      ? filtered
+      : compatibleCases.length > 0
+        ? compatibleCases
+        : cases;
 
   pool.sort((a, b) => {
-    const scoreDiff = scoreRetrievedCase(scenarioTokens, scenarioIssue, b) - scoreRetrievedCase(scenarioTokens, scenarioIssue, a);
+    const scoreDiff =
+      scoreRetrievedCase(scenarioTokens, scenarioIssue, b) -
+      scoreRetrievedCase(scenarioTokens, scenarioIssue, a);
     if (scoreDiff !== 0) return scoreDiff;
 
     const yearA = Number(a?.year) || 0;
@@ -333,25 +472,41 @@ function matchLandmarkCases(scenario) {
 
   for (const caseLaw of MASTER_CASE_LAW_DB) {
     let score = 0;
-    
+
     // 1. Literal Substring Matches (High Signal)
     for (const tag of caseLaw.tags) {
       if (s.includes(tag.toLowerCase())) score += 10;
     }
-    
+
     // 2. Token Overlap (Fuzzy Signal)
     const tagTokens = new Set();
-    caseLaw.tags.forEach(t => t.toLowerCase().split(/\s+/).forEach(token => tagTokens.add(token)));
-    caseLaw.topics.forEach(t => t.toLowerCase().split(/\s+/).forEach(token => tagTokens.add(token)));
+    caseLaw.tags.forEach((t) =>
+      t
+        .toLowerCase()
+        .split(/\s+/)
+        .forEach((token) => tagTokens.add(token)),
+    );
+    caseLaw.topics.forEach((t) =>
+      t
+        .toLowerCase()
+        .split(/\s+/)
+        .forEach((token) => tagTokens.add(token)),
+    );
     // Also add title tokens to the matching pool!
-    caseLaw.title.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).forEach(token => tagTokens.add(token));
-    
+    caseLaw.title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .forEach((token) => tagTokens.add(token));
+
     for (const token of scenarioTokens) {
       if (tagTokens.has(token)) score += 3;
     }
 
     // 3. Case Name Match (Direct Signal - punctuation insensitive)
-    const normalizedTitle = caseLaw.title.toLowerCase().replace(/[^a-z0-9\s]/g, "");
+    const normalizedTitle = caseLaw.title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "");
     const normalizedS = s.replace(/[^a-z0-9\s]/g, "");
     if (normalizedS.includes(normalizedTitle)) score += 20;
 
@@ -366,7 +521,12 @@ function matchLandmarkCases(scenario) {
 
 // ── Parse with one retry ─────────────────────────────────────────────────────
 
-async function analyzeWithRetry(scenario, filters, apiKey, retrievedCases = []) {
+async function analyzeWithRetry(
+  scenario,
+  filters,
+  apiKey,
+  retrievedCases = [],
+) {
   let system = buildSystemPrompt(filters || {});
   let matchedLandmarks = [];
 
@@ -374,23 +534,39 @@ async function analyzeWithRetry(scenario, filters, apiKey, retrievedCases = []) 
     matchedLandmarks = matchLandmarkCases(scenario);
     if (matchedLandmarks.length > 0) {
       // Strip any characters that could escape prompt delimiters before injecting into system prompt.
-      const safeLine = (s) => String(s || "").replace(/[<>`\n\r]/g, " ").slice(0, 300);
-      const contextStr = matchedLandmarks.map((c) => `- ${safeLine(c.title)} (${safeLine(c.citation)}): ${safeLine(c.ratio)}`).join("\n");
+      const safeLine = (s) =>
+        String(s || "")
+          .replace(/[<>`\n\r]/g, " ")
+          .slice(0, 300);
+      const contextStr = matchedLandmarks
+        .map(
+          (c) =>
+            `- ${safeLine(c.title)} (${safeLine(c.citation)}): ${safeLine(c.ratio)}`,
+        )
+        .join("\n");
       system += `\n\nCRITICAL CONTEXT: Based on the user's scenario, you MUST consider applying the following Supreme Court of Canada landmark cases:\n${contextStr}\nEnsure you accurately cite these specific cases and strictly apply their ratios to the analysis where relevant.`;
     }
   }
 
   // Inject pre-retrieved CanLII cases as plain text context in the system prompt.
   if (Array.isArray(retrievedCases) && retrievedCases.length > 0) {
-    const safeLine = (s) => String(s || "").replace(/[<>`\n\r]/g, " ").slice(0, 300);
+    const safeLine = (s) =>
+      String(s || "")
+        .replace(/[<>`\n\r]/g, " ")
+        .slice(0, 300);
     const caseContext = retrievedCases
-      .map((c) => `- ${safeLine(c.citation)}: ${safeLine(c.summary || c.title || "")}`)
+      .map(
+        (c) =>
+          `- ${safeLine(c.citation)}: ${safeLine(c.summary || c.title || "")}`,
+      )
       .join("\n");
     system += `\n\nVERIFIED CANLII CASES (pre-retrieved): The following cases were retrieved from CanLII for this scenario. Prefer citing these where relevant:\n${caseContext}`;
   }
 
   const sanitized = sanitizeUserInput(scenario);
-  const messages = [{ role: "user", content: `<user_input>\n${sanitized}\n</user_input>` }];
+  const messages = [
+    { role: "user", content: `<user_input>\n${sanitized}\n</user_input>` },
+  ];
 
   // First attempt
   const raw = await callAnthropic(messages, system, apiKey);
@@ -420,18 +596,20 @@ async function analyzeWithRetry(scenario, filters, apiKey, retrievedCases = []) 
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
-  const requestId = req.headers['x-vercel-id'] || randomUUID();
+  const requestId = req.headers["x-vercel-id"] || randomUUID();
   const startMs = Date.now();
   logRequestStart(req, "analyze", requestId);
   applyStandardApiHeaders(req, res, "POST, OPTIONS", "Content-Type");
 
   if (handleOptionsAndMethod(req, res, "POST")) return;
-  if (!validateJsonRequest(req, res, {
-    requestId,
-    endpoint: "analyze",
-    maxBytes: 50_000,
-    logValidationError,
-  })) {
+  if (
+    !validateJsonRequest(req, res, {
+      requestId,
+      endpoint: "analyze",
+      maxBytes: 50_000,
+      logValidationError,
+    })
+  ) {
     return;
   }
 
@@ -440,7 +618,9 @@ export default async function handler(req, res) {
   const rlHeaders = rateLimitHeaders(rlResult);
   Object.entries(rlHeaders).forEach(([k, v]) => res.setHeader(k, v));
   if (!rlResult.allowed) {
-    const retryAfter = rlHeaders["Retry-After"] ? Math.ceil(Number(rlHeaders["Retry-After"]) / 60) : null;
+    const retryAfter = rlHeaders["Retry-After"]
+      ? Math.ceil(Number(rlHeaders["Retry-After"]) / 60)
+      : null;
     const msg = retryAfter
       ? `Rate limit reached. Try again in ${retryAfter} minute${retryAfter !== 1 ? "s" : ""}.`
       : "Rate limit exceeded. Please try again later.";
@@ -450,23 +630,49 @@ export default async function handler(req, res) {
   const { scenario, filters: rawFilters } = req.body;
 
   if (!scenario || typeof scenario !== "string" || !scenario.trim()) {
-    logValidationError(requestId, "analyze", "Scenario is required", "scenario");
+    logValidationError(
+      requestId,
+      "analyze",
+      "Scenario is required",
+      "scenario",
+    );
     return res.status(400).json({ error: "Scenario is required" });
   }
   if (scenario.length > 5000) {
     logValidationError(requestId, "analyze", "Scenario too long", "scenario");
-    return res.status(400).json({ error: "Scenario must be 5,000 characters or fewer." });
+    return res
+      .status(400)
+      .json({ error: "Scenario must be 5,000 characters or fewer." });
   }
 
   // Whitelist filter values — prevents prompt injection via filter fields
   const VALID_JURISDICTIONS = new Set([
-    "all","Ontario","British Columbia","Alberta","Quebec",
-    "Manitoba","Saskatchewan","Nova Scotia","New Brunswick",
-    "Newfoundland and Labrador","Prince Edward Island",
+    "all",
+    "Ontario",
+    "British Columbia",
+    "Alberta",
+    "Quebec",
+    "Manitoba",
+    "Saskatchewan",
+    "Nova Scotia",
+    "New Brunswick",
+    "Newfoundland and Labrador",
+    "Prince Edward Island",
   ]);
-  const VALID_COURT_LEVELS = new Set(["all","scc","appeal","superior","provincial"]);
-  const VALID_DATE_RANGES   = new Set(["all","5","10","20"]);
-  const VALID_LAW_TYPES     = new Set(["criminal_code","case_law","civil_law","charter"]);
+  const VALID_COURT_LEVELS = new Set([
+    "all",
+    "scc",
+    "appeal",
+    "superior",
+    "provincial",
+  ]);
+  const VALID_DATE_RANGES = new Set(["all", "5", "10", "20"]);
+  const VALID_LAW_TYPES = new Set([
+    "criminal_code",
+    "case_law",
+    "civil_law",
+    "charter",
+  ]);
 
   // Validate lawTypes — only allow known keys with boolean values, default true
   const rawLawTypes = rawFilters?.lawTypes || {};
@@ -476,17 +682,30 @@ export default async function handler(req, res) {
   }
 
   const filters = {
-    jurisdiction: VALID_JURISDICTIONS.has(rawFilters?.jurisdiction) ? rawFilters.jurisdiction : "all",
-    courtLevel:   VALID_COURT_LEVELS.has(rawFilters?.courtLevel)    ? rawFilters.courtLevel   : "all",
-    dateRange:    VALID_DATE_RANGES.has(rawFilters?.dateRange)       ? rawFilters.dateRange    : "all",
+    jurisdiction: VALID_JURISDICTIONS.has(rawFilters?.jurisdiction)
+      ? rawFilters.jurisdiction
+      : "all",
+    courtLevel: VALID_COURT_LEVELS.has(rawFilters?.courtLevel)
+      ? rawFilters.courtLevel
+      : "all",
+    dateRange: VALID_DATE_RANGES.has(rawFilters?.dateRange)
+      ? rawFilters.dateRange
+      : "all",
     lawTypes,
   };
 
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      logValidationError(requestId, "analyze", "ANTHROPIC_API_KEY is not configured", "environment");
-      return res.status(503).json({ error: "Analysis service temporarily unavailable." });
+      logValidationError(
+        requestId,
+        "analyze",
+        "ANTHROPIC_API_KEY is not configured",
+        "environment",
+      );
+      return res
+        .status(503)
+        .json({ error: "Analysis service temporarily unavailable." });
     }
 
     // Check cache first
@@ -494,13 +713,16 @@ export default async function handler(req, res) {
       try {
         const cacheKeyStr = cacheKey(scenario, filters);
         const timeoutGet = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS)
+          setTimeout(() => reject(new Error("Timeout")), API_REDIS_TIMEOUT_MS),
         );
         const cached = await Promise.race([redis.get(cacheKeyStr), timeoutGet]);
         if (cached) {
-          const cachedResult = typeof cached === "string" ? JSON.parse(cached) : cached;
+          const cachedResult =
+            typeof cached === "string" ? JSON.parse(cached) : cached;
           if (filters.lawTypes.case_law !== false) {
-            const cachedCaseLaw = Array.isArray(cachedResult?.case_law) ? cachedResult.case_law : [];
+            const cachedCaseLaw = Array.isArray(cachedResult?.case_law)
+              ? cachedResult.case_law
+              : [];
             const cachedCaseLawMeta =
               cachedResult?.meta && typeof cachedResult.meta === "object"
                 ? cachedResult.meta.case_law || {}
@@ -513,7 +735,10 @@ export default async function handler(req, res) {
               scenario,
               filters,
               reason: computeTelemetryReason({
-                reason: typeof cachedCaseLawMeta.reason === "string" ? cachedCaseLawMeta.reason : "",
+                reason:
+                  typeof cachedCaseLawMeta.reason === "string"
+                    ? cachedCaseLawMeta.reason
+                    : "",
                 finalCaseLawCount: cachedCaseLaw.length,
               }),
               retrievalLatencyMs: 0,
@@ -529,11 +754,20 @@ export default async function handler(req, res) {
           }
 
           logCacheHit(requestId, "analyze", cacheKeyStr);
-          logSuccess(requestId, "analyze", 200, Date.now() - startMs, rlResult, { cacheUsed: true });
+          logSuccess(
+            requestId,
+            "analyze",
+            200,
+            Date.now() - startMs,
+            rlResult,
+            { cacheUsed: true },
+          );
           return res.status(200).json(cachedResult);
         }
         logCacheMiss(requestId, "analyze");
-      } catch { /* cache miss — proceed normally */ }
+      } catch {
+        /* cache miss — proceed normally */
+      }
     }
 
     // Pre-retrieval pass: fetch CanLII cases from the raw scenario before calling
@@ -564,13 +798,25 @@ export default async function handler(req, res) {
     const dedupeKey = `inflight:analyze:${cacheKey(scenario, filters)}`;
     const { result, raw, retryRaw, matchedLandmarks } = await withRequestDedup(
       dedupeKey,
-      () => analyzeWithRetry(scenario, filters, apiKey, preRetrievedCases)
+      () => analyzeWithRetry(scenario, filters, apiKey, preRetrievedCases),
     );
     const anthropicDurationMs = Date.now() - anthropicStartMs;
-    logExternalApiCall(requestId, "analyze", "anthropic", 200, anthropicDurationMs, { retried: !!retryRaw });
+    logExternalApiCall(
+      requestId,
+      "analyze",
+      "anthropic",
+      200,
+      anthropicDurationMs,
+      { retried: !!retryRaw },
+    );
 
     if (!result) {
-      logValidationError(requestId, "analyze", "AI returned unstructured response", "ai_output");
+      logValidationError(
+        requestId,
+        "analyze",
+        "AI returned unstructured response",
+        "ai_output",
+      );
       return res.status(422).json({
         error:
           "The AI returned an unstructured response for this scenario. Try adding more detail — specify the location, what happened, and any relevant context.",
@@ -579,11 +825,11 @@ export default async function handler(req, res) {
 
     // Phase B retrieval-first path: use retrieved verified case-law as final source.
     const meta = ensureMetaContainer(result);
-    
+
     if (filters.lawTypes.case_law !== false) {
       const canliiKey = process.env.CANLII_API_KEY || "";
       const retrievalStartMs = Date.now();
-      
+
       if (!canliiKey || canliiKey.trim() === "") {
         result.case_law = [];
         meta.case_law = {
@@ -603,96 +849,125 @@ export default async function handler(req, res) {
         });
       } else {
         try {
-          const { cases: retrievedCases, meta: retrievalMeta } = await runCaseLawRetrieval({
-            scenario: scenario.trim(),
+          const { cases: retrievedCases, meta: retrievalMeta } =
+            await runCaseLawRetrieval({
+              scenario: scenario.trim(),
+              filters,
+              aiSuggestions: Array.isArray(result.suggestions)
+                ? result.suggestions
+                : [],
+              aiCaseLaw: Array.isArray(result.case_law) ? result.case_law : [],
+              landmarkMatches: matchedLandmarks,
+              criminalCode: Array.isArray(result.criminal_code)
+                ? result.criminal_code
+                : [],
+              apiKey: canliiKey,
+              maxResults: 10,
+              timeoutMs: 7_000,
+            });
+          const retrievalDurationMs = Date.now() - retrievalStartMs;
+
+          if (
+            (retrievalMeta.searchCalls || 0) > 0 ||
+            (retrievalMeta.verificationCalls || 0) > 0
+          ) {
+            logExternalApiCall(
+              requestId,
+              "analyze",
+              "canlii-retrieval",
+              200,
+              retrievalDurationMs,
+              {
+                ...retrievalMeta,
+                casesReturned: retrievedCases.length,
+              },
+            );
+          }
+
+          result.case_law = selectTopRetrievedCases(
+            scenario,
+            retrievedCases,
+            3,
+          );
+
+          const reason = computeTelemetryReason({
+            reason: retrievalMeta.reason,
+            finalCaseLawCount: result.case_law.length,
+          });
+          meta.case_law = {
+            source: "retrieval_ranked",
+            verifiedCount: result.case_law.length,
+            reason,
+            retrieval: {
+              fallbackSearchUsed: Boolean(retrievalMeta.fallbackSearchUsed),
+              fallbackReason: retrievalMeta.fallbackReason || null,
+              retrievalPass: retrievalMeta.retrievalPass || null,
+              issuePrimary: retrievalMeta.issuePrimary || null,
+              searchCalls: retrievalMeta.searchCalls ?? 0,
+              verificationCalls: retrievalMeta.verificationCalls ?? 0,
+              candidateCount: retrievalMeta.candidateCount ?? 0,
+              termsTried: retrievalMeta.termsTried ?? 0,
+            },
+          };
+          logRetrievalMetricsAsync({
+            requestId,
+            endpoint: "analyze",
+            source: "retrieval",
+            scenario,
             filters,
-            aiSuggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
-            aiCaseLaw: Array.isArray(result.case_law) ? result.case_law : [],
-            landmarkMatches: matchedLandmarks,
-            criminalCode: Array.isArray(result.criminal_code) ? result.criminal_code : [],
-            apiKey: canliiKey,
-            maxResults: 10,
-            timeoutMs: 7_000,
+            reason,
+            retrievalMeta,
+            retrievalLatencyMs: retrievalDurationMs,
+            finalCaseLawCount: result.case_law.length,
           });
-        const retrievalDurationMs = Date.now() - retrievalStartMs;
+        } catch (retrievalErr) {
+          // Keep retrieval-first behavior even on retrieval failures (including timeout).
+          if (!retrievalErr?.isTimeout) Sentry.captureException(retrievalErr);
+          const retrievalErrMessage =
+            retrievalErr && typeof retrievalErr.message === "string"
+              ? retrievalErr.message
+              : String(retrievalErr);
+          const retrievalReason = retrievalErr?.isTimeout
+            ? "retrieval_timeout"
+            : "retrieval_error";
+          console.error(
+            `[analyze] Retrieval ${retrievalReason} for requestId ${requestId}: ${retrievalErrMessage}`,
+          );
+          logError(
+            requestId,
+            "analyze-retrieval",
+            retrievalErr,
+            500,
+            Date.now() - retrievalStartMs,
+          );
 
-        if ((retrievalMeta.searchCalls || 0) > 0 || (retrievalMeta.verificationCalls || 0) > 0) {
-          logExternalApiCall(requestId, "analyze", "canlii-retrieval", 200, retrievalDurationMs, {
-            ...retrievalMeta,
-            casesReturned: retrievedCases.length,
-          });
-        }
-
-        result.case_law = selectTopRetrievedCases(scenario, retrievedCases, 3);
-
-        const reason = computeTelemetryReason({
-          reason: retrievalMeta.reason,
-          finalCaseLawCount: result.case_law.length,
-        });
-        meta.case_law = {
-          source: "retrieval_ranked",
-          verifiedCount: result.case_law.length,
-          reason,
-          retrieval: {
-            fallbackSearchUsed: Boolean(retrievalMeta.fallbackSearchUsed),
-            fallbackReason: retrievalMeta.fallbackReason || null,
-            retrievalPass: retrievalMeta.retrievalPass || null,
-            issuePrimary: retrievalMeta.issuePrimary || null,
-            searchCalls: retrievalMeta.searchCalls ?? 0,
-            verificationCalls: retrievalMeta.verificationCalls ?? 0,
-            candidateCount: retrievalMeta.candidateCount ?? 0,
-            termsTried: retrievalMeta.termsTried ?? 0,
-          },
-        };
-        logRetrievalMetricsAsync({
-          requestId,
-          endpoint: "analyze",
-          source: "retrieval",
-          scenario,
-          filters,
-          reason,
-          retrievalMeta,
-          retrievalLatencyMs: retrievalDurationMs,
-          finalCaseLawCount: result.case_law.length,
-        });
-      } catch (retrievalErr) {
-        // Keep retrieval-first behavior even on retrieval failures (including timeout).
-        if (!retrievalErr?.isTimeout) Sentry.captureException(retrievalErr);
-        const retrievalErrMessage =
-          retrievalErr && typeof retrievalErr.message === "string"
-            ? retrievalErr.message
-            : String(retrievalErr);
-        const retrievalReason = retrievalErr?.isTimeout ? "retrieval_timeout" : "retrieval_error";
-        console.error(`[analyze] Retrieval ${retrievalReason} for requestId ${requestId}: ${retrievalErrMessage}`);
-        logError(requestId, "analyze-retrieval", retrievalErr, 500, Date.now() - retrievalStartMs);
-
-        const retrievalDurationMs = Date.now() - retrievalStartMs;
-        logRetrievalMetricsAsync({
-          requestId,
-          endpoint: "analyze",
-          source: "retrieval",
-          scenario,
-          filters,
-          reason: computeTelemetryReason({
-            retrievalError: true,
-            reason: retrievalReason,
+          const retrievalDurationMs = Date.now() - retrievalStartMs;
+          logRetrievalMetricsAsync({
+            requestId,
+            endpoint: "analyze",
+            source: "retrieval",
+            scenario,
+            filters,
+            reason: computeTelemetryReason({
+              retrievalError: true,
+              reason: retrievalReason,
+              finalCaseLawCount: 0,
+            }),
+            retrievalLatencyMs: retrievalDurationMs,
             finalCaseLawCount: 0,
-          }),
-          retrievalLatencyMs: retrievalDurationMs,
-          finalCaseLawCount: 0,
-          retrievalError: true,
-          errorMessage: retrievalErrMessage,
-        });
-        
-        result.case_law = [];
-        meta.case_law = {
-          source: "retrieval_error",
-          verifiedCount: 0,
-          reason: retrievalReason,
-        };
+            retrievalError: true,
+            errorMessage: retrievalErrMessage,
+          });
+
+          result.case_law = [];
+          meta.case_law = {
+            source: "retrieval_error",
+            verifiedCount: 0,
+            reason: retrievalReason,
+          };
+        }
       }
-    }
-  } else {
+    } else {
       result.case_law = [];
       meta.case_law = {
         source: "retrieval",
@@ -713,17 +988,27 @@ export default async function handler(req, res) {
 
     // Store in cache (fire-and-forget)
     if (redis) {
-      redis.setex(cacheKey(scenario, filters), CACHE_TTL_S, JSON.stringify(result)).catch(() => {});
+      redis
+        .setex(cacheKey(scenario, filters), CACHE_TTL_S, JSON.stringify(result))
+        .catch(() => {});
     }
 
-    logSuccess(requestId, "analyze", 200, Date.now() - startMs, rlResult, { cached: true });
+    logSuccess(requestId, "analyze", 200, Date.now() - startMs, rlResult, {
+      cached: true,
+    });
     return res.status(200).json(result);
   } catch (err) {
     Sentry.captureException(err);
-    const statusCode = err.status ? (err.status >= 500 ? 502 : err.status) : 500;
+    const statusCode = err.status
+      ? err.status >= 500
+        ? 502
+        : err.status
+      : 500;
     logError(requestId, "analyze", err, statusCode, Date.now() - startMs);
     if (err.status) {
-      return res.status(statusCode).json({ error: "Analysis service temporarily unavailable." });
+      return res
+        .status(statusCode)
+        .json({ error: "Analysis service temporarily unavailable." });
     }
     return res.status(500).json({ error: "Internal server error" });
   }

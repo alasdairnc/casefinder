@@ -3,7 +3,8 @@
 export const ANALYZE_CACHE_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 export const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
 export const ANTHROPIC_TIMEOUT_MS = 25_000;
-export const ANTHROPIC_MODEL_ID = process.env.ANTHROPIC_MODEL_ID || "claude-haiku-4-5-20251001";
+export const ANTHROPIC_MODEL_ID =
+  process.env.ANTHROPIC_MODEL_ID || "claude-haiku-4-5-20251001";
 
 export const API_REDIS_TIMEOUT_MS = 500;
 
