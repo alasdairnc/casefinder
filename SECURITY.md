@@ -11,6 +11,7 @@ If you find a security vulnerability, please do not open a public GitHub issue.
 Email: contact@casedive.ca
 
 Include:
+
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact
