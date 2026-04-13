@@ -111,10 +111,9 @@ describe("verify handler", () => {
     expect(mockCheckRateLimit).not.toHaveBeenCalled();
   });
 
-  it("returns 413 when content-length exceeds 50kb", async () => {
+  it("returns 413 when body exceeds 50kb", async () => {
     const req = createReq({
-      body: { citations: ["2016 SCC 27"] },
-      headers: { "content-length": "50001" },
+      body: { citations: ["x".repeat(50_001)] },
     });
     const res = createRes();
 

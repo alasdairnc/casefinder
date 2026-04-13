@@ -43,8 +43,11 @@ export function validateJsonRequest(
     return false;
   }
 
-  const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-  if (Number.isFinite(maxBytes) && contentLength > maxBytes) {
+  const bodySize =
+    typeof req.body === "string"
+      ? Buffer.byteLength(req.body)
+      : Buffer.byteLength(JSON.stringify(req.body ?? ""));
+  if (Number.isFinite(maxBytes) && bodySize > maxBytes) {
     logValidationError(
       requestId,
       endpoint,

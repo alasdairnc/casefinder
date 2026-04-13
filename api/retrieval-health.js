@@ -1,6 +1,6 @@
 // /api/retrieval-health.js — Internal retrieval health + alert status endpoint.
 
-import { randomUUID } from "crypto";
+import { randomUUID, timingSafeEqual } from "crypto";
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
 import {
   getFailureScenarioPage,
@@ -42,7 +42,9 @@ function isAuthorized(req) {
     return false;
   }
   const authHeader = req.headers.authorization || "";
-  return authHeader === `Bearer ${expectedToken}`;
+  const expected = `Bearer ${expectedToken}`;
+  if (authHeader.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
 }
 
 export default async function handler(req, res) {

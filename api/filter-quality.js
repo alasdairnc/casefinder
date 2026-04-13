@@ -6,7 +6,7 @@
  * Shows current filter configuration, test success rate, and tuning status.
  */
 
-import { randomUUID } from "crypto";
+import { randomUUID, timingSafeEqual } from "crypto";
 import { FILTER_CONFIG } from "./_filterConfig.js";
 import { checkRateLimit, getClientIp, rateLimitHeaders } from "./_rateLimit.js";
 import {
@@ -47,7 +47,12 @@ export default async function handler(req, res) {
   const token = req.headers.authorization?.replace(/^Bearer\s+/, "");
   const expectedToken = process.env.RETRIEVAL_HEALTH_TOKEN;
 
-  if (!expectedToken || !token || token !== expectedToken) {
+  if (
+    !expectedToken ||
+    !token ||
+    token.length !== expectedToken.length ||
+    !timingSafeEqual(Buffer.from(token), Buffer.from(expectedToken))
+  ) {
     logValidationError(
       requestId,
       "filter-quality",
