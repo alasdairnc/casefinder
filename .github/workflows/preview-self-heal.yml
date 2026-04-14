@@ -240,6 +240,7 @@ jobs:
         id: self_heal
         if: steps.preview.outputs.preview_url != '' && steps.verification_status.outputs.verification_passed == 'false' && env.ALLOW_SELF_HEAL == 'true' && env.HAS_ANTHROPIC_API_KEY != ''
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PREVIEW_URL: ${{ steps.preview.outputs.preview_url }}
         run: |
           set -euo pipefail
