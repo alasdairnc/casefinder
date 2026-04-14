@@ -947,6 +947,15 @@ function isClearlyNonCriminalScenario(scenario) {
     "administrative_general",
     "constitutional_general",
     "indigenous_general",
+    // New: add explicit workplace injury, tort, employment signals
+    "workplace_injury",
+    "tort_general",
+    "employment_law",
+    "wsib",
+    "negligence",
+    "occupational_health_safety",
+    "personal_injury",
+    "civil_liability",
   ];
   const criminalScenarioDomains = [
     "trial_delay",
@@ -973,7 +982,52 @@ function isClearlyNonCriminalScenario(scenario) {
   const scenarioHasCriminalDomain = criminalScenarioDomains.some((d) =>
     scenarioDomainHints.has(d),
   );
-  return scenarioHasNonCriminalDomain && !scenarioHasCriminalDomain;
+
+  // Extra: keyword-based detection for workplace injury/tort/employment
+  const s = String(scenario || "").toLowerCase();
+  const workplaceSignals = [
+    "workplace injury",
+    "injured at work",
+    "burned at work",
+    "burnt at work",
+    "wsib",
+    "workers compensation",
+    "occupational health",
+    "safety board",
+    "co-worker",
+    "coworker",
+    "employer",
+    "employment law",
+    "tort",
+    "negligence",
+    "personal injury",
+    "civil liability",
+    "slip and fall",
+    "work accident",
+    "injury claim",
+    "damages",
+    "liability insurance",
+    "compensation claim",
+    "wrongful dismissal",
+    "constructive dismissal",
+    "harassment at work",
+    "workplace harassment",
+    "occupational injury",
+    "workplace safety",
+    "employment standards",
+    "labour standards",
+    "labour board",
+    "employment standards act",
+    "termination pay",
+    "severance pay",
+    "employment contract",
+    "civil suit",
+    "civil action",
+  ];
+  const hasWorkplaceSignal = workplaceSignals.some((kw) => s.includes(kw));
+
+  // Block criminal case-law if any non-criminal domain or workplace/tort/employment signal is present and no criminal domain is present
+  return (scenarioHasNonCriminalDomain || hasWorkplaceSignal) && !scenarioHasCriminalDomain;
 }
 
 function isCandidateCompatibleWithIssue(issuePrimary, candidateDomains) {
