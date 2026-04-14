@@ -70,9 +70,18 @@ jobs:
         env:
           RETRIEVAL_HEALTH_TOKEN: ${{ secrets.RETRIEVAL_HEALTH_TOKEN }}
           RETRIEVAL_HEALTH_BASE_URL: ${{ env.PROD_BASE_URL }}
+          RETRIEVAL_HEALTH_BASE_URL_OVERRIDE: ${{ vars.RETRIEVAL_HEALTH_BASE_URL }}
+          RETRIEVAL_HEALTH_FALLBACK_BASE_URLS_OVERRIDE: ${{ vars.RETRIEVAL_HEALTH_FALLBACK_BASE_URLS }}
         run: |
+          BASE_URL="$RETRIEVAL_HEALTH_BASE_URL"
+          if [ -n "${RETRIEVAL_HEALTH_BASE_URL_OVERRIDE:-}" ]; then
+            BASE_URL="$RETRIEVAL_HEALTH_BASE_URL_OVERRIDE"
+          fi
+          if [ -n "${RETRIEVAL_HEALTH_FALLBACK_BASE_URLS_OVERRIDE:-}" ]; then
+            export RETRIEVAL_HEALTH_FALLBACK_BASE_URLS="$RETRIEVAL_HEALTH_FALLBACK_BASE_URLS_OVERRIDE"
+          fi
           node scripts/collect-production-no-caselaw.js \
-            --base-url "$RETRIEVAL_HEALTH_BASE_URL" \
+            --base-url "$BASE_URL" \
             --limit 100 \
             --max-pages 8 \
             --out-dir reports/retrieval-autofix
