@@ -251,7 +251,7 @@ jobs:
           claude -p "$PROMPT" \
             --model claude-haiku-4-5-20251001 \
             --allowedTools "Read,Edit,Grep,Glob" \
-            --max-turns 30 \
+            --max-turns 50 \
             --output-format text 2>&1 | tee preview-self-heal.log
 
       - name: Commit self-heal changes
