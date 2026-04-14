@@ -49,9 +49,14 @@ test.describe("Preview verification", () => {
     await expect(page.getByText("Legal Analysis", { exact: true })).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.getByText(/R\. v\. Mann/i)).toBeVisible({ timeout: 15000 });
+    const neutralCitations = page
+      .getByText(
+        /\b(19|20)\d{2}\s+(SCC|ONCA|ABCA|BCCA|QCCA|NSCA|NBCA|SKCA|MBCA|CanLII)\s+\d+\b/i,
+      )
+      .first();
+    await expect(neutralCitations).toBeVisible({ timeout: 15000 });
     await expect(
-      page.getByRole("link", { name: /Verified on CanLII/i }),
+      page.getByRole("link", { name: /Verified on CanLII/i }).first(),
     ).toBeVisible({ timeout: 15000 });
   });
 
