@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const isLiveMode = process.env.PLAYWRIGHT_MODE === "live";
+const liveBaseUrl = process.env.PLAYWRIGHT_BASE_URL || "https://www.casedive.ca";
 
 export default defineConfig({
   testDir: isLiveMode ? "./tests/live" : "./tests/e2e",
@@ -20,7 +21,7 @@ export default defineConfig({
   ],
   timeout: isLiveMode ? 90000 : undefined,
   use: {
-    baseURL: isLiveMode ? "https://www.casedive.ca" : "http://localhost:5173",
+    baseURL: isLiveMode ? liveBaseUrl : "http://localhost:5173",
     actionTimeout: isLiveMode ? 10000 : undefined,
     navigationTimeout: isLiveMode ? 30000 : undefined,
     trace: "on-first-retry",

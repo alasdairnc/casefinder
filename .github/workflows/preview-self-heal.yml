@@ -1,0 +1,346 @@
+name: Preview Verification and Self-Heal
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: "Optional preview URL override"
+        required: false
+        default: ""
+      allow_self_heal:
+        description: "Allow Claude self-heal step"
+        required: false
+        default: "true"
+
+concurrency:
+  group: preview-self-heal-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  preview-verification:
+    runs-on: ubuntu-latest
+    env:
+      MAX_WAIT_SECONDS: "1200"
+      PREVIEW_URL_INPUT: ${{ github.event.inputs.preview_url || '' }}
+      ALLOW_SELF_HEAL: ${{ github.event.inputs.allow_self_heal || 'true' }}
+      HAS_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      RETRIEVAL_HEALTH_TOKEN: ${{ secrets.RETRIEVAL_HEALTH_TOKEN }}
+      PROD_BASE_URL: https://www.casedive.ca
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve preview URL
+        id: preview
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const previewUrlInput = (process.env.PREVIEW_URL_INPUT || '').trim();
+            const urlPattern = /https:\/\/[A-Za-z0-9.-]+(?:-[A-Za-z0-9.-]+)*\.vercel\.app\/?[A-Za-z0-9._~:/?#[\]@!$&'()*+,;=%-]*/i;
+
+            if (previewUrlInput) {
+              core.setOutput('preview_url', previewUrlInput.replace(/\/$/, ''));
+              core.setOutput('preview_source', 'input');
+              return 'input';
+            }
+
+            const prNumber = context.payload.pull_request?.number;
+            if (!prNumber) {
+              core.setOutput('preview_url', '');
+              core.setOutput('preview_source', 'missing-pr-context');
+              return 'missing-pr-context';
+            }
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            for (const comment of comments.slice().reverse()) {
+              const match = String(comment.body || '').match(urlPattern);
+              if (match?.[0]) {
+                core.setOutput('preview_url', match[0].replace(/\/$/, ''));
+                core.setOutput('preview_source', 'comment');
+                return 'comment';
+              }
+            }
+
+            const deployments = await github.paginate(github.rest.repos.listDeployments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              per_page: 100,
+            });
+
+            for (const deployment of deployments.slice().reverse()) {
+              const candidates = [
+                deployment.environment_url,
+                deployment.payload?.url,
+                deployment.payload?.target_url,
+                deployment.url,
+              ].filter(Boolean);
+
+              for (const candidate of candidates) {
+                const candidateUrl = String(candidate);
+                if (urlPattern.test(candidateUrl)) {
+                  core.setOutput('preview_url', candidateUrl.replace(/\/$/, ''));
+                  core.setOutput('preview_source', 'deployment');
+                  return 'deployment';
+                }
+              }
+            }
+
+            core.setOutput('preview_url', '');
+            core.setOutput('preview_source', 'missing');
+            return 'missing';
+
+      - name: Fail if preview URL is missing
+        if: steps.preview.outputs.preview_url == ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.payload.pull_request?.number) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: [
+                  'Preview verification could not find a Vercel preview URL yet.',
+                  '',
+                  'The workflow needs either:',
+                  '- a Vercel preview deployment comment, or',
+                  '- a manual `preview_url` input via `workflow_dispatch`.',
+                  '',
+                  'No Claude token spend occurred.'
+                ].join('\n'),
+              });
+            }
+            core.setFailed('Preview URL was not available.');
+
+      - name: Wait for preview readiness
+        if: steps.preview.outputs.preview_url != ''
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          echo "Waiting for preview URL: $PREVIEW_URL"
+          ATTEMPT=0
+          MAX_ATTEMPTS=$((MAX_WAIT_SECONDS / 30))
+          mkdir -p preview-artifacts
+          while [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; do
+            STATUS="$(curl -s -L -o /tmp/preview-health.txt -w '%{http_code}' "$PREVIEW_URL" || true)"
+            echo "Attempt $((ATTEMPT + 1))/$MAX_ATTEMPTS -> HTTP $STATUS"
+            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+              echo "preview_ready=true" >> "$GITHUB_OUTPUT"
+              echo "$STATUS" > preview-artifacts/preview-status.txt
+              exit 0
+            fi
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep 30
+          done
+
+          echo "preview_ready=false" >> "$GITHUB_OUTPUT"
+          echo "Preview never became ready within the timeout."
+          exit 1
+
+      - name: Compare preview and production retrieval health
+        if: steps.preview.outputs.preview_url != ''
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.preview_url }}
+          PROD_BASE_URL: ${{ env.PROD_BASE_URL }}
+          RETRIEVAL_HEALTH_TOKEN: ${{ env.RETRIEVAL_HEALTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+
+          const previewBase = process.env.PREVIEW_URL.replace(/\/$/, '');
+          const prodBase = (process.env.PROD_BASE_URL || 'https://www.casedive.ca').replace(/\/$/, '');
+          const token = (process.env.RETRIEVAL_HEALTH_TOKEN || '').trim();
+
+          async function fetchHealth(baseUrl) {
+            const headers = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            const response = await fetch(`${baseUrl}/api/retrieval-health`, {
+              headers,
+              signal: AbortSignal.timeout(15000),
+            });
+            const text = await response.text();
+            let json = null;
+            try {
+              json = JSON.parse(text);
+            } catch {
+              json = null;
+            }
+            return {
+              url: `${baseUrl}/api/retrieval-health`,
+              status: response.status,
+              ok: response.ok,
+              keys: json && typeof json === 'object' ? Object.keys(json).sort() : [],
+              snapshotSource: json?.snapshotSource || json?.snapshot_source || null,
+            };
+          }
+
+          (async () => {
+            const preview = await fetchHealth(previewBase);
+            const prod = await fetchHealth(prodBase);
+            const compare = {
+              preview,
+              prod,
+              sameShape: JSON.stringify(preview.keys) === JSON.stringify(prod.keys),
+              tokenUsed: Boolean(token),
+            };
+            fs.writeFileSync('preview-compare.json', JSON.stringify(compare, null, 2));
+            fs.writeFileSync('preview-compare.md', [
+              '## Retrieval Health Compare',
+              '',
+              `- Preview status: ${preview.status}`,
+              `- Production status: ${prod.status}`,
+              `- Same schema keys: ${compare.sameShape ? 'yes' : 'no'}`,
+              `- Token used: ${compare.tokenUsed ? 'yes' : 'no'}`,
+            ].join('\n') + '\n');
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Run preview journeys
+        id: preview_tests
+        if: steps.preview.outputs.preview_url != ''
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_MODE: live
+          PLAYWRIGHT_BASE_URL: ${{ steps.preview.outputs.preview_url }}
+        run: |
+          set -o pipefail
+          npm run test:live -- tests/live/preview-verification.spec.js 2>&1 | tee preview-verification.log
+
+      - name: Record verification status
+        id: verification_status
+        if: steps.preview.outputs.preview_url != ''
+        run: |
+          if [ "${{ steps.preview_tests.outcome }}" = "success" ]; then
+            echo "verification_passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "verification_passed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload preview artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-verification-${{ github.run_id }}
+          if-no-files-found: ignore
+          path: |
+            preview-verification.log
+            preview-compare.json
+            preview-compare.md
+            preview-artifacts/preview-status.txt
+
+      - name: Self-heal failing preview
+        id: self_heal
+        if: steps.preview.outputs.preview_url != '' && steps.verification_status.outputs.verification_passed == 'false' && env.ALLOW_SELF_HEAL == 'true' && env.HAS_ANTHROPIC_API_KEY != ''
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          claude -p "$(cat .github/agents/preview-self-heal.agent.md)" \
+            --allowedTools "Read,Edit,Grep,Glob" \
+            --max-turns 18 \
+            --output-format text 2>&1 | tee preview-self-heal.log
+
+      - name: Commit self-heal changes
+        if: steps.self_heal.outcome == 'success' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "Claude did not modify files; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(preview): self-heal preview regression"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Re-run preview journeys after self-heal
+        id: preview_tests_after_heal
+        if: steps.self_heal.outcome == 'success'
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_MODE: live
+          PLAYWRIGHT_BASE_URL: ${{ steps.preview.outputs.preview_url }}
+        run: |
+          set -o pipefail
+          npm run test:live -- tests/live/preview-verification.spec.js 2>&1 | tee preview-verification-rerun.log
+
+      - name: Comment success
+        if: github.event_name == 'pull_request' && (steps.verification_status.outputs.verification_passed == 'true' || steps.preview_tests_after_heal.outcome == 'success')
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.preview_url }}
+        with:
+          script: |
+            const body = [
+              'Preview verification passed.',
+              '',
+              `Preview URL: ${process.env.PREVIEW_URL || 'n/a'}`,
+              `Source: ${context.payload.pull_request ? 'pull_request' : 'workflow_dispatch'}`,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });
+
+      - name: Block failing preview
+        if: github.event_name == 'pull_request' && steps.preview.outputs.preview_url != '' && steps.verification_status.outputs.verification_passed != 'true' && steps.preview_tests_after_heal.outcome != 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let log = '';
+            try {
+              log = fs.readFileSync('preview-verification.log', 'utf8');
+            } catch {
+              log = '(missing preview-verification.log)';
+            }
+            const tail = log.split('\n').slice(-40).join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: [
+                'Preview verification failed and no self-heal passed.',
+                '',
+                'Tail of the preview run:',
+                '```',
+                tail,
+                '```',
+                '',
+                'See the workflow artifacts for the full report.'
+              ].join('\n'),
+            });
+            core.setFailed('Preview verification failed.');
