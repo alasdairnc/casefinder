@@ -7,6 +7,10 @@ import crypto from "crypto";
 function parseArgs(argv) {
   const out = {
     baseUrl: process.env.RETRIEVAL_HEALTH_BASE_URL || "https://www.casedive.ca",
+    fallbackBaseUrls: (process.env.RETRIEVAL_HEALTH_FALLBACK_BASE_URLS || "https://casedive.vercel.app")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
     outDir: "reports/retrieval-autofix",
     limit: 100,
     maxPages: 8,
@@ -35,6 +39,15 @@ function parseArgs(argv) {
   }
 
   return out;
+}
+
+function isCloudflareChallenge(bodyText = "") {
+  const body = String(bodyText || "").toLowerCase();
+  return (
+    body.includes("just a moment") ||
+    body.includes("cf-browser-verification") ||
+    body.includes("cloudflare")
+  );
 }
 
 function normalizeSnippet(snippet) {
@@ -121,6 +134,11 @@ async function fetchFailureArchive(baseUrl, token, limit, maxPages) {
     });
     if (!response.ok) {
       const body = await response.text().catch(() => "");
+      if (response.status === 403 && isCloudflareChallenge(body)) {
+        const err = new Error(`retrieval-health cloudflare_challenge on ${cleanBase}`);
+        err.code = "CLOUDFLARE_CHALLENGE";
+        throw err;
+      }
       throw new Error(`retrieval-health ${response.status}: ${body.slice(0, 300)}`);
     }
 
@@ -134,6 +152,31 @@ async function fetchFailureArchive(baseUrl, token, limit, maxPages) {
   }
 
   return allItems;
+}
+
+async function fetchFailureArchiveWithFallback({ baseUrl, fallbackBaseUrls, token, limit, maxPages }) {
+  const candidates = [baseUrl, ...fallbackBaseUrls]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .filter((value, index, arr) => arr.indexOf(value) === index);
+
+  const attempts = [];
+  for (const candidate of candidates) {
+    try {
+      const items = await fetchFailureArchive(candidate, token, limit, maxPages);
+      return { items, resolvedBaseUrl: candidate, attempts };
+    } catch (error) {
+      attempts.push({
+        baseUrl: candidate,
+        code: error?.code || "ERROR",
+        message: String(error?.message || error),
+      });
+      continue;
+    }
+  }
+
+  const details = attempts.map((attempt) => `${attempt.baseUrl} -> ${attempt.code}`).join(", ");
+  throw new Error(`all retrieval-health base URLs failed: ${details}`);
 }
 
 function renderMarkdown(summary, grouped) {
@@ -169,12 +212,15 @@ async function main() {
 
   const rawEvents = args.input
     ? JSON.parse(fs.readFileSync(path.resolve(process.cwd(), args.input), "utf-8"))
-    : await fetchFailureArchive(
-        args.baseUrl,
-        process.env.RETRIEVAL_HEALTH_TOKEN || "",
-        args.limit,
-        args.maxPages,
-      );
+    : (
+        await fetchFailureArchiveWithFallback({
+          baseUrl: args.baseUrl,
+          fallbackBaseUrls: args.fallbackBaseUrls,
+          token: process.env.RETRIEVAL_HEALTH_TOKEN || "",
+          limit: args.limit,
+          maxPages: args.maxPages,
+        })
+      ).items;
 
   const allFailures = Array.isArray(rawEvents) ? rawEvents : [];
   const noCaselawFailures = allFailures.filter((item) => {
