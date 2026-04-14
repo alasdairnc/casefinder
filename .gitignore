@@ -10,6 +10,7 @@ test-results
 .env*.local
 .claude/settings.local.json
 .claude/mcp.json
+.claude/worktrees/
 node_modules_old/
 tmp/
 .claude-flow/

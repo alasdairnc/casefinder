@@ -29,7 +29,7 @@ jobs:
       PROD_BASE_URL: https://casefinder-project-git-main-alasdairncs-projects.vercel.app
       RETRIEVAL_HEALTH_FALLBACK_BASE_URLS: https://www.casedive.ca,https://casedive.ca
       RETRIEVAL_HEALTH_SOFT_FAIL: "true"
-      MIN_FAILURE_EVENTS: "25"
+      MIN_FAILURE_EVENTS: "10"
       FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_run || 'false' }}
     outputs:
       run_autofix: ${{ steps.detect_outputs.outputs.run_autofix }}
@@ -164,7 +164,7 @@ jobs:
 
       - name: Upload detector artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: production-retrieval-detector-${{ github.run_id }}
           if-no-files-found: ignore
@@ -178,7 +178,7 @@ jobs:
     if: needs.detect.outputs.run_autofix == 'true'
     runs-on: ubuntu-latest
     env:
-      MIN_FAILURE_EVENTS: "25"
+      MIN_FAILURE_EVENTS: "10"
       HIGH_SIGNAL_FAILURE_EVENTS: "75"
       ALLOW_CLAUDE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.allow_claude || 'false' }}
 
@@ -196,7 +196,7 @@ jobs:
         run: npm ci
 
       - name: Download detector artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: production-retrieval-detector-${{ github.run_id }}
           path: reports/retrieval-autofix
@@ -307,7 +307,7 @@ jobs:
 
       - name: Upload autofix artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: production-retrieval-autofix-${{ github.run_id }}
           if-no-files-found: ignore
