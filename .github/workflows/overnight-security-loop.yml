@@ -139,6 +139,12 @@ jobs:
         run: |
           REPORT=$(head -100 claude-security-report.txt 2>/dev/null || echo "(no report generated)")
           TITLE="fix(security): nightly security autofix $(date +%Y-%m-%d)"
+          LABEL_ARGS=()
+          for LABEL in security automated; do
+            if gh label list --limit 200 | awk '{print $1}' | grep -qx "$LABEL"; then
+              LABEL_ARGS+=(--label "$LABEL")
+            fi
+          done
           read -r -d '' BODY << 'BODYEOF' || true
           ## Overnight Security Loop
 
@@ -165,4 +171,4 @@ jobs:
             --body "$BODY" \
             --base main \
             --head "$BRANCH" \
-            --label "security,automated"
+            "${LABEL_ARGS[@]}"
