@@ -118,12 +118,9 @@ jobs:
         run: |
           git add api/
           CHANGED_COUNT="${{ steps.diff_check.outputs.changed_files }}"
-          git commit -m "fix(security): nightly automated security fixes $(date +%Y-%m-%d)
-
-Automated fixes from overnight-security-loop workflow.
-Files changed: ${CHANGED_COUNT}
-
-See PR description for full audit report."
+          git commit \
+            -m "fix(security): nightly automated security fixes $(date +%Y-%m-%d)" \
+            -m "Automated fixes from overnight-security-loop workflow.\n\nFiles changed: ${CHANGED_COUNT}\n\nSee PR description for full audit report."
 
       - name: Push branch
         if: steps.has_changes.outputs.has_changes == 'true'
