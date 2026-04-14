@@ -15,6 +15,7 @@ function parseArgs(argv) {
     limit: 100,
     maxPages: 8,
     input: "",
+    softFail: process.env.RETRIEVAL_HEALTH_SOFT_FAIL !== "false",
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -210,17 +211,68 @@ async function main() {
   const outDir = path.resolve(process.cwd(), args.outDir);
   fs.mkdirSync(outDir, { recursive: true });
 
-  const rawEvents = args.input
-    ? JSON.parse(fs.readFileSync(path.resolve(process.cwd(), args.input), "utf-8"))
-    : (
-        await fetchFailureArchiveWithFallback({
-          baseUrl: args.baseUrl,
-          fallbackBaseUrls: args.fallbackBaseUrls,
-          token: process.env.RETRIEVAL_HEALTH_TOKEN || "",
-          limit: args.limit,
-          maxPages: args.maxPages,
-        })
-      ).items;
+  const dateTag = new Date().toISOString().slice(0, 10);
+  const reportPath = path.join(outDir, `daily-${dateTag}.json`);
+  const markdownPath = path.join(outDir, `daily-${dateTag}.md`);
+
+  let rawEvents = [];
+  let fetchMeta = null;
+  try {
+    if (args.input) {
+      rawEvents = JSON.parse(
+        fs.readFileSync(path.resolve(process.cwd(), args.input), "utf-8"),
+      );
+    } else {
+      fetchMeta = await fetchFailureArchiveWithFallback({
+        baseUrl: args.baseUrl,
+        fallbackBaseUrls: args.fallbackBaseUrls,
+        token: process.env.RETRIEVAL_HEALTH_TOKEN || "",
+        limit: args.limit,
+        maxPages: args.maxPages,
+      });
+      rawEvents = fetchMeta.items;
+    }
+  } catch (error) {
+    if (!args.softFail) throw error;
+
+    const fallbackPayload = {
+      generatedAt: new Date().toISOString(),
+      baseUrl: args.baseUrl,
+      resolvedBaseUrl: null,
+      totalFailures: 0,
+      noCaselawFailures: 0,
+      reasonCounts: {},
+      groups: [],
+      events: [],
+      fetchError: String(error?.message || error),
+    };
+
+    fs.writeFileSync(reportPath, JSON.stringify(fallbackPayload, null, 2));
+    fs.writeFileSync(
+      markdownPath,
+      [
+        "# Daily No-Case-Law Snapshot",
+        "",
+        `- Generated: ${fallbackPayload.generatedAt}`,
+        `- Base URL: ${fallbackPayload.baseUrl}`,
+        "- Fetch status: blocked",
+        `- Error: ${fallbackPayload.fetchError}`,
+        "",
+        "No telemetry could be collected from the configured endpoints in this run.",
+      ].join("\n"),
+    );
+
+    const summary = {
+      reportPath,
+      markdownPath,
+      totalFailures: 0,
+      noCaselawFailures: 0,
+      groupCount: 0,
+    };
+    writeOutputs(summary);
+    console.log(JSON.stringify({ ...summary, softFailed: true }, null, 2));
+    return;
+  }
 
   const allFailures = Array.isArray(rawEvents) ? rawEvents : [];
   const noCaselawFailures = allFailures.filter((item) => {
@@ -233,13 +285,10 @@ async function main() {
 
   const grouped = groupEvents(noCaselawFailures);
   const reasonCounts = toReasonCounts(noCaselawFailures);
-  const dateTag = new Date().toISOString().slice(0, 10);
-  const reportPath = path.join(outDir, `daily-${dateTag}.json`);
-  const markdownPath = path.join(outDir, `daily-${dateTag}.md`);
-
   const payload = {
     generatedAt: new Date().toISOString(),
     baseUrl: args.baseUrl,
+    resolvedBaseUrl: fetchMeta?.resolvedBaseUrl || args.baseUrl,
     totalFailures: allFailures.length,
     noCaselawFailures: noCaselawFailures.length,
     reasonCounts,

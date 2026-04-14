@@ -28,6 +28,7 @@ jobs:
     env:
       PROD_BASE_URL: https://www.casedive.ca
       RETRIEVAL_HEALTH_FALLBACK_BASE_URLS: https://casedive.vercel.app
+      RETRIEVAL_HEALTH_SOFT_FAIL: "true"
       MIN_FAILURE_EVENTS: "25"
       HIGH_SIGNAL_FAILURE_EVENTS: "75"
       ALLOW_CLAUDE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.allow_claude || 'false' }}
