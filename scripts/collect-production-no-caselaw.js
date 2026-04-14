@@ -129,7 +129,10 @@ async function fetchFailureArchive(baseUrl, token, limit, maxPages) {
     if (beforeTs) params.set("failuresBeforeTs", String(beforeTs));
     const url = `${cleanBase}/api/retrieval-health?${params.toString()}`;
 
-    const headers = {};
+    const headers = {
+      Accept: "application/json",
+      "User-Agent": "CaseDive-Retrieval-Detector/1.0 (+github-actions)",
+    };
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const response = await fetch(url, {
