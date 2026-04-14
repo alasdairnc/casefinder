@@ -1,0 +1,225 @@
+name: Production Retrieval Auto-Fix
+
+on:
+  schedule:
+    - cron: "15 7 * * *"
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Force run even under low failure volume"
+        required: false
+        default: "false"
+      allow_claude:
+        description: "Allow one Claude fallback pass (manual only)"
+        required: false
+        default: "false"
+
+concurrency:
+  group: production-retrieval-autofix
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    env:
+      PROD_BASE_URL: https://www.casedive.ca
+      MIN_FAILURE_EVENTS: "25"
+      HIGH_SIGNAL_FAILURE_EVENTS: "75"
+      ALLOW_CLAUDE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.allow_claude || 'false' }}
+      FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_run || 'false' }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check required telemetry token
+        id: token
+        env:
+          RETRIEVAL_HEALTH_TOKEN: ${{ secrets.RETRIEVAL_HEALTH_TOKEN }}
+        run: |
+          if [ -z "${RETRIEVAL_HEALTH_TOKEN}" ]; then
+            echo "token_available=false" >> "$GITHUB_OUTPUT"
+            echo "reason=missing-token" >> "$GITHUB_OUTPUT"
+          else
+            echo "token_available=true" >> "$GITHUB_OUTPUT"
+            echo "reason=ok" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Collect production no-case-law failures
+        id: collect
+        if: steps.token.outputs.token_available == 'true'
+        env:
+          RETRIEVAL_HEALTH_TOKEN: ${{ secrets.RETRIEVAL_HEALTH_TOKEN }}
+          RETRIEVAL_HEALTH_BASE_URL: ${{ env.PROD_BASE_URL }}
+        run: |
+          node scripts/collect-production-no-caselaw.js \
+            --base-url "$RETRIEVAL_HEALTH_BASE_URL" \
+            --limit 100 \
+            --max-pages 8 \
+            --out-dir reports/retrieval-autofix
+
+      - name: Decide whether to tune
+        id: precheck
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.token.outputs.token_available }}" != "true" ]; then
+            echo "run_autofix=false" >> "$GITHUB_OUTPUT"
+            echo "reason=missing-token" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          FAILURES="${{ steps.collect.outputs.no_caselaw_failures }}"
+          if [ -z "$FAILURES" ]; then FAILURES=0; fi
+
+          if [ "${FORCE_RUN}" = "true" ]; then
+            echo "run_autofix=true" >> "$GITHUB_OUTPUT"
+            echo "reason=forced" >> "$GITHUB_OUTPUT"
+          elif [ "$FAILURES" -ge "$MIN_FAILURE_EVENTS" ]; then
+            echo "run_autofix=true" >> "$GITHUB_OUTPUT"
+            echo "reason=threshold-met" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_autofix=false" >> "$GITHUB_OUTPUT"
+            echo "reason=below-threshold" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create branch
+        id: branch
+        if: steps.precheck.outputs.run_autofix == 'true'
+        run: |
+          set -euo pipefail
+          BRANCH="retrieval-autofix/$(date +%Y-%m-%d)-${GITHUB_RUN_ID}"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Apply deterministic retrieval autofix
+        id: deterministic
+        if: steps.precheck.outputs.run_autofix == 'true'
+        run: |
+          node scripts/apply-retrieval-autofix.js \
+            --apply \
+            --min-failures "$MIN_FAILURE_EVENTS" \
+            --report "${{ steps.collect.outputs.report_path }}" \
+            --summary reports/retrieval-autofix/autofix-plan.md
+
+      - name: Verify deterministic patch
+        id: deterministic_tests
+        if: steps.precheck.outputs.run_autofix == 'true' && steps.deterministic.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:retrieval-failures 2>&1 | tee retrieval-autofix-tests.log
+
+      - name: Optional Claude fallback (manual + high-signal only)
+        id: claude
+        if: steps.precheck.outputs.run_autofix == 'true' && steps.deterministic.outputs.changed != 'true' && env.ALLOW_CLAUDE == 'true' && fromJSON(steps.collect.outputs.no_caselaw_failures || '0') >= fromJSON(env.HIGH_SIGNAL_FAILURE_EVENTS)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "Claude key missing; skipping fallback."
+            exit 0
+          fi
+          npm install -g @anthropic-ai/claude-code
+          claude -p "$(cat .github/agents/production-retrieval-autofix.agent.md)" \
+            --allowedTools "Read,Edit,Grep,Glob" \
+            --max-turns 10 \
+            --output-format text 2>&1 | tee retrieval-autofix-claude.log
+
+      - name: Verify Claude patch
+        id: claude_tests
+        if: steps.claude.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:retrieval-failures 2>&1 | tee retrieval-autofix-tests-claude.log
+
+      - name: Decide PR readiness
+        id: readiness
+        if: steps.precheck.outputs.run_autofix == 'true'
+        run: |
+          set -euo pipefail
+          READY=false
+          SOURCE=none
+
+          if [ "${{ steps.deterministic.outputs.changed }}" = "true" ] && [ "${{ steps.deterministic_tests.outcome }}" = "success" ]; then
+            READY=true
+            SOURCE=deterministic
+          elif [ "${{ steps.claude.outcome }}" = "success" ] && [ "${{ steps.claude_tests.outcome }}" = "success" ]; then
+            if ! git diff --quiet; then
+              READY=true
+              SOURCE=claude
+            fi
+          fi
+
+          if git diff --quiet; then
+            HAS_DIFF=false
+          else
+            HAS_DIFF=true
+          fi
+
+          echo "ready=${READY}" >> "$GITHUB_OUTPUT"
+          echo "source=${SOURCE}" >> "$GITHUB_OUTPUT"
+          echo "has_diff=${HAS_DIFF}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload autofix artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-retrieval-autofix-${{ github.run_id }}
+          if-no-files-found: ignore
+          path: |
+            reports/retrieval-autofix/*.json
+            reports/retrieval-autofix/*.md
+            retrieval-autofix-tests.log
+            retrieval-autofix-tests-claude.log
+            retrieval-autofix-claude.log
+
+      - name: Commit and push autofix branch
+        if: steps.readiness.outputs.ready == 'true' && steps.readiness.outputs.has_diff == 'true'
+        env:
+          BRANCH: ${{ steps.branch.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add api/_filterConfig.js reports/retrieval-autofix scripts/apply-retrieval-autofix.js scripts/collect-production-no-caselaw.js
+          git commit -m "fix(retrieval): daily no-case-law autofix $(date +%Y-%m-%d)"
+          git push origin "$BRANCH"
+
+      - name: Open batched PR
+        if: steps.readiness.outputs.ready == 'true' && steps.readiness.outputs.has_diff == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
+          SOURCE: ${{ steps.readiness.outputs.source }}
+          FAILURES: ${{ steps.collect.outputs.no_caselaw_failures }}
+        run: |
+          set -euo pipefail
+          REPORT_MD="${{ steps.collect.outputs.markdown_path }}"
+          PLAN_MD="reports/retrieval-autofix/autofix-plan.md"
+          BODY="$(cat "$REPORT_MD")\n\n---\n\n$(cat "$PLAN_MD")\n\n---\n\nSource: $SOURCE\nNo-case-law failures: $FAILURES"
+          gh pr create \
+            --title "fix(retrieval): daily production no-case-law autofix $(date +%Y-%m-%d)" \
+            --body "$BODY" \
+            --base main \
+            --head "$BRANCH"
+
+      - name: Skip summary
+        if: steps.precheck.outputs.run_autofix != 'true'
+        run: |
+          echo "Skipping daily retrieval autofix."
+          echo "Reason: ${{ steps.precheck.outputs.reason }}"
