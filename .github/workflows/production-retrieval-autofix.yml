@@ -23,16 +23,20 @@ permissions:
   pull-requests: write
 
 jobs:
-  autofix:
+  detect:
     runs-on: ubuntu-latest
     env:
       PROD_BASE_URL: https://www.casedive.ca
       RETRIEVAL_HEALTH_FALLBACK_BASE_URLS: https://casedive.vercel.app
       RETRIEVAL_HEALTH_SOFT_FAIL: "true"
       MIN_FAILURE_EVENTS: "25"
-      HIGH_SIGNAL_FAILURE_EVENTS: "75"
-      ALLOW_CLAUDE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.allow_claude || 'false' }}
       FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_run || 'false' }}
+    outputs:
+      run_autofix: ${{ steps.detect_outputs.outputs.run_autofix }}
+      reason: ${{ steps.detect_outputs.outputs.reason }}
+      no_caselaw_failures: ${{ steps.detect_outputs.outputs.no_caselaw_failures }}
+      report_path: ${{ steps.detect_outputs.outputs.report_path }}
+      markdown_path: ${{ steps.detect_outputs.outputs.markdown_path }}
 
     steps:
       - uses: actions/checkout@v5
@@ -42,10 +46,6 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Check required telemetry token
         id: token
@@ -97,9 +97,76 @@ jobs:
             echo "reason=below-threshold" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Publish detector outputs
+        id: detect_outputs
+        run: |
+          set -euo pipefail
+          NO_CASELAW_FAILURES="${{ steps.collect.outputs.no_caselaw_failures }}"
+          REPORT_PATH="${{ steps.collect.outputs.report_path }}"
+          MARKDOWN_PATH="${{ steps.collect.outputs.markdown_path }}"
+          if [ -z "$NO_CASELAW_FAILURES" ]; then NO_CASELAW_FAILURES=0; fi
+
+          echo "run_autofix=${{ steps.precheck.outputs.run_autofix }}" >> "$GITHUB_OUTPUT"
+          echo "reason=${{ steps.precheck.outputs.reason }}" >> "$GITHUB_OUTPUT"
+          echo "no_caselaw_failures=${NO_CASELAW_FAILURES}" >> "$GITHUB_OUTPUT"
+          echo "report_path=${REPORT_PATH}" >> "$GITHUB_OUTPUT"
+          echo "markdown_path=${MARKDOWN_PATH}" >> "$GITHUB_OUTPUT"
+
+      - name: Write daily detector summary
+        run: |
+          set -euo pipefail
+          mkdir -p reports/retrieval-autofix
+          cat > reports/retrieval-autofix/detector-summary.md << 'EOF'
+          # Daily Retrieval Detector Summary
+
+          - Run autofix: ${{ steps.precheck.outputs.run_autofix }}
+          - Reason: ${{ steps.precheck.outputs.reason }}
+          - No-case-law failures: ${{ steps.detect_outputs.outputs.no_caselaw_failures }}
+          - Report path: ${{ steps.detect_outputs.outputs.report_path || '(none)' }}
+          - Markdown path: ${{ steps.detect_outputs.outputs.markdown_path || '(none)' }}
+          EOF
+
+      - name: Upload detector artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-retrieval-detector-${{ github.run_id }}
+          if-no-files-found: ignore
+          path: |
+            reports/retrieval-autofix/detector-summary.md
+            reports/retrieval-autofix/*.json
+            reports/retrieval-autofix/*.md
+
+  repair:
+    needs: detect
+    if: needs.detect.outputs.run_autofix == 'true'
+    runs-on: ubuntu-latest
+    env:
+      MIN_FAILURE_EVENTS: "25"
+      HIGH_SIGNAL_FAILURE_EVENTS: "75"
+      ALLOW_CLAUDE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.allow_claude || 'false' }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download detector artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: production-retrieval-detector-${{ github.run_id }}
+          path: .
+
       - name: Create branch
         id: branch
-        if: steps.precheck.outputs.run_autofix == 'true'
         run: |
           set -euo pipefail
           BRANCH="retrieval-autofix/$(date +%Y-%m-%d)-${GITHUB_RUN_ID}"
@@ -108,17 +175,21 @@ jobs:
 
       - name: Apply deterministic retrieval autofix
         id: deterministic
-        if: steps.precheck.outputs.run_autofix == 'true'
         run: |
+          set -euo pipefail
+          REPORT_PATH="reports/retrieval-autofix/$(basename '${{ needs.detect.outputs.report_path }}')"
+          if [ ! -f "$REPORT_PATH" ]; then
+            REPORT_PATH="${{ needs.detect.outputs.report_path }}"
+          fi
           node scripts/apply-retrieval-autofix.js \
             --apply \
             --min-failures "$MIN_FAILURE_EVENTS" \
-            --report "${{ steps.collect.outputs.report_path }}" \
+            --report "$REPORT_PATH" \
             --summary reports/retrieval-autofix/autofix-plan.md
 
       - name: Verify deterministic patch
         id: deterministic_tests
-        if: steps.precheck.outputs.run_autofix == 'true' && steps.deterministic.outputs.changed == 'true'
+        if: steps.deterministic.outputs.changed == 'true'
         continue-on-error: true
         run: |
           set -o pipefail
@@ -126,7 +197,7 @@ jobs:
 
       - name: Optional Claude fallback (manual + high-signal only)
         id: claude
-        if: steps.precheck.outputs.run_autofix == 'true' && steps.deterministic.outputs.changed != 'true' && env.ALLOW_CLAUDE == 'true' && fromJSON(steps.collect.outputs.no_caselaw_failures || '0') >= fromJSON(env.HIGH_SIGNAL_FAILURE_EVENTS)
+        if: steps.deterministic.outputs.changed != 'true' && env.ALLOW_CLAUDE == 'true' && fromJSON(needs.detect.outputs.no_caselaw_failures || '0') >= fromJSON(env.HIGH_SIGNAL_FAILURE_EVENTS)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -151,7 +222,6 @@ jobs:
 
       - name: Decide PR readiness
         id: readiness
-        if: steps.precheck.outputs.run_autofix == 'true'
         run: |
           set -euo pipefail
           READY=false
@@ -208,10 +278,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ steps.branch.outputs.branch }}
           SOURCE: ${{ steps.readiness.outputs.source }}
-          FAILURES: ${{ steps.collect.outputs.no_caselaw_failures }}
+          FAILURES: ${{ needs.detect.outputs.no_caselaw_failures }}
         run: |
           set -euo pipefail
-          REPORT_MD="${{ steps.collect.outputs.markdown_path }}"
+          REPORT_MD="reports/retrieval-autofix/$(basename '${{ needs.detect.outputs.markdown_path }}')"
+          if [ ! -f "$REPORT_MD" ]; then
+            REPORT_MD="${{ needs.detect.outputs.markdown_path }}"
+          fi
           PLAN_MD="reports/retrieval-autofix/autofix-plan.md"
           BODY="$(cat "$REPORT_MD")\n\n---\n\n$(cat "$PLAN_MD")\n\n---\n\nSource: $SOURCE\nNo-case-law failures: $FAILURES"
           gh pr create \
@@ -220,8 +293,13 @@ jobs:
             --base main \
             --head "$BRANCH"
 
+  skip-summary:
+    needs: detect
+    if: needs.detect.outputs.run_autofix != 'true'
+    runs-on: ubuntu-latest
+    steps:
       - name: Skip summary
-        if: steps.precheck.outputs.run_autofix != 'true'
         run: |
           echo "Skipping daily retrieval autofix."
-          echo "Reason: ${{ steps.precheck.outputs.reason }}"
+          echo "Reason: ${{ needs.detect.outputs.reason }}"
+          echo "No-case-law failures: ${{ needs.detect.outputs.no_caselaw_failures }}"
