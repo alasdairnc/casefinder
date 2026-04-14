@@ -1,371 +1,234 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CaseDive Filter Quality Report</title>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        margin: 20px;
-        background: #f5f5f5;
-      }
-      .header {
-        background: #2c2825;
-        color: #faf7f2;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 30px;
-      }
-      h1 {
-        margin: 0;
-        font-size: 24px;
-      }
-      .timestamp {
-        font-size: 12px;
-        opacity: 0.8;
-        margin-top: 10px;
-      }
-      .metrics {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 15px;
-        margin-bottom: 30px;
-      }
-      .metric {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid #d4a040;
-      }
-      .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: #d4a040;
-      }
-      .metric-label {
-        font-size: 12px;
-        color: #666;
-        text-transform: uppercase;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-      th {
-        background: #f0f0f0;
-        padding: 12px;
-        text-align: left;
-        font-weight: 600;
-        border-bottom: 2px solid #ddd;
-      }
-      td {
-        padding: 12px;
-        border-bottom: 1px solid #eee;
-      }
-      tr.pass {
-        background: #f0fef0;
-      }
-      tr.fail {
-        background: #fef0f0;
-      }
-      tr.skip {
-        background: #f5f7fb;
-      }
-      .suggestion {
-        margin-bottom: 15px;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid;
-      }
-      .suggestion.high {
-        border-color: #d32f2f;
-        background: #ffebee;
-      }
-      .suggestion.medium {
-        border-color: #f57c00;
-        background: #fff3e0;
-      }
-      .suggestion.low {
-        border-color: #fbc02d;
-        background: #fffde7;
-      }
-      h4 {
-        margin: 0 0 10px 0;
-      }
-      p {
-        margin: 5px 0;
-        font-size: 13px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <h1>CaseDive Filter Quality Report</h1>
-      <div class="timestamp">Generated 2026-04-13T14:59:27.991Z</div>
-      <div class="timestamp">Mode: keyed-canlii</div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaseDive Filter Quality Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 20px; background: #f5f5f5; }
+    .header { background: #2c2825; color: #faf7f2; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    h1 { margin: 0; font-size: 24px; }
+    .timestamp { font-size: 12px; opacity: 0.8; margin-top: 10px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+    .metric { background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #d4a040; }
+    .metric-value { font-size: 28px; font-weight: bold; color: #d4a040; }
+    .metric-label { font-size: 12px; color: #666; text-transform: uppercase; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+    th { background: #f0f0f0; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+    td { padding: 12px; border-bottom: 1px solid #eee; }
+    tr.pass { background: #f0fef0; }
+    tr.fail { background: #fef0f0; }
+    tr.skip { background: #f5f7fb; }
+    .suggestion { margin-bottom: 15px; padding: 15px; border-radius: 8px; border-left: 4px solid; }
+    .suggestion.high { border-color: #d32f2f; background: #ffebee; }
+    .suggestion.medium { border-color: #f57c00; background: #fff3e0; }
+    .suggestion.low { border-color: #fbc02d; background: #fffde7; }
+    h4 { margin: 0 0 10px 0; }
+    p { margin: 5px 0; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>CaseDive Filter Quality Report</h1>
+    <div class="timestamp">Generated 2026-04-14T14:05:33.452Z</div>
+    <div class="timestamp">Mode: keyed-canlii</div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-value">100.0%</div>
+      <div class="metric-label">Pass Rate</div>
     </div>
-
-    <div class="metrics">
-      <div class="metric">
-        <div class="metric-value">100.0%</div>
-        <div class="metric-label">Pass Rate</div>
-      </div>
-      <div class="metric">
-        <div class="metric-value">19/19</div>
-        <div class="metric-label">Tests Passed</div>
-      </div>
-      <div class="metric">
-        <div class="metric-value">6.35</div>
-        <div class="metric-label">Avg Relevance (0-10)</div>
-      </div>
-      <div class="metric">
-        <div class="metric-value">0.84</div>
-        <div class="metric-label">Avg Precision</div>
-      </div>
+    <div class="metric">
+      <div class="metric-value">19/19</div>
+      <div class="metric-label">Tests Passed</div>
     </div>
-
-    <h2>Test Results</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Scenario</th>
-          <th>Precision</th>
-          <th>Relevance</th>
-          <th>Results</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="pass">
-          <td>
-            I was pulled over at a RIDE checkpoint and asked to provide a breath
-            sample. Wha
-          </td>
-          <td>1.00</td>
-          <td>7.00</td>
-          <td>2</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            Drunk driving conviction. I refused the breathalyzer. What defences
-            exist?
-          </td>
-          <td>1.00</td>
-          <td>7.00</td>
-          <td>2</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            Roadside stop at a checkpoint, officer demanded a breath test and
-            held me there.
-          </td>
-          <td>1.00</td>
-          <td>9.00</td>
-          <td>2</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I punched someone in the face during an argument. They had minor
-            injuries. Am I
-          </td>
-          <td>1.00</td>
-          <td>4.00</td>
-          <td>1</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I was in a fight at a bar and broke someone's arm. Self-defence is
-            my claim.
-          </td>
-          <td>1.00</td>
-          <td>8.67</td>
-          <td>3</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I stabbed someone with a knife during a confrontation. What's the
-            crime?
-          </td>
-          <td>1.00</td>
-          <td>6.00</td>
-          <td>3</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I'm accused of sexual assault. The complainant says consent wasn't
-            given. What's
-          </td>
-          <td>1.00</td>
-          <td>10.00</td>
-          <td>3</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            Police found 50 grams of cocaine in my car. They're charging me with
-            trafficking
-          </td>
-          <td>1.00</td>
-          <td>7.00</td>
-          <td>1</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            Found with fentanyl pills. Police say it's for trafficking. What's
-            the legal sta
-          </td>
-          <td>1.00</td>
-          <td>7.00</td>
-          <td>1</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            Police arrested me without a warrant and without explaining why. Is
-            this a Chart
-          </td>
-          <td>1.00</td>
-          <td>6.67</td>
-          <td>3</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I was detained on the street with no clear grounds and not told why.
-            Is that arb
-          </td>
-          <td>1.00</td>
-          <td>9.33</td>
-          <td>3</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I was arrested and detained, but police didn't let me call a lawyer
-            for hours. W
-          </td>
-          <td>1.00</td>
-          <td>10.00</td>
-          <td>1</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            After arrest, officers questioned me and delayed my chance to
-            contact counsel. D
-          </td>
-          <td>1.00</td>
-          <td>8.00</td>
-          <td>2</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I was involved in a store robbery. I didn't use a weapon, but I was
-            there and th
-          </td>
-          <td>1.00</td>
-          <td>9.00</td>
-          <td>2</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I took merchandise from a store without paying. The value was $150.
-            Am I facing
-          </td>
-          <td>1.00</td>
-          <td>6.00</td>
-          <td>1</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I got into a heated argument with my spouse, there was physical
-            contact, and the
-          </td>
-          <td>1.00</td>
-          <td>6.00</td>
-          <td>1</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>Very brief scenario with minimal detail.</td>
-          <td>0.00</td>
-          <td>0.00</td>
-          <td>0</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I need advice on copyright royalties and digital music licensing
-            terms.
-          </td>
-          <td>0.00</td>
-          <td>0.00</td>
-          <td>0</td>
-          <td>✓ PASS</td>
-        </tr>
-
-        <tr class="pass">
-          <td>
-            I am appealing an administrative tribunal decision on professional
-            licensing fai
-          </td>
-          <td>0.00</td>
-          <td>0.00</td>
-          <td>0</td>
-          <td>✓ PASS</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <h2 style="margin-top: 30px">Improvement Suggestions</h2>
-    <p style="color: #666">
-      ✓ All tests passing – no improvements needed at this time.
-    </p>
-
-    <div
-      style="
-        margin-top: 30px;
-        padding: 15px;
-        background: #f0f0f0;
-        border-radius: 8px;
-        font-size: 12px;
-        color: #666;
-      "
-    >
-      This report evaluates filter effectiveness across 19 test scenarios.
-      Results are ranked by relevance and precision. Adjust thresholds in
-      <code>api/_filterConfig.js</code> based on suggestions above.
+    <div class="metric">
+      <div class="metric-value">6.35</div>
+      <div class="metric-label">Avg Relevance (0-10)</div>
     </div>
-  </body>
+    <div class="metric">
+      <div class="metric-value">0.84</div>
+      <div class="metric-label">Avg Precision</div>
+    </div>
+  </div>
+
+  <h2>Test Results</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Scenario</th>
+        <th>Precision</th>
+        <th>Relevance</th>
+        <th>Results</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+    <tr class="pass">
+      <td>I was pulled over at a RIDE checkpoint and asked to provide a breath sample. Wha</td>
+      <td>1.00</td>
+      <td>7.00</td>
+      <td>2</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>Drunk driving conviction. I refused the breathalyzer. What defences exist?</td>
+      <td>1.00</td>
+      <td>7.00</td>
+      <td>2</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>Roadside stop at a checkpoint, officer demanded a breath test and held me there.</td>
+      <td>1.00</td>
+      <td>9.00</td>
+      <td>2</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I punched someone in the face during an argument. They had minor injuries. Am I </td>
+      <td>1.00</td>
+      <td>4.00</td>
+      <td>1</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I was in a fight at a bar and broke someone's arm. Self-defence is my claim.</td>
+      <td>1.00</td>
+      <td>8.67</td>
+      <td>3</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I stabbed someone with a knife during a confrontation. What's the crime?</td>
+      <td>1.00</td>
+      <td>6.00</td>
+      <td>3</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I'm accused of sexual assault. The complainant says consent wasn't given. What's</td>
+      <td>1.00</td>
+      <td>10.00</td>
+      <td>3</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>Police found 50 grams of cocaine in my car. They're charging me with trafficking</td>
+      <td>1.00</td>
+      <td>7.00</td>
+      <td>1</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>Found with fentanyl pills. Police say it's for trafficking. What's the legal sta</td>
+      <td>1.00</td>
+      <td>7.00</td>
+      <td>1</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>Police arrested me without a warrant and without explaining why. Is this a Chart</td>
+      <td>1.00</td>
+      <td>6.67</td>
+      <td>3</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I was detained on the street with no clear grounds and not told why. Is that arb</td>
+      <td>1.00</td>
+      <td>9.33</td>
+      <td>3</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I was arrested and detained, but police didn't let me call a lawyer for hours. W</td>
+      <td>1.00</td>
+      <td>10.00</td>
+      <td>1</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>After arrest, officers questioned me and delayed my chance to contact counsel. D</td>
+      <td>1.00</td>
+      <td>8.00</td>
+      <td>2</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I was involved in a store robbery. I didn't use a weapon, but I was there and th</td>
+      <td>1.00</td>
+      <td>9.00</td>
+      <td>2</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I took merchandise from a store without paying. The value was $150. Am I facing </td>
+      <td>1.00</td>
+      <td>6.00</td>
+      <td>1</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I got into a heated argument with my spouse, there was physical contact, and the</td>
+      <td>1.00</td>
+      <td>6.00</td>
+      <td>1</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>Very brief scenario with minimal detail.</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I need advice on copyright royalties and digital music licensing terms.</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    <tr class="pass">
+      <td>I am appealing an administrative tribunal decision on professional licensing fai</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0</td>
+      <td>✓ PASS</td>
+    </tr>
+  
+    </tbody>
+  </table>
+
+  <h2 style="margin-top: 30px;">Improvement Suggestions</h2>
+  <p style="color: #666;">✓ All tests passing – no improvements needed at this time.</p>
+
+  <div style="margin-top: 30px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 12px; color: #666;">
+    This report evaluates filter effectiveness across 19 test scenarios.
+    Results are ranked by relevance and precision. Adjust thresholds in <code>api/_filterConfig.js</code> based on suggestions above.
+  </div>
+</body>
 </html>
+  
