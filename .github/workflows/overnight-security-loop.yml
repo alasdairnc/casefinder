@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 6 * * *" # 2am ET / 6am UTC nightly
   workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run security audit'
+        required: false
+        default: 'true'
 
 jobs:
   security-loop:
