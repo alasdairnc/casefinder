@@ -1,4 +1,4 @@
-name: Overnight Security Loop
+name: 'Overnight Security Loop'
 
 on:
   schedule:
