@@ -20,7 +20,7 @@
 npm run test:filter
 
 # Output:
-# ✓ Report written to: /filter-quality-report.html
+# ✓ Report written to: /artifacts/filter-quality-report.html
 #
 # 📊 Results:
 #   Pass Rate: 87.5%
@@ -120,7 +120,7 @@ impaired_motor: {
 
 ### Problem: Specific Scenario Keeps Failing
 
-1. Open `filter-quality-report.html` in browser
+1. Open `artifacts/filter-quality-report.html` in browser
 2. Find the failing scenario
 3. Look at precision/relevance scores
 4. Check test case definition in `tests/unit/filterTuning.test.js`
@@ -249,7 +249,7 @@ Add to CI/CD:
 
 - name: Check pass rate
   run: |
-    PASS_RATE=$(grep "Pass Rate" filter-quality-report.html || echo 0)
+    PASS_RATE=$(grep "Pass Rate" artifacts/filter-quality-report.html || echo 0)
     if [[ $PASS_RATE -lt 70 ]]; then
       echo "Filter pass rate below 70%!"
       exit 1
@@ -331,7 +331,7 @@ console.log(scenario.scenario);
    npm run test:filter
    ```
 
-2. **Review report** — Open `filter-quality-report.html` in browser
+2. **Review report** — Open `artifacts/filter-quality-report.html` in browser
 
 3. **Identify any issues** — Review suggestions section
 

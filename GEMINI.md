@@ -7,21 +7,21 @@ This file provides Gemini CLI-specific instructions for working within the CaseD
 As Gemini CLI, I am a guest in this Claude-optimized codebase. I must strictly adhere to the rules, patterns, and workflows defined in:
 
 1. **`CLAUDE.md`** (Architecture, design tokens, and distilled rules)
-2. **`Skills/`** (Domain-specific legal data and API logic)
+2. **`skills/`** (Domain-specific legal data and API logic)
 3. **`.claude/`** (Agent configurations and custom commands)
 
 ## 2. Skills System (Claude-First)
 
-The CaseDive Skills system is the primary way to execute complex tasks. I will treat the instructions in `Skills/*.md` as expert procedural guidance that overrides my default behaviors.
+The CaseDive Skills system is the primary way to execute complex tasks. I will treat the instructions in `skills/*.md` as expert procedural guidance that overrides my default behaviors.
 
 ### Required Skills Reading
 
 | Task                | Primary Source (Master)                      |
 | :------------------ | :------------------------------------------- |
-| Criminal Code Edits | `Skills/criminal-code-builder-SKILL.md`      |
-| CanLII API Logic    | `Skills/canlii-case-verification-SKILL.md`   |
-| Prompt Engineering  | `Skills/canlii-prompt-engineering-SKILL.md`  |
-| Civil Law / Charter | `Skills/civil-law-database-builder-SKILL.md` |
+| Criminal Code Edits | `skills/criminal-code-builder-SKILL.md`      |
+| CanLII API Logic    | `skills/canlii-case-verification-SKILL.md`   |
+| Prompt Engineering  | `skills/canlii-prompt-engineering-SKILL.md`  |
+| Civil Law / Charter | `skills/civil-law-database-builder-SKILL.md` |
 
 ## 3. Architecture Rules (from CLAUDE.md)
 

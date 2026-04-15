@@ -158,7 +158,7 @@ Real-time view of filter configuration and health.
 node scripts/tune-filters.js --report
 ```
 
-Generates `filter-quality-report.html` with all metrics.
+Generates `artifacts/filter-quality-report.html` with all metrics.
 
 ### Step 2: Analyze Results
 

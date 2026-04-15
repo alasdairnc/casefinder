@@ -344,7 +344,7 @@ function suggestImprovements(testResults) {
 function generateHtmlReport(
   testResults,
   suggestions,
-  filename = "filter-quality-report.html",
+  filename = "artifacts/filter-quality-report.html",
   modeLabel = "unknown",
 ) {
   const timestamp = new Date().toISOString();
@@ -462,6 +462,7 @@ function generateHtmlReport(
   `;
 
   const reportPath = path.join(BASE_DIR, filename);
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, html, "utf-8");
   console.log(`✓ Report written to: ${reportPath}`);
   return reportPath;
@@ -573,7 +574,7 @@ async function main() {
       generateHtmlReport(
         testResults,
         suggestions,
-        "filter-quality-report.html",
+        "artifacts/filter-quality-report.html",
         modeLabel,
       );
     }
