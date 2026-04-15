@@ -196,3 +196,20 @@ Append-only. Each run adds a dated section. Never overwrite previous entries.
 ### Still open
 
 - Local `.env` contains live API and Redis credentials (gitignored but present on disk) | High | .env
+
+## Audit — 2026-04-14 (run 2)
+
+### Fixed since last run
+
+- Hardcoded model ID in vite.config.js — now imports `ANTHROPIC_MODEL_ID` from `_constants.js` | vite.config.js:1,172,285
+- `src/lib/criminalCodeParts.js` has no dedicated unit test — `tests/unit/criminalCodeParts.test.js` now exists
+
+### New findings
+
+- `api/status.js` missing from vercel.json `functions` config — falls back to platform defaults | Medium | vercel.json:9-16
+- 3 unbounded `redis.set()` calls in `_retrievalHealthStore.js` with no TTL — potential Redis bloat | Medium | api/\_retrievalHealthStore.js:273, 590, 759
+- Stale snapshot/checklist .md files in project root: MODE5_CANARY_CHECKLIST.md, MODE5_CANARY_SNAPSHOT_2026-04-04.md, MODE4_EVALUATION_SNAPSHOT_2026-04-04.md, MODE1_BALANCED_BACKLOG.md, MODE1_DISCOVERY_RUNBOOK.md | Low | (project root)
+
+### Still open
+
+- Local `.env` contains live API and Redis credentials (gitignored but present on disk) | High | .env

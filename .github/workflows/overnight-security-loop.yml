@@ -6,9 +6,7 @@ on:
       force_run:
         description: "Force run security audit"
         required: false
-        default: "true"
-  schedule:
-    - cron: "0 6 * * *" # 2am ET / 6am UTC nightly
+        default: "false"
 
 concurrency:
   group: overnight-security-loop

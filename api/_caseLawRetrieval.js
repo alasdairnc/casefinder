@@ -1027,7 +1027,10 @@ function isClearlyNonCriminalScenario(scenario) {
   const hasWorkplaceSignal = workplaceSignals.some((kw) => s.includes(kw));
 
   // Block criminal case-law if any non-criminal domain or workplace/tort/employment signal is present and no criminal domain is present
-  return (scenarioHasNonCriminalDomain || hasWorkplaceSignal) && !scenarioHasCriminalDomain;
+  return (
+    (scenarioHasNonCriminalDomain || hasWorkplaceSignal) &&
+    !scenarioHasCriminalDomain
+  );
 }
 
 function isCandidateCompatibleWithIssue(issuePrimary, candidateDomains) {

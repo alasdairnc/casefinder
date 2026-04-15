@@ -12,7 +12,7 @@ on:
       allow_self_heal:
         description: "Allow Claude self-heal step"
         required: false
-        default: "true"
+        default: "false"
 
 concurrency:
   group: preview-self-heal-${{ github.event.pull_request.number || github.run_id }}
@@ -29,7 +29,7 @@ jobs:
     env:
       MAX_WAIT_SECONDS: "1200"
       PREVIEW_URL_INPUT: ${{ github.event.inputs.preview_url || '' }}
-      ALLOW_SELF_HEAL: ${{ github.event.inputs.allow_self_heal || 'true' }}
+      ALLOW_SELF_HEAL: ${{ github.event.inputs.allow_self_heal || 'false' }}
       HAS_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       RETRIEVAL_HEALTH_TOKEN: ${{ secrets.RETRIEVAL_HEALTH_TOKEN }}
       PROD_BASE_URL: https://www.casedive.ca

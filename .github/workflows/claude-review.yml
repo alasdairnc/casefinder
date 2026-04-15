@@ -1,13 +1,12 @@
 name: Claude PR Review
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - "api/**"
-      - ".github/workflows/**"
-      - "package.json"
-      - "CLAUDE.md"
+  workflow_dispatch:
+    inputs:
+      run_review:
+        description: "Manually trigger Claude PR review"
+        required: false
+        default: "false"
 
 concurrency:
   group: claude-pr-review-${{ github.event.pull_request.number }}

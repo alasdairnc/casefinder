@@ -52,6 +52,11 @@
             "type": "command",
             "command": "sh .claude/hooks/lint-on-save.sh",
             "statusMessage": "Linting..."
+          },
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json\ndata = json.load(sys.stdin)\npath = data.get('tool_input', {}).get('file_path', '')\nfilename = path.split('/')[-1]\nif '/api/' in path and path.endswith('.js') and not filename.startswith('_'):\n    print(json.dumps({'systemMessage': f'api/{filename} edited — run api-invariant-reviewer before committing.'}))\n\"",
+            "statusMessage": "Checking api/ invariants..."
           }
         ]
       }
