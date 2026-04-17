@@ -30,12 +30,8 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    ...(isLiveMode
-      ? []
-      : [
-          { name: "Mobile Chrome", use: { ...devices["Pixel 5"] } },
-          { name: "Mobile Safari", use: { ...devices["iPhone 12"] } },
-        ]),
+    { name: "Mobile Chrome", use: { ...devices["Pixel 5"] } },
+    { name: "Mobile Safari", use: { ...devices["iPhone 12"] } },
   ],
   webServer: isLiveMode
     ? undefined

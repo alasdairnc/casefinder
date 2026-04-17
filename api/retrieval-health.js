@@ -48,6 +48,10 @@ function isAuthorized(req) {
   return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
 }
 
+import { redis } from "./_rateLimit.js";
+import { withRedisTimeout } from "./_redisTimeout.js";
+import { API_REDIS_TIMEOUT_MS } from "./_constants.js";
+
 export default async function handler(req, res) {
   const requestId = req.headers["x-vercel-id"] || randomUUID();
   const startMs = Date.now();
@@ -77,6 +81,30 @@ export default async function handler(req, res) {
       "authorization",
     );
     return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  // Redis response caching (7-day TTL)
+  const cacheKey = `cache:retrieval-health:v1:${req.url || "default"}`;
+  if (redis) {
+    try {
+      const cached = await withRedisTimeout(
+        redis.get(cacheKey),
+        API_REDIS_TIMEOUT_MS,
+      );
+      if (cached) {
+        logSuccess(
+          requestId,
+          "retrieval-health",
+          200,
+          Date.now() - startMs,
+          rlResult,
+          { cached: true },
+        );
+        return res
+          .status(200)
+          .json(typeof cached === "string" ? JSON.parse(cached) : cached);
+      }
+    } catch (err) {}
   }
 
   try {
@@ -133,6 +161,19 @@ export default async function handler(req, res) {
       thresholds: RETRIEVAL_ALERT_THRESHOLDS,
       alerts,
     };
+
+    if (redis) {
+      try {
+        await withRedisTimeout(
+          redis.setex(
+            cacheKey,
+            7 * 24 * 60 * 60,
+            JSON.stringify(response),
+          ),
+          API_REDIS_TIMEOUT_MS,
+        );
+      } catch (err) {}
+    }
 
     logSuccess(
       requestId,
