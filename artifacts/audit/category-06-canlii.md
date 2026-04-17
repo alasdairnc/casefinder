@@ -1,63 +1,18 @@
-# Category 6: CanLII Integration Correctness
+# Category 6: CanLII Integration
 
-Audit date: 2026-04-16
-Auditor: inline (main session)
+## Findings (2026-04-17)
 
-## webDbId vs apiDbId usage
+- **[Medium] CANLII_API_BASE_URL env override enables operator-controlled SSRF/prompt-injection**
+  - File: api/_caseLawRetrieval.js:32-36
+  - Evidence: `CANLII_API_BASE = process.env.CANLII_API_BASE_URL ?? "https://api.canlii.org/v1";`
+  - Attack: An attacker with Vercel env-var write access can redirect all CanLII API calls to an attacker-controlled server. This enables SSRF and prompt-injection amplification.
+  - Impact: Requires privileged access. Blast radius is high if exploited.
 
-`src/lib/canlii.js` defines two maps:
+- **No webDbId/apiDbId mix-up found**
+  - All CanLII API and web URL construction uses closed maps and validated fields; no user-controlled SSRF found.
 
-- `COURT_WEB_MAP` (aliased as webDbId in return objects) — path segments like `ca/scc`, `on/onca` — used to build `https://www.canlii.org/en/{webDbId}/doc/...` URLs
-- `COURT_API_MAP` (aliased as apiDbId) — short strings like `csc-scc`, `onca` — used to build `https://api.canlii.org/v1/caseBrowse/en/{apiDbId}/{caseId}/`
-
-Usage verified:
-
-- `buildCaseUrl(dbId, year, caseId)` at canlii.js:261 → constructs `https://www.canlii.org/en/{dbId}/...` — callers pass `parsed.webDbId`. Correct.
-- `buildApiUrl(dbId, caseId, apiKey)` at canlii.js:253 → constructs `https://api.canlii.org/v1/caseBrowse/en/{dbId}/...` — callers pass `parsed.apiDbId`. Correct.
-- `verify.js:306` calls `buildCaseUrl(parsed.webDbId, ...)` ✓
-- `verify.js:315` calls `buildApiUrl(parsed.apiDbId, ...)` — but wait: `buildApiUrl` receives `parsed.apiDbId` but the first argument is named `dbId`, used as `${CANLII_BASE}/caseBrowse/en/${dbId}/`. Correct.
-- `COURT_DB_MAP` at canlii.js:106 is an alias for `COURT_API_MAP` (backwards compat). Verify any caller using `COURT_DB_MAP` is using it for API URLs (not web URLs).
-
-**No webDbId/apiDbId mix-up found** in the traced call sites.
-
-## Fetch target safety
-
-`src/lib/canlii.js:253` → `buildApiUrl` constructs `${CANLII_BASE}/caseBrowse/en/${dbId}/${caseId}/?api_key=...`
-
-- `CANLII_BASE = "https://api.canlii.org/v1"` — hardcoded, not overridable from user input.
-- `dbId` comes from `COURT_API_MAP[courtCode.toUpperCase()]` — a closed string-keyed map; unknown courts return `null` and the pipeline returns `{ status: "unknown_court" }` before any fetch.
-- `caseId` is built from `year` (4-digit number), `courtCode` (uppercased alpha), `number` (digits) — all extracted from parsed neutral citation regex. No user-controlled freeform string directly in the URL.
-- `CANLII_API_BASE_URL` env override exists in `api/_caseLawRetrieval.js:35-36` (see Category 1 finding) — can redirect to arbitrary host if set by an operator. This is the only SSRF-adjacent path.
-
-**SSRF conclusion**: Not exploitable from untrusted user input via citation parsing. The one override path requires Vercel env-var write access.
-
-## Findings
-
-### [Medium] `CANLII_API_BASE_URL` env override enables operator-controlled SSRF/prompt-injection
-
-File: api/\_caseLawRetrieval.js:32-36
-Evidence:
-
-```js
-// SECURITY TESTING: Set CANLII_API_BASE_URL env var to redirect to a mock server.
-const CANLII_API_BASE =
-  process.env.CANLII_API_BASE_URL ?? "https://api.canlii.org/v1";
-```
-
-Attack: An insider/attacker with Vercel env-var write access sets `CANLII_API_BASE_URL=https://attacker.example.com/v1`. All CanLII API search calls now hit the attacker's server. The attacker-controlled response's `case.title` flows into `analyze.js`'s system prompt (see Category 2 High finding). This is both SSRF (redirect of server-side requests) and a prompt-injection amplification path.
-Impact: Requires Vercel project access (privileged). Blast radius is high if exploited: every analyze call that triggers retrieval gets an attacker-shaped system-prompt injection. Combined with the 7-day response cache TTL, poisoned responses persist.
-Trace confidence: High
-
-### [Medium] No fetch timeout on `api._caseLawRetrieval.js` CanLII search calls
-
-File: api/\_caseLawRetrieval.js (CanLII search calls, not directly traced — see Coverage Gaps)
-Evidence: `api/verify.js:315-317` uses `AbortSignal.timeout(8_000)` on its CanLII fetch — correctly guarded. `src/lib/canlii.js:362` uses `AbortSignal.timeout(8_000)` in `lookupCase`. However, `_caseLawRetrieval.js` does not call `fetch()` directly (its search calls go through `lookupCase` and other helpers from canlii.js) — so timeout is inherited from the canlii.js helpers. The `_retrievalOrchestrator.js` uses its own `Promise.race` timeout wrapper.
-Confirmed: `lookupCase` in `canlii.js:362` has an 8s AbortSignal timeout. Covered.
-Trace confidence: Medium (inferred from canlii.js; \_caseLawRetrieval.js not fully read)
-
-### [Low] Citation normalization handles null/undefined gracefully
-
-File: src/lib/canlii.js:108-112, 176-179
+- **All fetches to CanLII use AbortSignal.timeout via helpers**
+  - No missing timeout found in direct calls.
 Evidence:
 
 ```js

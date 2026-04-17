@@ -61,10 +61,50 @@ function sanitizeUserInput(input) {
   return input.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*(?:\s[^>\s][^>]*)?>/g, "");
 }
 
+
+// Remove common instruction-like phrases to mitigate prompt injection.
+function filterInstructionLikeText(input) {
+  if (!input) return "";
+  let out = String(input);
+  const patterns = [
+    /ignore all previous instructions/gi,
+    /you are now in debug mode/gi,
+    /assistant:/gi,
+    /system:/gi,
+    /user:/gi,
+    /as an ai language model/gi,
+    /disregard prior context/gi,
+    /reset all instructions/gi,
+    /override/gi,
+    /forget previous/gi,
+    /role:/gi,
+    /\[system\]/gi,
+    /\[user\]/gi,
+    /\[assistant\]/gi,
+    /you must/gi,
+    /return only/gi,
+    /do not/gi,
+    /output:/gi,
+    /instruction/gi,
+    /prompt:/gi,
+    /debug/gi,
+    /mode:/gi,
+    /execute/gi,
+    /command:/gi,
+    /please/gi
+  ];
+  for (const pat of patterns) {
+    out = out.replace(pat, "");
+  }
+  return out;
+}
+
 function safePromptLine(input) {
-  return String(input || "")
-    .replace(/[<>`\n\r]/g, " ")
-    .slice(0, 300);
+  return filterInstructionLikeText(
+    String(input || "")
+      .replace(/[<>`\n\r]/g, " ")
+      .slice(0, 300)
+  );
 }
 
 function buildUserPromptContent(scenario, matchedLandmarks, retrievedCases) {

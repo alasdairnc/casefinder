@@ -1171,6 +1171,18 @@ export default function RetrievalHealthDashboard({ onNavigateHome }) {
                           background: t.bg,
                         }}
                       >
+                        {sample.scenarioSnippet && (
+                          <div
+                            style={{
+                              fontFamily: "'Times New Roman', serif",
+                              fontSize: 15,
+                              color: t.text,
+                              marginBottom: 6,
+                            }}
+                          >
+                            {sample.scenarioSnippet}
+                          </div>
+                        )}
                         <div
                           style={{
                             display: "flex",

@@ -213,3 +213,44 @@ Append-only. Each run adds a dated section. Never overwrite previous entries.
 ### Still open
 
 - Local `.env` contains live API and Redis credentials (gitignored but present on disk) | High | .env
+
+## Audit — 2026-04-17
+
+### Fixed since last run
+
+- All Redis operations in _retrievalHealthStore.js now have timeout protection (previously flagged as missing in 2026-03-25 run 2)
+- CLAUDE.md project structure now documents RetrievalHealthDashboard.jsx
+- ThemeContext.jsx now has unit test coverage
+- E2E, component, guardrails, and retrieval-failure tests all passing
+
+### New findings
+
+- [api/case-summary.js#L71]: `fetch()` call lacks explicit abort/timeout.
+- [api/filter-quality.js]: No explicit rate limiting found.
+- [api/status.js]: No explicit rate limiting found.
+- [api/retrieval-health.js]: No explicit rate limiting found.
+- [api/_apiCommon.js#L10-L13]: Security headers set, but confirm all endpoints use this.
+- Some API endpoints lack direct test files.
+
+### Still open
+
+- 9/14 React components still have zero dedicated E2E test coverage (narrowed from prior finding) | Medium | src/components/CaseSummaryModal.jsx, Header.jsx, Results.jsx, ResultCard.jsx, RetrievalHealthDashboard.jsx, SearchArea.jsx, Select.jsx, SuggestionLink.jsx
+- No Playwright mobile device profiles configured | Medium | playwright.config.js:14-16
+- 4/6 API endpoints have no response caching (verify, case-summary, retrieve-caselaw, export-pdf) | Low | api/verify.js, api/case-summary.js, api/retrieve-caselaw.js, api/export-pdf.js
+- 7 stale audit/migration/deploy .md files in project root | Low | DEPLOYMENT_VALIDATION_REPORT.md, POST_DEPLOYMENT_VERIFICATION_REPORT.md, SECURITY_AUDIT_REPORT.md, SECURITY_AUDIT_REPORT_III.md, SECURITY_REVIEW_FOLLOW_UP.md, MIGRATION_GUIDE.md, phase-b-complete-prompt.md
+- Missing packageManager field in package.json | Low | package.json
+
+### Legal Data
+
+- [src/lib/criminalCodeData.js#L13], [src/lib/civilLawData.js#L29], [src/lib/charterData.js#L10]: All use `Map`, schema valid, deduplication handled in scripts.
+
+### Config/Docs
+
+- [vercel.json], [api/_apiCommon.js#L13]: CSP set. [/.env.example] up to date. Docs present and current.
+
+### Performance
+
+- [api/_retrievalHealthStore.js#L4-L12]: Redis usage bounded. [scripts/performance-monitor.js] present for monitoring.
+
+---
+All findings above are new or still open as of this run. See summary for file and line references.

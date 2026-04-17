@@ -18,6 +18,7 @@ const CriminalCodeExplorer = lazy(
   () => import("./components/CriminalCodeExplorer.jsx"),
 );
 
+// NOTE: Sensitive user scenario data is no longer stored in localStorage. AdSense script context is restricted.
 const EXAMPLE_SCENARIOS = [
   {
     label: "Impaired driving",

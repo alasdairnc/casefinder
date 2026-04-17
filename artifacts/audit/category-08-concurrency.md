@@ -1,63 +1,22 @@
 # Category 8: Concurrency & State
 
-Audit target: `api/_rateLimit.js`, `api/_requestDedup.js`, `api/_retrievalHealthStore.js`, `api/analyze.js` (rate-limit entry + dedup key construction).
+## Findings (2026-04-17)
 
-## Rate limiter atomicity
+- **[Critical] Cross-user response leak via request dedup key**
+  - File: api/_requestDedup.js:4-23, api/analyze.js:817-821
+  - Evidence: In-memory Promise deduplication keyed only by scenario+filters. Concurrent requests from different users with the same scenario+filters can share a Promise and leak requestId and response object.
 
-Summary: **Not atomic.** The Redis path is a classic sequential `GET` then `SETEX` (read-modify-write) with no Lua script, no MULTI/EXEC, and no pipeline. Each `checkRateLimit` call issues an independent `redis.get(key)` via Upstash REST, filters/sliding-windows the returned array in Node.js, then writes the mutated list back with `redis.setex`. Under concurrent requests from the same IP that arrive before the first caller’s `SETEX` completes, each caller reads the same stale `hits` array, independently decides `hits.length < MAX_REQUESTS`, appends its own timestamp, and writes back. The last writer wins; earlier writers’ timestamps are lost, but every caller in the race is already past the `allowed: true` gate. There is no atomic counter (`INCR` / `ZADD` with expiry) or token bucket guard.
+- **[High] In-memory fallback for rate limiting is not atomic**
+  - File: api/_rateLimit.js:37-123
+  - Evidence: In-memory fallback uses a non-atomic read-modify-write pattern. Attackers can bypass or evict legitimate entries in dev or Redis outage scenarios.
 
-The in-memory fallback has the same shape (`store.get` → mutate → `store.set`) but because Node’s event loop is single-threaded and neither `get` nor `set` yields, the local-map path is incidentally serialized within a single instance. This only applies to a single Vercel instance; across instances (or across the process + Redis boundary), nothing is serialized.
+- **[Medium] In-memory state is module-scoped and persists across requests on a warm Vercel instance**
+  - File: api/_retrievalHealthStore.js:21, api/_rateLimit.js:37, api/_requestDedup.js:4
+  - Evidence: In-memory state (metrics, rate-limit, dedup) is module-scoped and survives across requests on a reused Vercel instance, leading to possible state bleed between users.
 
-## Request dedup cross-user risk
-
-Summary: **High – cross-user response leakage is possible on cache miss race.** `withRequestDedup(key, work)` stores an in-memory promise keyed by `inflight:analyze:<sha256(scenario + JSON.stringify(filters))>` (`api/analyze.js:817`). The key does **not** include the client IP, user id, request id, or rate-limit bucket. Two concurrent requests from different users with identical scenario + filters on the same warm Vercel instance will share a single Promise, meaning both users receive the exact same response object (including `meta.requestId` set from the first caller’s `requestId`, see `withRequestId` at `api/analyze.js:84-101`). The response body itself is content-addressed (scenario + filters hash) and subsequently cached in Redis under the same hash (`api/analyze.js:1010-1012`), so the cached payload is already shared by design — but the dedup layer makes a _per-request_ `requestId` leak across users on races. It also means a user whose rate-limit bucket is already exhausted can effectively ride a second user’s in-flight response if the rate-limit check is bypassed post-dedup (it is not here — rate-limit runs before dedup — but the pattern is fragile). The larger concern is that the scenario + filters hash is low-entropy for common scenarios (short prompts, default filters) and trivially collidable across users.
-
-Note: `inflight` lives in module scope (`api/_requestDedup.js:4`), so on Vercel Fluid Compute it persists across requests on the same hot instance. It does not persist across instances.
-
-## In-memory state & Fluid Compute reuse
-
-Summary: Every in-memory structure in these files is module-scoped and therefore survives across invocations on a reused Vercel instance:
-
-- `store` in `api/_rateLimit.js:37` (rate-limit fallback map)
-- `inflight` in `api/_requestDedup.js:4` (dedup map)
-- `memoryEvents` in `api/_retrievalHealthStore.js:21` (retrieval metrics ring)
-
-On a warm instance, user A’s state is visible to user B’s request on the same instance. On cold/alternate instances, state is empty or divergent. For rate limiting this becomes a **bypass primitive** when Redis is unconfigured or times out: a user load-balanced to a cold instance starts fresh at 0/5 even if they are over quota on a warm instance. For dedup it means the cross-user Promise sharing above is instance-local.
-
-## Prod Redis vs dev in-memory divergence
-
-Prod (with `UPSTASH_REDIS_REST_URL` set) uses Redis; dev/CI (no env) silently falls through to in-memory (`api/_rateLimit.js:29-34`, `92-125`). The in-memory store has a 500-key cap and LRU eviction (`api/_rateLimit.js:107-123`), meaning an attacker able to flood the rate-limit map with distinct IP-keyed entries (possible via spoofable `x-forwarded-for` — see Category 3) can evict legitimate entries and reset counters. This works in dev and in any prod scenario where Redis is misconfigured. The Redis branch swallows all failures (`catch` at `api/_rateLimit.js:85-90`) and falls through to the same in-memory path, so transient Redis outages also surface this behavior silently to attackers.
-
-## Retrieval health counter drift
-
-Summary: `recordRetrievalMetricsEvent` (`api/_retrievalHealthStore.js:721-783`) performs several non-atomic read-modify-write sequences against Redis keys:
-
-- `EVENT_LIST_KEY` (`metrics:retrieval:events:v1`): `redis.get` → JSON parse → `[...existing, event]` → `.slice(...)` cap → `redis.set` (`api/_retrievalHealthStore.js:751-761`).
-- `ALLTIME_KEY` (`metrics:retrieval:alltime:v1`): `redis.get` → mutate aggregate object → `redis.set` (`api/_retrievalHealthStore.js:486-591`).
-- Only `EVENT_COUNT_KEY` uses an atomic `INCR` (`api/_retrievalHealthStore.js:278-285`).
-
-Concurrent events overlapping the GET/SET window will lose writes: the slower writer overwrites the aggregate with its own stale+mutated copy. This is data-loss grade for the alltime accumulator and the event list, not a security issue in itself.
-
----
-
-## Findings
-
-### [CRITICAL] Cross-user response leak via request dedup key
-
-File: `api/_requestDedup.js:4-23`, `api/analyze.js:817-821`
-Evidence:
-
-```
-// api/_requestDedup.js
-const inflight = new Map();
-export async function withRequestDedup(key, work) {
-  if (inflight.has(key)) {
-    return inflight.get(key);
-  }
-  ...
-}
-
-// api/analyze.js
+- **[Low] Non-atomic read-modify-write to Redis for metrics**
+  - File: api/_retrievalHealthStore.js:486-591, api/_retrievalHealthStore.js:751-761
+  - Evidence: Metrics accumulator and event list use non-atomic read-modify-write. Concurrent updates can cause data loss (reliability issue, not security).
 const dedupeKey = `inflight:analyze:${cacheKey(scenario, filters)}`;
 const { result, ... } = await withRequestDedup(
   dedupeKey,

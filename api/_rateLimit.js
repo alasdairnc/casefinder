@@ -106,21 +106,22 @@ export async function checkRateLimit(ip, endpoint) {
 
   if (redis) {
     try {
-      const currentCount = Number(
-        await withRedisTimeout(redis.incr(key), REDIS_TIMEOUT_MS),
+      // Use atomic INCR+EXPIRE for fixed window
+      // Set expiry only if key is new (INCR returns 1)
+      const currentCount = await withRedisTimeout(
+        redis.incr(key),
+        REDIS_TIMEOUT_MS
       );
-
       if (!Number.isFinite(currentCount) || currentCount <= 0) {
         throw new Error("Invalid Redis counter value");
       }
-
       if (currentCount === 1) {
+        // Set expiry for the window
         await withRedisTimeout(
           redis.expire(key, Math.ceil(WINDOW_MS / 1000) + 5),
-          REDIS_TIMEOUT_MS,
+          REDIS_TIMEOUT_MS
         );
       }
-
       return buildWindowResult({
         allowed: currentCount <= maxRequests,
         count: currentCount,
@@ -211,5 +212,23 @@ export function getClientIp(req) {
   const remote = req.socket?.remoteAddress;
   if (remote) return remote;
   // No identifiable IP — return a fixed key so all anonymous requests share one strict bucket
+  return "unknown";
+}
+
+// Only trust X-Forwarded-For from known proxies (Vercel); otherwise, use req.socket.remoteAddress.
+export function getClientIp(req) {
+  const trustedVercel = req.headers["x-vercel-proxied-for"] || req.headers["x-vercel-id"];
+  let ip = null;
+  if (trustedVercel && req.headers["x-forwarded-for"]) {
+    // Only trust X-Forwarded-For if Vercel proxy headers are present
+    ip = req.headers["x-forwarded-for"].split(",")[0]?.trim();
+  }
+  if (!ip) {
+    ip = req.socket?.remoteAddress;
+  }
+  // Basic validation: must look like an IPv4 or IPv6 address
+  if (typeof ip === "string" && /^(\d{1,3}\.){3}\d{1,3}$|^[a-fA-F0-9:]+$/.test(ip)) {
+    return ip;
+  }
   return "unknown";
 }

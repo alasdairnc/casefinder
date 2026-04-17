@@ -102,8 +102,10 @@ function normalizeEvent(raw) {
   };
 }
 
+
 function buildStoredEvent(metricsPayload = {}) {
-  return normalizeEvent({
+  // Truncate scenarioSnippet to 100 chars and add TTL for Redis storage
+  const event = normalizeEvent({
     ts: Date.now(),
     endpoint: metricsPayload.endpoint,
     source: metricsPayload.source,
@@ -127,7 +129,9 @@ function buildStoredEvent(metricsPayload = {}) {
     semanticFilterDropCount: metricsPayload.semanticFilterDropCount,
     candidateSourceMix: metricsPayload.candidateSourceMix,
     errorMessage: metricsPayload.errorMessage,
+    scenarioSnippet: (metricsPayload.scenarioSnippet || "").slice(0, 100),
   });
+  return event;
 }
 
 function getFailureEvents(events = []) {
@@ -748,8 +752,22 @@ export async function recordRetrievalMetricsEvent(metricsPayload = {}) {
           ? merged.slice(merged.length - MAX_PERSISTED_EVENTS)
           : merged;
 
+
+      // Use Redis list for events, enforce cap with LTRIM
+      const eventStr = JSON.stringify(event);
+
+      // Store event with TTL for scenario snippet
       await Promise.race([
-        redis.set(EVENT_LIST_KEY, JSON.stringify(capped)),
+        redis.rpush(EVENT_LIST_KEY, eventStr),
+        timeout(),
+      ]);
+      await Promise.race([
+        redis.ltrim(EVENT_LIST_KEY, -MAX_PERSISTED_EVENTS, -1),
+        timeout(),
+      ]);
+      // Set TTL for the event list (e.g., 30 days)
+      await Promise.race([
+        redis.expire(EVENT_LIST_KEY, 60 * 60 * 24 * 30),
         timeout(),
       ]);
 
