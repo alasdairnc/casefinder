@@ -80,7 +80,7 @@ Domain-split modules merged by `index.js` into `MASTER_CASE_LAW_DB`.
 
 ## Client Storage
 
-- `useSearchHistory`: localStorage, 20 entries, 7-day TTL
+- `useSearchHistory`: in-memory only for the active session, capped at 20 entries
 - `useBookmarks`: localStorage persistence
 
 ## Environment Variables

@@ -13,9 +13,10 @@
 
 ## Rate Limiting
 
-- Sliding-window based via `api/_rateLimit.js`
-- Redis-backed when `UPSTASH_REDIS_REST_URL` configured
-- Falls back to in-memory limiter in dev
+- Fixed-window atomic counters via `api/_rateLimit.js`
+- Redis-backed in production when `UPSTASH_REDIS_REST_URL` or `KV_REST_API_URL` is configured
+- Falls back to in-memory limiter only in dev or with explicit `ALLOW_IN_MEMORY_RATE_LIMIT_FALLBACK=1`
+- Production returns `503` when the rate-limit backend is unavailable
 
 ## Input Validation
 
@@ -31,5 +32,6 @@
 ## Data Privacy
 
 - No user account data persisted server-side
-- Search history and bookmarks are localStorage-based (client only)
-- No PII collection or tracking beyond Google AdSense
+- Search history is session-only in memory; bookmarks remain localStorage-based on the client
+- Retrieval health telemetry stores classified issue data, not raw scenario text
+- Sentry request data is scrubbed before events leave the server
