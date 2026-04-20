@@ -187,33 +187,6 @@ export function rateLimitHeaders(result) {
   return headers;
 }
 
-/**
- * Extract the real client IP from Vercel's request headers.
- */
-export function getClientIp(req) {
-  const vercelForwarded = req.headers["x-vercel-forwarded-for"]
-    ?.split(",")[0]
-    ?.trim();
-  if (vercelForwarded) return vercelForwarded;
-
-  const realIp = req.headers["x-real-ip"]?.split(",")[0]?.trim();
-  if (realIp) return realIp;
-
-  const isVercelRuntime =
-    Boolean(req.headers["x-vercel-id"]) ||
-    Boolean(process.env.VERCEL) ||
-    Boolean(process.env.VERCEL_ENV);
-  if (!isVercelRuntime) {
-    const forwarded = req.headers["x-forwarded-for"]?.split(",")[0]?.trim();
-    if (forwarded) return forwarded;
-  }
-
-  const remote = req.socket?.remoteAddress;
-  if (remote) return remote;
-  // No identifiable IP — return a fixed key so all anonymous requests share one strict bucket
-  return "unknown";
-}
-
 // Only trust X-Forwarded-For from known proxies (Vercel); otherwise, use req.socket.remoteAddress.
 export function getClientIp(req) {
   const trustedVercel =
