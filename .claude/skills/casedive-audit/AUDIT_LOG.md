@@ -218,7 +218,7 @@ Append-only. Each run adds a dated section. Never overwrite previous entries.
 
 ### Fixed since last run
 
-- All Redis operations in _retrievalHealthStore.js now have timeout protection (previously flagged as missing in 2026-03-25 run 2)
+- All Redis operations in \_retrievalHealthStore.js now have timeout protection (previously flagged as missing in 2026-03-25 run 2)
 - CLAUDE.md project structure now documents RetrievalHealthDashboard.jsx
 - ThemeContext.jsx now has unit test coverage
 - E2E, component, guardrails, and retrieval-failure tests all passing
@@ -253,4 +253,5 @@ Append-only. Each run adds a dated section. Never overwrite previous entries.
 - [api/_retrievalHealthStore.js#L4-L12]: Redis usage bounded. [scripts/performance-monitor.js] present for monitoring.
 
 ---
+
 All findings above are new or still open as of this run. See summary for file and line references.

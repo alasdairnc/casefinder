@@ -1,5 +1,13 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(npm run test:unit)",
+      "Bash(npm run test:component)",
+      "Bash(npm run test:integration)",
+      "Bash(npm run build)",
+      "Bash(npm audit)",
+      "Bash(vercel env ls)"
+    ],
     "deny": [
       "Bash(rm -rf *)",
       "Bash(git push --force*)",
@@ -57,6 +65,11 @@
             "type": "command",
             "command": "python3 -c \"\nimport sys, json\ndata = json.load(sys.stdin)\npath = data.get('tool_input', {}).get('file_path', '')\nfilename = path.split('/')[-1]\nif '/api/' in path and path.endswith('.js') and not filename.startswith('_'):\n    print(json.dumps({'systemMessage': f'api/{filename} edited — run api-invariant-reviewer before committing.'}))\n\"",
             "statusMessage": "Checking api/ invariants..."
+          },
+          {
+            "type": "command",
+            "command": "git status --short 2>/dev/null || true",
+            "statusMessage": "Checking git status..."
           }
         ]
       }

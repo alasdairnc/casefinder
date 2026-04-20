@@ -75,3 +75,10 @@ Auto-loaded from `.claude/skills/` (e.g., `casedive-audit`, `new-api-endpoint`).
 - When stuck, summarize attempts and ask for guidance
 - Double-check output before presenting; verify it addresses the request
 - After 2 consecutive tool failures, change approach and explain
+
+## Testing & Verification
+
+- Always start dev server (`npm run dev:api`) before E2E/Playwright tests — hung tests = missing server
+- After any refactor that changes data shapes or API contracts, run full unit suite before declaring done
+- For E2E failures, run with `--workers=1` first to rule out parallelism before diagnosing state issues
+- If 10+ tests fail simultaneously, suspect parallelism or missing server — not individual test bugs
