@@ -3,7 +3,7 @@
 ## Findings (2026-04-17)
 
 - **[Medium] CANLII_API_BASE_URL env override enables operator-controlled SSRF/prompt-injection**
-  - File: api/_caseLawRetrieval.js:32-36
+  - File: api/\_caseLawRetrieval.js:32-36
   - Evidence: `CANLII_API_BASE = process.env.CANLII_API_BASE_URL ?? "https://api.canlii.org/v1";`
   - Attack: An attacker with Vercel env-var write access can redirect all CanLII API calls to an attacker-controlled server. This enables SSRF and prompt-injection amplification.
   - Impact: Requires privileged access. Blast radius is high if exploited.
@@ -13,7 +13,7 @@
 
 - **All fetches to CanLII use AbortSignal.timeout via helpers**
   - No missing timeout found in direct calls.
-Evidence:
+    Evidence:
 
 ```js
 function normalizeCitationInput(citation) {

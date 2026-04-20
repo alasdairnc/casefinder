@@ -3,25 +3,26 @@
 ## Findings (2026-04-17)
 
 - **[Critical] Cross-user response leak via request dedup key**
-  - File: api/_requestDedup.js:4-23, api/analyze.js:817-821
+  - File: api/\_requestDedup.js:4-23, api/analyze.js:817-821
   - Evidence: In-memory Promise deduplication keyed only by scenario+filters. Concurrent requests from different users with the same scenario+filters can share a Promise and leak requestId and response object.
 
 - **[High] In-memory fallback for rate limiting is not atomic**
-  - File: api/_rateLimit.js:37-123
+  - File: api/\_rateLimit.js:37-123
   - Evidence: In-memory fallback uses a non-atomic read-modify-write pattern. Attackers can bypass or evict legitimate entries in dev or Redis outage scenarios.
 
 - **[Medium] In-memory state is module-scoped and persists across requests on a warm Vercel instance**
-  - File: api/_retrievalHealthStore.js:21, api/_rateLimit.js:37, api/_requestDedup.js:4
+  - File: api/\_retrievalHealthStore.js:21, api/\_rateLimit.js:37, api/\_requestDedup.js:4
   - Evidence: In-memory state (metrics, rate-limit, dedup) is module-scoped and survives across requests on a reused Vercel instance, leading to possible state bleed between users.
 
 - **[Low] Non-atomic read-modify-write to Redis for metrics**
-  - File: api/_retrievalHealthStore.js:486-591, api/_retrievalHealthStore.js:751-761
+  - File: api/\_retrievalHealthStore.js:486-591, api/\_retrievalHealthStore.js:751-761
   - Evidence: Metrics accumulator and event list use non-atomic read-modify-write. Concurrent updates can cause data loss (reliability issue, not security).
-const dedupeKey = `inflight:analyze:${cacheKey(scenario, filters)}`;
-const { result, ... } = await withRequestDedup(
-  dedupeKey,
-  () => analyzeWithRetry(scenario, filters, apiKey, preRetrievedCases),
-);
+    const dedupeKey = `inflight:analyze:${cacheKey(scenario, filters)}`;
+    const { result, ... } = await withRequestDedup(
+    dedupeKey,
+    () => analyzeWithRetry(scenario, filters, apiKey, preRetrievedCases),
+    );
+
 ```
 
 Race scenario:
@@ -40,21 +41,23 @@ File: `api/_rateLimit.js:56-84`
 Evidence:
 
 ```
+
 const hitsJson = await Promise.race([redis.get(key), timeout]);
 let hits = hitsJson ? JSON.parse(hitsJson) : [];
 hits = hits.filter((t) => now - t < WINDOW_MS);
 
 if (hits.length >= maxRequests) {
-  return { allowed: false, ... };
+return { allowed: false, ... };
 }
 
 hits.push(now);
 await Promise.race([
-  redis.setex(key, Math.ceil(WINDOW_MS / 1000), JSON.stringify(hits)),
-  ...
+redis.setex(key, Math.ceil(WINDOW_MS / 1000), JSON.stringify(hits)),
+...
 ]);
 
 return { allowed: true, remaining: maxRequests - hits.length };
+
 ```
 
 Race scenario:
@@ -73,15 +76,17 @@ File: `api/_rateLimit.js:85-125`
 Evidence:
 
 ```
+
 } catch (err) {
-  console.error(
-    "Redis rate limit check failed, falling back to in-memory:",
-    err.message,
-  );
+console.error(
+"Redis rate limit check failed, falling back to in-memory:",
+err.message,
+);
 }
 
 // Fallback: in-memory store (development or Redis unavailable)
 const hits = (store.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
+
 ```
 
 Race scenario:
@@ -99,16 +104,18 @@ File: `api/_retrievalHealthStore.js:486-591`, `721-783`
 Evidence:
 
 ```
+
 async function updateAlltimeAccumulator(event) {
-  ...
-  const raw = await Promise.race([redis.get(ALLTIME_KEY), timeout()]);
-  let acc = {};
-  if (raw) { acc = typeof raw === "string" ? JSON.parse(raw) : raw; ... }
-  ...
-  acc.total = (acc.total || 0) + 1;
-  ...
-  await Promise.race([redis.set(ALLTIME_KEY, JSON.stringify(acc)), timeout()]);
+...
+const raw = await Promise.race([redis.get(ALLTIME_KEY), timeout()]);
+let acc = {};
+if (raw) { acc = typeof raw === "string" ? JSON.parse(raw) : raw; ... }
+...
+acc.total = (acc.total || 0) + 1;
+...
+await Promise.race([redis.set(ALLTIME_KEY, JSON.stringify(acc)), timeout()]);
 }
+
 ```
 
 Race scenario: Two concurrent analyze invocations finish at ~the same ms. Both call `recordRetrievalMetricsEvent` → `updateAlltimeAccumulator`. Both `GET` the same `acc`; each increments locally; each `SET`s. The later write clobbers the earlier’s increments. Same pattern for `EVENT_LIST_KEY` at `api/_retrievalHealthStore.js:751-761`.
@@ -129,15 +136,17 @@ File: `api/_rateLimit.js:107-123`, `api/_retrievalHealthStore.js:225-233`
 Evidence:
 
 ```
+
 if (store.size > 500) {
-  ...
-  const targetSize = 430;
-  const excess = store.size - targetSize;
-  if (excess > 0) {
-    const oldestKeys = Array.from(store.keys()).slice(0, excess);
-    for (const staleKey of oldestKeys) { store.delete(staleKey); }
-  }
+...
+const targetSize = 430;
+const excess = store.size - targetSize;
+if (excess > 0) {
+const oldestKeys = Array.from(store.keys()).slice(0, excess);
+for (const staleKey of oldestKeys) { store.delete(staleKey); }
 }
+}
+
 ```
 
 Race scenario: Insertion-order LRU means an attacker flooding unique spoofed `x-forwarded-for` IPs evicts the oldest 70 entries when size passes 500, which likely includes legitimate users’ live buckets. On the next request from an evicted user, they’re at 0/5 again.
@@ -150,12 +159,14 @@ File: `api/_retrievalHealthStore.js:785-812`
 Evidence:
 
 ```
+
 const cutoff = nowMs - MEMORY_RETENTION_MS;
 const recent = sorted.filter((event) => event.ts >= cutoff);
 
 memoryEvents.length = 0;
 memoryEvents.push(...recent);
 pruneMemory(nowMs);
+
 ```
 
 Race scenario: A read path concurrent with a write path (`recordRetrievalMetricsEvent` calling `memoryEvents.push(event)`) interleaves the `memoryEvents.length = 0` with an in-flight push. Because Node is single-threaded the actual splice/push calls can’t interleave at the statement level, but the sequence `length = 0; push(...recent)` can drop a concurrent `push` that happens between those two lines if `recent` was computed earlier. In practice this is cosmetic.
@@ -178,3 +189,4 @@ Trace confidence: Medium.
 - Did not reproduce the dedup cross-user race empirically (no load test harness) — finding is based on static analysis of key construction and state scope.
 - Did not audit Upstash client internals for connection-pool ordering; assumed REST calls are independent and commutative.
 - Did not examine whether `x-vercel-id` is deterministic enough that two concurrent dedup’d callers could be distinguished in logs; this matters for post-incident forensics of the CRITICAL finding.
+```
