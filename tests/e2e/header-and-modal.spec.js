@@ -81,20 +81,10 @@ test.describe("Header", () => {
     ).toBeVisible();
   });
 
-  test("theme toggle button is visible and shows Dark in light mode", async ({
-    page,
-  }) => {
-    // Default is light mode — button should say "Dark" (clicking will switch TO dark)
-    await expect(page.getByRole("button", { name: /dark/i })).toBeVisible();
-  });
-
-  test("clicking theme toggle switches to dark mode and shows Light", async ({
-    page,
-  }) => {
-    const toggleBtn = page.getByRole("button", { name: /dark/i });
-    await toggleBtn.click();
-    // After toggle, button should now say "Light"
-    await expect(page.getByRole("button", { name: /light/i })).toBeVisible();
+  test("has no theme toggle (dark-only UI)", async ({ page }) => {
+    await expect(
+      page.getByRole("button", { name: /^(dark|light)( mode)?$/i }),
+    ).toHaveCount(0);
   });
 });
 

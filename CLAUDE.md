@@ -27,6 +27,8 @@ Run `npm run security:scan` before any pre-push check.
 
 **Security:** `npm run security:scan` (gitleaks scan, run before pushing)
 
+**Caselaw curation:** `npm run improve:caselaw` (propose-only relevance loop, dated digest), `npm run expand:caselaw` (propose-only corpus expansion), `npm run caselaw:curate` (both in sequence)
+
 **Docs authoring:** `npm run docs:preview` (live-reload preview of docs/reports), `npm run docs:build -- <file.md>` (md → `artifacts/html/`), `npm run docs:lint` (markdownlint over reports + docs/superpowers). Generate digests with the `/weekly-report` skill.
 
 ## Memory & Session
@@ -61,6 +63,8 @@ Save non-obvious decisions/gotchas to `.claude/projects/*/memory/` immediately.
 
 `api/_*.js` = shared modules (rate limit, CORS, constants, filters, etc.)
 `api/*.js` = endpoint handlers (analyze, case-summary, export-pdf, etc.)
+`api/billing.js` = merged Stripe checkout + portal (12-fn cap); `validateJsonRequest` maxBytes 1000; plan-aware rate limiting via `_subscription.js`
+`api/stripe-webhook.js` = signature-verified raw-body endpoint; deliberately exempt from rate limiting/CORS; sole writer of the `subscriptions` table
 `.claude/rules/` = auto-loaded guardrails (import rules, citation rules, git rules)
 
 ## Auth (Optional Login)
@@ -99,6 +103,8 @@ Auto-loaded from `.claude/skills/` (e.g., `casedive-audit`, `new-api-endpoint`).
 - `retrieval-quality-reviewer`: Reviews filter scoring/threshold consistency after `_filter*`/`_scenarioClassification`/`_retrievalThresholds` changes
 - `retrieval-regression-detector`: Run when `_filters.js`, `_filterScoring.js`, `_filterConfig.js`, `_scenarioClassification.js`, or `_retrievalThresholds.js` change
 - `test-selector`: Determines which test suites to run based on changed files
+- `caselaw-curator` (`.claude/agents/caselaw-curator.md`): Propose-only caselaw relevance + expansion loop; never edits corpus/filter/threshold files
+- `/improve-caselaw` (`.claude/commands/improve-caselaw.md`): Runs the propose-only improvement loop and interprets the digest
 
 **Full skills list:** `casedive-audit`, `new-api-endpoint`, `e2e`, `e2e-verify`, `feature-factory`, `security-audit`, `caching-audit`, `verify-before-push`, `resume-checkpoint`, `filter-tune`, `ops-checklist`, `weekly-report`
 

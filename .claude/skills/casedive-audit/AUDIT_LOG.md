@@ -361,3 +361,44 @@ Full sweep: build ✓, gitleaks (750 commits, no leaks) ✓, unit 270/271, compo
 ### Verification matrix (post-fix)
 
 - Build ✓ · unit 271/271 ✓ · component 75/75 ✓ · retrieval corpus 57/57 ✓ · E2E 291/291 (3 device profiles) ✓ · AgentShield 99/100 gate PASSED ✓ · settings.json JSON + guard snippets compile ✓
+
+## Audit — 2026-07-01
+
+Full sweep, first audit since Stripe billing (#22–#24) and the caselaw improvement loop landed. Build ✓ (2m35s) · unit 294/294 ✓ · guardrails (sanitizer + retrieval corpus all PASS) ✓ · E2E chromium 92/97 (see findings; 2 of 5 failures are parallelism flakes that pass at --workers=1, 3 are stale theme tests) · component suite BLOCKED by machine-level environment issue (see findings) · AgentShield 99/100 but gate FAILED (1 new LOW).
+
+### Fixed since last run
+
+- None (single carried item still open)
+
+### New findings
+
+- E2E theme-toggle tests stale after dark-only redesign: `home.spec.js:36` and `header-and-modal.spec.js:84,91` expect a Light/Dark toggle button that no longer exists anywhere in src/ (removed by commits 18cc6e1/1afe407; the dark-only commit 1bf7fea aligned unit theme tests but missed these). Deterministic failures — 3 red tests in every E2E run | High | tests/e2e/home.spec.js:36, tests/e2e/header-and-modal.spec.js:84-97
+- vercel.json missing `functions` entries for the two new billing endpoints — falls back to platform defaults (same class as prior status.js/user-data.js findings; NOT "won't deploy") | Medium | vercel.json:9-20 (api/billing.js, api/stripe-webhook.js)
+- Component (.jsx) test suite cannot run on this machine: every jsdom worker start exceeds vitest's 60s timeout ("Failed to start forks worker"). Root-caused: bare `require('jsdom')` takes 11m20s wall / 1.3s CPU (OS-level syscall stalls, machine at 18-day uptime). Ruled out: sandbox (fails unsandboxed), repo changes (no vitest/config/lock changes since green 2026-06-09), iCloud eviction (0 placeholders), canvas dep (absent), CPU load. Not a code regression — machine remediation (reboot / node_modules reinstall) needed before component tests can gate anything | High (blocks a core suite) | environment
+- AgentShield gate FAILED (score unchanged 99→99): 1 new LOW — `.claude/commands/improve-caselaw.md` missing observation/feedback hooks (ECC 2.0 convention). Blocks `--gate` pre-push until hooks added or re-baselined | Medium | .claude/commands/improve-caselaw.md
+- CLAUDE.md does not document the billing feature (api/billing.js, api/stripe-webhook.js, Stripe env vars) nor the caselaw pipeline (improve:caselaw / expand:caselaw / caselaw:curate scripts, .claude/agents/caselaw-curator.md, .claude/commands/improve-caselaw.md) | Medium | CLAUDE.md
+- stripe-webhook `readRawBody()` has no explicit size cap — a request with a forged signature header is fully buffered before verification fails (bounded only by Vercel's platform body limit). Hardening, not a vuln | Low | api/stripe-webhook.js:29-41
+- Dangerous-Bash PreToolUse guard false-positives on the `\|\s*sh` pattern for any piped command containing words like "shield"/"show"/"sha256" (blocked a legitimate read-only grep this session) | Low | .claude/settings.json
+- npm `security:scan` (gitleaks) pathologically slow, not deadlocked: first (sandboxed) attempt killed after 40+ min at 0% CPU; unsandboxed retry COMPLETED in 27m7s — **761 commits scanned, no leaks found**. Same OS I/O-stall pathology as the jsdom finding (26.96 MB read in 27 min); scan verdict clean, machine still needs remediation | Low (env only; scan clean) | environment
+
+### Still open
+
+- `test:filter` local no-op (CANLII_API_KEY unset; 19/19 scenarios skipped, 0 evaluated — reconfirmed this run) | Low | (env)
+
+### Reclassified as false positive (this run)
+
+- Explore-sweep claim "11 src/components have zero E2E coverage" — refuted: 15 E2E spec files cover all 16 components (search-area, results, bookmarks, header-and-modal, filters, ui-states, errors, etc.); full coverage previously confirmed 2026-06-02/06-09. **Not a real finding.**
+- Explore-sweep severity "Critical: billing/stripe-webhook won't execute without vercel.json entries" — endpoints deploy and run on platform defaults; severity corrected to Medium (see above).
+- E2E pdf-export failures in the parallel run (`pdf-export.spec.js:79,127`, "element is not stable" → detached) — pass 4/4 at --workers=1 on a warm server; parallelism/machine-load flake per the documented E2E triage rule. **Not a code regression.**
+
+### Verified clean (this run)
+
+- All 12 endpoints: named rate-limit buckets matching filenames (stripe-webhook exempt by design — Stripe signature is the auth boundary, documented in-file with unsigned-flood pre-filter at stripe-webhook.js:106-111)
+- stripe-webhook: bodyParser disabled for raw-body signature verification (constructEvent), all four security headers set manually (stripe-webhook.js:86-92), no CORS by design, complete-row idempotent upserts, status allowlist
+- billing.js: validateJsonRequest maxBytes 1000, plan/action allowlists, headers, named bucket
+- Plan-aware rate limiting keys paid users by user id (`_subscription.js:191-199`), free tier by IP — no IP-collision bypass
+- No hardcoded secrets or model IDs anywhere (model only via _constants.js); no component process.env reads; fetch timeouts on every external call (analyze:154, case-summary:74, verify:311, expand-caselaw:138)
+- Caching: all endpoint caches setex-bounded at 7d (documented convention) with withRedisTimeout; CanLII cache tiered 7d verified / 24h not-found; the 3 fixed-key redis.set calls remain the known-fine exceptions; Supabase lookups timeout-wrapped
+- Legal data: no placeholders in criminalCodeData/civilLawData/charterData; caselaw corpus entries structurally complete
+- Config: packageManager npm@11.11.0 matches package-lock; manualChunks intact (vite.config.js); playwright mobile profiles intact (:32-34); root .md files clean (CLAUDE/GEMINI/README/SECURITY only); launch.json diff is reformat-only; package.json diff adds only the 3 caselaw scripts
+- Uncommitted caselaw pipeline scripts: propose-only (no corpus writes), CanLII verification gate, no secrets, timeouts on external calls; verify-webhook.mjs uses a placeholder key

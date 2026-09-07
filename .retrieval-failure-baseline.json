@@ -1,11 +1,11 @@
 {
-  "total_tests": 25,
-  "evaluated_tests": 25,
+  "total_tests": 58,
+  "evaluated_tests": 58,
   "skipped_tests": 0,
-  "passed": 25,
+  "passed": 58,
   "failed": 0,
   "pass_rate": 100,
-  "avg_relevance_global": 0.6,
+  "avg_relevance_global": 0.6724137931034483,
   "avg_precision_global": 1,
   "results": [
     {
@@ -94,7 +94,7 @@
       "total_returned": 0,
       "passed": true,
       "reason": "no_direct_case_law",
-      "issuePrimary": "general_criminal"
+      "issuePrimary": "minor_traffic_stop"
     },
     {
       "scenario_summary": "I was stopped for a tiny speed overage and want to know if an old SCC landmark a",
@@ -102,7 +102,7 @@
       "total_returned": 0,
       "passed": true,
       "reason": "no_direct_case_law",
-      "issuePrimary": "general_criminal"
+      "issuePrimary": "minor_traffic_stop"
     },
     {
       "scenario_summary": "Someone pulled a knife on me and took my phone at a bus platform.",
@@ -110,7 +110,7 @@
       "total_returned": 1,
       "passed": true,
       "reason": "relevant_case_law",
-      "issuePrimary": "general_criminal"
+      "issuePrimary": "robbery"
     },
     {
       "scenario_summary": "Security says I stole a backpack from a department store.",
@@ -118,15 +118,15 @@
       "total_returned": 1,
       "passed": true,
       "reason": "relevant_case_law",
-      "issuePrimary": "general_criminal"
+      "issuePrimary": "theft"
     },
     {
       "scenario_summary": "Officers entered my home and searched my computer without a warrant.",
       "skipped": false,
-      "total_returned": 1,
+      "total_returned": 2,
       "passed": true,
       "reason": "relevant_case_law",
-      "issuePrimary": "general_criminal"
+      "issuePrimary": "charter_search_seizure"
     },
     {
       "scenario_summary": "My criminal trial delay is over four years with repeated adjournments.",
@@ -142,7 +142,7 @@
       "total_returned": 1,
       "passed": true,
       "reason": "relevant_case_law",
-      "issuePrimary": "general_criminal"
+      "issuePrimary": "charter_counsel"
     },
     {
       "scenario_summary": "I got a simple speeding ticket and there was no detention, search, or arrest.",
@@ -150,7 +150,7 @@
       "total_returned": 0,
       "passed": true,
       "reason": "no_direct_case_law",
-      "issuePrimary": "general_criminal"
+      "issuePrimary": "minor_traffic_stop"
     },
     {
       "scenario_summary": "A speed camera mailed me a ticket. No officer stopped me and there was no search",
@@ -207,6 +207,270 @@
       "passed": true,
       "reason": "relevant_case_law",
       "issuePrimary": "charter_counsel"
+    },
+    {
+      "scenario_summary": "Police stopped me at a ride check, demanded a roadside breath sample, and detain",
+      "skipped": false,
+      "total_returned": 2,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "impaired_driving"
+    },
+    {
+      "scenario_summary": "After an impaired driving stop, I refused a lawful breath demand because I wante",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "impaired_driving"
+    },
+    {
+      "scenario_summary": "During an impaired stop, officers searched my phone without a warrant after taki",
+      "skipped": false,
+      "total_returned": 2,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "charter_search_seizure"
+    },
+    {
+      "scenario_summary": "I was arrested after police said I sold fentanyl near a transit station.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "drug_trafficking"
+    },
+    {
+      "scenario_summary": "Police found chat messages about quantities and prices and charged me with traff",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "drug_trafficking"
+    },
+    {
+      "scenario_summary": "I was charged after a complainant said there was no consent during sexual touchi",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "sexual_assault"
+    },
+    {
+      "scenario_summary": "The allegation says I ignored clear no's and now I am claiming mistaken belief i",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "sexual_assault"
+    },
+    {
+      "scenario_summary": "I punched someone during an argument and they suffered a broken nose and stitche",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "assault_bodily_harm"
+    },
+    {
+      "scenario_summary": "During a fight I brandished a knife and now I am charged with assault with a wea",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "assault_weapon"
+    },
+    {
+      "scenario_summary": "Officers boxed in my car and questioned me for twenty minutes without saying I w",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "charter_detention"
+    },
+    {
+      "scenario_summary": "My ex keeps threatening me in messages and I need to know how a peace bond appli",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "peace_bond"
+    },
+    {
+      "scenario_summary": "My case has taken three years and I was also denied access to counsel right afte",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "charter_counsel"
+    },
+    {
+      "scenario_summary": "Two people shoved me into a wall and took my backpack and cash.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "robbery"
+    },
+    {
+      "scenario_summary": "Store security says I concealed items and left without paying.",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "theft"
+    },
+    {
+      "scenario_summary": "I got a speeding ticket for 5 km over and there was no detention, search, or bre",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "minor_traffic_stop"
+    },
+    {
+      "scenario_summary": "I had a tiny amount of cannabis for personal use and no evidence of selling.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I pushed someone away in a bar fight because they swung first and I left immedia",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "An officer asked me for ID briefly on the sidewalk and then let me continue walk",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "My landlord will not fix mold and I want to file at the housing board.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "My manager is bullying me and HR has not enforced workplace policy.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "Someone posted false statements about me online and I want a civil remedy.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "A neighbor's tree branch damaged my fence and we are arguing about costs.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I lost my phone at a cafe and someone turned it in later.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I disagree with an ambulance bill and want to challenge the charge.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "My college flagged plagiarism and I need to appeal the academic decision.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I paid a parking ticket late and now there is an extra municipal fee.",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "Can I be charged for what happened yesterday if things got heated?",
+      "skipped": false,
+      "total_returned": 0,
+      "passed": true,
+      "reason": "no_direct_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "I was stopped by police and held for thirty minutes without being told I could c",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "charter_detention"
+    },
+    {
+      "scenario_summary": "After my arrest at the station, officers kept questioning me for two hours and r",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "charter_counsel"
+    },
+    {
+      "scenario_summary": "indigenous sentencing principles",
+      "skipped": false,
+      "total_returned": 2,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "general_criminal"
+    },
+    {
+      "scenario_summary": "A person was found inside an occupied house at 2 a.m. with stolen electronics. T",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "break_and_enter"
+    },
+    {
+      "scenario_summary": "During an argument, the accused punched the victim several times causing a broke",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "assault_bodily_harm"
+    },
+    {
+      "scenario_summary": "A person broke into a residential home at night through a back window and stole ",
+      "skipped": false,
+      "total_returned": 1,
+      "passed": true,
+      "reason": "relevant_case_law",
+      "issuePrimary": "break_and_enter"
     }
   ]
 }
