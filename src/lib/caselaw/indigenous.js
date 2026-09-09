@@ -1,6 +1,6 @@
 export const indigenousCases = [
   {
-    citation: "1990 SCC 104",
+    citation: "[1990] 1 SCR 1075",
     title: "R. v. Sparrow",
     year: 1990,
     court: "SCC",
@@ -12,7 +12,7 @@ export const indigenousCases = [
       "Established the 'Sparrow Test': the government can only limit an existing s. 35 Aboriginal right if they have a valid legislative objective and the infringement is as minimal as possible while upholding the Honour of the Crown.",
   },
   {
-    citation: "1997 SCC 302",
+    citation: "[1997] 3 SCR 1010",
     title: "Delgamuukw v. British Columbia",
     year: 1997,
     court: "SCC",
@@ -48,7 +48,7 @@ export const indigenousCases = [
       "The first case in history where the SCC formally declared Aboriginal Title over a specific territorial tract, granting the Nation exclusive control and economic benefits from the land.",
   },
   {
-    citation: "1973 SCR 313",
+    citation: "[1973] SCR 313",
     title: "Calder v. British Columbia (AG)",
     year: 1973,
     court: "SCC",
@@ -60,7 +60,7 @@ export const indigenousCases = [
       "Though the Nisga'a lost on a technicality, the case was a legal revolution: it was the first time the SCC recognized that Aboriginal title existed as a legal right rooted in historical occupation, independent of any government grant.",
   },
   {
-    citation: "1984 2 SCR 335",
+    citation: "[1984] 2 SCR 335",
     title: "Guerin v. The Queen",
     year: 1984,
     court: "SCC",
@@ -72,7 +72,7 @@ export const indigenousCases = [
       "Established that the federal government has a 'fiduciary duty' (a sui generis trust-like obligation) to act in the best interests of Indigenous groups when dealing with their surrendered lands.",
   },
   {
-    citation: "1996 2 SCR 507",
+    citation: "[1996] 2 SCR 507",
     title: "R. v. Van der Peet",
     year: 1996,
     court: "SCC",
@@ -89,7 +89,7 @@ export const indigenousCases = [
       "Created the 'Van der Peet Test': to be an Aboriginal right protected under s. 35, an activity must be an element of a practice, custom, or tradition 'integral to the distinctive culture' of the group prior to European contact.",
   },
   {
-    citation: "1999 3 SCR 451",
+    citation: "[1999] 3 SCR 456",
     title: "R. v. Marshall",
     year: 1999,
     court: "SCC",

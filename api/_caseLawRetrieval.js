@@ -792,6 +792,55 @@ function detectCoreIssue(scenario) {
         "reasonable time",
       ]),
     },
+    // ── FAMILY LAW ─────────────────────────────────────────────
+    // Compound-phrase tests only (bare "custody"/"support"/"property"
+    // collide with criminal contexts). Placed LAST in orderedKeys so any
+    // criminal pattern wins first; these only classify scenarios that match
+    // no criminal pattern.
+    family_support: {
+      tests: [
+        /\b(spousal\s+support|spousal|alimony|support\s+after\s+(a\s+)?(divorce|separation)|maintenance\s+after\s+(a\s+)?(divorce|separation))\b/,
+      ],
+      primary: "family_support",
+      subIssues: new Set([
+        "spousal support",
+        "compensatory",
+        "non-compensatory",
+        "self-sufficiency",
+        "maintenance",
+        "economic disadvantage",
+        "divorce act",
+      ]),
+    },
+    family_custody: {
+      tests: [
+        /\b(child\s+custody|custody\s+battle|custody\s+dispute|custody\s+of\s+(my|our|the)\s+(child|children|kids?)|parenting\s+time|best\s+interests\s+of\s+the\s+child|access\s+to\s+(my|the)\s+(child|children)|relocate\s+with\s+(my|the)\s+(child|children)|child\s+relocation|parenting\s+(plan|order|arrangement))\b/,
+      ],
+      primary: "family_custody",
+      subIssues: new Set([
+        "custody",
+        "best interests of the child",
+        "relocation",
+        "mobility",
+        "parenting",
+        "access",
+        "material change",
+      ]),
+    },
+    family_property: {
+      tests: [
+        /\b(common[\s-]law\s+(spouse|partner|relationship)|unjust\s+enrichment|joint\s+family\s+venture|matrimonial\s+property|division\s+of\s+(family\s+)?property|constructive\s+trust)\b/,
+      ],
+      primary: "family_property",
+      subIssues: new Set([
+        "unjust enrichment",
+        "joint family venture",
+        "common law spouse",
+        "constructive trust",
+        "division of property",
+        "contributions",
+      ]),
+    },
   };
 
   const orderedKeys = [
@@ -814,6 +863,10 @@ function detectCoreIssue(scenario) {
     "uttering_threats",
     "criminal_harassment",
     "dangerous_driving",
+    // Family law last: only classifies scenarios matching no criminal pattern.
+    "family_support",
+    "family_custody",
+    "family_property",
   ];
 
   for (const key of orderedKeys) {
@@ -938,6 +991,15 @@ function detectCandidateDomains(candidate) {
     )
   )
     out.add("sentencing");
+
+  // Family law (non-criminal). Compound terms only, to avoid tagging criminal
+  // cases that merely mention "child"/"property"/"support".
+  if (
+    /\b(spousal\s+support|best\s+interests\s+of\s+the\s+child|child\s+custody|unjust\s+enrichment|joint\s+family\s+venture|common[\s-]law\s+(spouse|partner)|matrimonial|divorce\s+act|family\s+law)\b/.test(
+      haystack,
+    )
+  )
+    out.add("family_law");
 
   return out;
 }
@@ -1605,6 +1667,13 @@ function buildLocalFallbackCandidates({ scenario = "", maxResults = 3 }) {
       title: entry.title,
       summary: `${entry.ratio || ""} ${(entry.tags || []).join(" ")} ${(entry.topics || []).join(" ")}`,
     });
+
+    // Keep family-law and criminal cases in separate lanes: a family case must
+    // not leak into a criminal/general fallback (e.g. a relocation case for a
+    // "child abuse charge"), and a family issue must not surface criminal cases.
+    const issueIsFamily = String(issue.primary).startsWith("family_");
+    if (candidateDomains.has("family_law") !== issueIsFamily) continue;
+
     const compatibilityAdjustment = compatibilityAdjustmentForIssue(
       issue.primary,
       candidateDomains,

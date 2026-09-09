@@ -93,6 +93,67 @@ const LANDMARK_CASES = [
     },
   },
   {
+    citation: "R v Spencer, 2014 SCC 43",
+    title: "R v Spencer",
+    summary:
+      "Leading s. 8 case on online anonymity: police obtaining the internet subscriber information (the name and address behind an IP address) from an ISP without a warrant is a search.",
+    topics: [
+      "internet",
+      "ip address",
+      "subscriber information",
+      "online anonymity",
+      "isp",
+    ],
+    mustMatchAny: [
+      "internet",
+      "ip address",
+      "isp",
+      "subscriber",
+      "online",
+      "service provider",
+      "anonymity",
+      "spencer",
+    ],
+    structuredSummary: {
+      facts:
+        "Police identified the IP address of a computer used to access and store child pornography through a peer-to-peer file-sharing program, then obtained the matching subscriber's name and address from the internet service provider without a warrant. This led them to Mr. Spencer.",
+      held: "Obtaining the subscriber information was an unreasonable search contrary to s. 8. However, the evidence was admitted under s. 24(2) because the police had acted on a reasonable, good-faith understanding of the unsettled law, and the possession conviction was restored.",
+      ratio:
+        "Internet users have a reasonable expectation of privacy in subscriber information that links their identity to their online activity. Anonymity is an important facet of informational privacy, and revealing the subscriber behind an IP address can expose intimate details of the user's biographical core. Absent exigent circumstances or a reasonable law authorizing it, police generally require prior judicial authorization to obtain it; an ISP's voluntary disclosure does not defeat the privacy interest.",
+      significance:
+        "Spencer is the leading Canadian authority on online anonymity and the privacy of internet subscriber information, establishing that police generally need a production order or warrant to unmask the person behind an IP address.",
+    },
+  },
+  {
+    citation: "R v Fearon, 2014 SCC 77",
+    title: "R v Fearon",
+    summary:
+      "Leading case on searching a cell phone incident to arrest: permitted without a warrant only within strict limits (truly incidental, tailored in scope, with detailed notes).",
+    topics: [
+      "cell phone",
+      "cell phone search",
+      "search incident to arrest",
+      "text message",
+    ],
+    mustMatchAny: [
+      "cell phone",
+      "cellphone",
+      "smartphone",
+      "text message",
+      "search incident to arrest",
+      "fearon",
+    ],
+    structuredSummary: {
+      facts:
+        "After arresting Mr. Fearon for an armed jewellery-store robbery, police searched his cell phone (which was not password-protected) without a warrant, both at the scene and later at the station, finding a draft text message ('We did it') and photographs of a handgun.",
+      held: "On these facts the cell-phone searches did not breach s. 8; the appeal was dismissed and the conviction upheld. The Court modified the common-law power of search incident to arrest to fit cell phones.",
+      ratio:
+        "Police may search a cell phone incident to a lawful arrest without a warrant, but only if: (1) the arrest is lawful; (2) the search is truly incidental to the arrest, serving a valid law-enforcement purpose such as protecting safety, preserving evidence, or discovering evidence with prompt investigative value; (3) the nature and extent of the search are tailored to that purpose; and (4) police take detailed notes of what they examined and how. General, exploratory searches of a phone are not permitted.",
+      significance:
+        "Fearon sets the Canadian framework for warrantless cell-phone searches incident to arrest, balancing the heightened privacy interest in digital devices against legitimate law-enforcement needs.",
+    },
+  },
+  {
     citation: "R v Stinchcombe, [1991] 3 SCR 326",
     title: "R v Stinchcombe",
     summary: "Defines Crown disclosure obligations in criminal proceedings.",
@@ -126,6 +187,237 @@ const LANDMARK_CASES = [
         "The right to counsel under s. 10(b) must be implemented 'immediately' upon arrest or detention, but the short delay inherent in the s. 254(2) roadside screening device demand is a justified limitation on that right. Once a detainee is subject to a breath demand on an approved instrument, a new and distinct s. 10(b) right arises, requiring a renewed informational and implementational duty.",
       significance:
         "Woods clarifies the interplay between the roadside screening regime and s. 10(b), confirming that the roadside ASD exception constitutionally justifies brief delay in contact with counsel, while requiring fresh s. 10(b) compliance at the evidentiary breath-testing stage.",
+    },
+  },
+  {
+    citation: "R v Ewanchuk, [1999] 1 SCR 330",
+    title: "R v Ewanchuk",
+    summary:
+      "Leading sexual-assault case: there is no defence of 'implied consent'; consent is assessed subjectively from the complainant's perspective, and an honest but mistaken belief in consent must be grounded in reasonable steps.",
+    topics: [
+      "sexual",
+      "consent",
+      "sexual assault",
+      "implied consent",
+      "reasonable steps",
+    ],
+    mustMatchAny: [
+      "sexual assault",
+      "sexually assaulted",
+      "sexually",
+      "sexual",
+      "rape",
+      "raped",
+      "implied consent",
+      "molested",
+      "ewanchuk",
+    ],
+    structuredSummary: {
+      facts:
+        "A 17-year-old complainant attended the accused's trailer for a job interview. He made escalating sexual advances; each time she said 'no', and each time he briefly stopped before continuing. He was acquitted at trial on the basis of 'implied consent'.",
+      held: "Appeal allowed; a conviction for sexual assault was entered. The defence of 'implied consent' does not exist in Canadian law, and the trial judge erred in relying on it.",
+      ratio:
+        "The actus reus of sexual assault requires the absence of consent, assessed subjectively from the complainant's point of view: there is no defence of implied consent. For the mens rea, an accused relying on an honest but mistaken belief in communicated consent must have taken reasonable steps to ascertain consent; belief grounded in the complainant's silence, passivity, or ambiguous conduct is not a defence.",
+      significance:
+        "Ewanchuk is the foundational modern statement of the law of consent in sexual assault, rejecting 'implied consent' and grounding the analysis in affirmative, communicated consent and the reasonable-steps requirement.",
+    },
+  },
+  {
+    citation: "R v Khill, 2021 SCC 37",
+    title: "R v Khill",
+    summary:
+      "Leading modern self-defence case under the reformed s. 34: defensive force is judged by a multi-factor reasonableness assessment that expressly includes the accused's role in the incident.",
+    topics: [
+      "self defence",
+      "self defense",
+      "section 34",
+      "reasonable force",
+      "use of force",
+    ],
+    mustMatchAny: [
+      "self defence",
+      "self defense",
+      "defend myself",
+      "defending myself",
+      "defended myself",
+      "defend himself",
+      "stand my ground",
+      "khill",
+    ],
+    structuredSummary: {
+      facts:
+        "Mr. Khill awoke to noises and believed someone was breaking into his truck in his rural driveway at night. He took a loaded shotgun outside, confronted Jon Styres, and shot and killed him, then raised self-defence.",
+      held: "Appeal dismissed; a new trial was ordered. The trial judge erred by failing to instruct the jury to consider Mr. Khill's role in the incident as part of the reasonableness analysis under s. 34(2)(c).",
+      ratio:
+        "Self-defence under s. 34 has three elements: (1) the accused reasonably believed force was being used or threatened against them; (2) the accused acted for a defensive purpose; and (3) the act committed was reasonable in the circumstances. Reasonableness is assessed using the non-exhaustive factors in s. 34(2), and the accused's 'role in the incident' — their conduct throughout, not just at the final moment — is a mandatory consideration.",
+      significance:
+        "Khill is the leading interpretation of Canada's 2013 self-defence reforms, confirming that a person's role in creating or escalating a confrontation bears directly on whether their defensive force was reasonable.",
+    },
+  },
+  {
+    citation: "R v Antic, 2017 SCC 27",
+    title: "R v Antic",
+    summary:
+      "Leading bail case: the s. 11(e) right to reasonable bail requires courts to follow the 'ladder principle' and impose the least onerous form of release that is appropriate.",
+    topics: [
+      "bail",
+      "denied bail",
+      "bail conditions",
+      "bail hearing",
+      "surety",
+      "ladder principle",
+    ],
+    mustMatchAny: [
+      "bail",
+      "denied bail",
+      "release pending trial",
+      "surety",
+      "recognizance",
+      "bail conditions",
+      "judicial interim release",
+      "antic",
+    ],
+    structuredSummary: {
+      facts:
+        "Mr. Antic was detained when the bail review judge insisted on a cash deposit as a condition of release, even though other adequate forms of release were available under the Criminal Code.",
+      held: "The detention order was set aside. The bail judge erred by insisting on cash and failing to apply the ladder principle.",
+      ratio:
+        "Section 11(e) of the Charter guarantees the right not to be denied reasonable bail without just cause. Courts must apply the 'ladder principle' in s. 515: an accused should be released on the least onerous form of bail unless the Crown shows why a more restrictive form is necessary, and the rungs must be considered in order. Release conditions must be tied to a statutory ground for detention and must not be used to punish the accused or to change behaviour.",
+      significance:
+        "Antic is the leading modern statement of bail principles in Canada, reaffirming the presumption of release, the ladder principle, and a caution against routine or excessive conditions.",
+    },
+  },
+  {
+    citation: "R v Roy, 2012 SCC 26",
+    title: "R v Roy",
+    summary:
+      "Leading dangerous-driving case: the fault element is a 'marked departure' from the standard of a reasonable driver, assessed on a modified objective standard.",
+    topics: [
+      "dangerous driving",
+      "marked departure",
+      "dangerous operation",
+      "modified objective standard",
+      "careless driving",
+    ],
+    mustMatchAny: [
+      "dangerous driving",
+      "dangerous operation",
+      "marked departure",
+      "careless driving",
+      "driving caused",
+      "street racing",
+      "roy",
+    ],
+    structuredSummary: {
+      facts:
+        "In poor winter visibility, Mr. Roy drove his motorhome from a stop onto a highway into the path of an oncoming tractor-trailer. The collision killed his passenger, and he was convicted of dangerous driving causing death.",
+      held: "Conviction set aside and an acquittal entered: the evidence showed at most a momentary lapse, not the marked departure required for criminal fault.",
+      ratio:
+        "The mens rea of dangerous driving is a marked departure from the standard of care that a reasonable person would observe in the accused's circumstances (a modified objective standard). Conduct amounting only to civil negligence or a momentary lapse of attention is insufficient; the trier of fact must identify how and why the driving was a marked departure.",
+      significance:
+        "Roy is the leading authority on the fault element for dangerous driving, sharply distinguishing criminal driving offences from mere negligence.",
+    },
+  },
+  {
+    citation: "Gordon v Goertz, [1996] 2 SCR 27",
+    title: "Gordon v Goertz",
+    summary:
+      "Leading custody/relocation case: once a material change is shown, the court decides parenting and relocation solely on the best interests of the child.",
+    topics: [
+      "best interests of the child",
+      "child custody",
+      "custody of my child",
+      "custody battle",
+      "parenting time",
+      "relocate with my child",
+      "child relocation",
+    ],
+    mustMatchAny: [
+      "best interests of the child",
+      "child custody",
+      "custody of my child",
+      "custody of our child",
+      "custody of the children",
+      "custody battle",
+      "custody dispute",
+      "parenting time",
+      "access to my child",
+      "relocate with my child",
+      "move away with my child",
+      "gordon v goertz",
+    ],
+    structuredSummary: {
+      facts:
+        "A custodial mother wished to move abroad to study, taking the child with her. The father sought to prevent the relocation and to vary custody and access.",
+      held: "The custodial mother was permitted to relocate with the child, with the father's access adjusted; the Court used the appeal to set out the governing framework for relocation and variation.",
+      ratio:
+        "A parent seeking to vary a custody or access order to relocate must first establish a material change in the child's circumstances. The court then conducts a fresh inquiry into the best interests of the child — the only consideration — with no legal presumption in favour of the custodial parent, although that parent's views are entitled to great respect.",
+      significance:
+        "Gordon v Goertz is the foundational Canadian authority on child relocation ('mobility') and the best-interests standard for varying parenting arrangements.",
+    },
+  },
+  {
+    citation: "Moge v Moge, [1992] 3 SCR 813",
+    title: "Moge v Moge",
+    summary:
+      "Leading spousal-support case: support under the Divorce Act is primarily compensatory, recognizing the economic advantages and disadvantages arising from the marriage and its breakdown.",
+    topics: [
+      "spousal support",
+      "spousal",
+      "alimony",
+      "support after divorce",
+      "support after separation",
+    ],
+    mustMatchAny: [
+      "spousal support",
+      "spousal",
+      "alimony",
+      "support after divorce",
+      "support after separation",
+      "maintenance after divorce",
+      "moge",
+    ],
+    structuredSummary: {
+      facts:
+        "After a long traditional marriage in which the wife cared for the home and children, a lower court moved to terminate her spousal support on the basis that she should have become self-sufficient.",
+      held: "Appeal allowed; spousal support was continued. Self-sufficiency had been wrongly prioritized over fairly compensating the wife for the economic consequences of the marriage.",
+      ratio:
+        "Spousal support under the Divorce Act is primarily compensatory: it should recognize the economic advantages and disadvantages to each spouse arising from the marriage and its breakdown. Self-sufficiency is only one of several objectives and must not be elevated above fair compensation.",
+      significance:
+        "Moge transformed Canadian spousal-support law by rejecting a strict 'clean break' model in favour of a compensatory approach that accounts for the long-term economic consequences of marital roles.",
+    },
+  },
+  {
+    citation: "Kerr v Baranow, 2011 SCC 10",
+    title: "Kerr v Baranow",
+    summary:
+      "Leading case on the property rights of common-law spouses: disputes are resolved through unjust enrichment, with a 'joint family venture' analysis where the relationship pooled efforts toward shared wealth.",
+    topics: [
+      "common law spouse",
+      "common law partner",
+      "unjust enrichment",
+      "joint family venture",
+      "division of property",
+      "matrimonial property",
+    ],
+    mustMatchAny: [
+      "common law spouse",
+      "common law partner",
+      "common-law relationship",
+      "unjust enrichment",
+      "joint family venture",
+      "division of property",
+      "matrimonial property",
+      "kerr v baranow",
+    ],
+    structuredSummary: {
+      facts:
+        "An older couple separated after a common-law relationship of more than 25 years and disputed the division of property accumulated during the relationship.",
+      held: "The Court set out the unjust-enrichment and 'joint family venture' framework for common-law spouses and remitted Ms. Kerr's claim for reconsideration under it.",
+      ratio:
+        "Property disputes between unmarried (common-law) spouses are resolved through the law of unjust enrichment. Where the relationship was a 'joint family venture' and the claimant's contributions are linked to the accumulation of wealth, the remedy may be a proportionate monetary share of that wealth rather than a fee-for-services calculation.",
+      significance:
+        "Kerr v Baranow is the leading authority on the property entitlements of common-law spouses in Canada, since they fall outside the matrimonial-property statutes that apply to married couples.",
     },
   },
   {

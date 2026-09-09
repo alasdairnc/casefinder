@@ -1,6 +1,6 @@
 export const charterCases = [
   {
-    citation: "1986 SCC 8",
+    citation: "[1986] 1 SCR 103",
     title: "R. v. Oakes",
     year: 1986,
     court: "SCC",
@@ -12,7 +12,7 @@ export const charterCases = [
       "Establishes the 'Oakes Test' for Section 1 limitations: the government must prove a pressing and substantial objective, rational connection, minimal impairment, and proportionality between effects and objective.",
   },
   {
-    citation: "1988 SCC 30",
+    citation: "[1988] 1 SCR 30",
     title: "R. v. Morgentaler",
     year: 1988,
     court: "SCC",
@@ -47,7 +47,7 @@ export const charterCases = [
       "The absolute prohibition on assisted dying was overly broad and violated s. 7, legally establishing the right to Medical Assistance in Dying (MAID) for consenting adults.",
   },
   {
-    citation: "1990 SCC 112",
+    citation: "[1990] 3 SCR 697",
     title: "R. v. Keegstra",
     year: 1990,
     court: "SCC",
@@ -59,7 +59,7 @@ export const charterCases = [
       "Upheld hate speech laws under s. 1. While promoting hatred is 'expression' under s. 2(b), the severe harm it causes to targeted groups and democracy justifies its criminalization.",
   },
   {
-    citation: "1989 SCC 2",
+    citation: "[1989] 1 SCR 143",
     title: "Andrews v. Law Society of British Columbia",
     year: 1989,
     court: "SCC",
@@ -71,7 +71,7 @@ export const charterCases = [
       "The seminal s. 15 case. Established that 'equality' requires 'substantive' equality (protecting minority/disadvantaged groups from analogous grounds of discrimination), not identical treatment.",
   },
   {
-    citation: "1985 SCC 17",
+    citation: "[1985] 1 SCR 295",
     title: "R. v. Big M Drug Mart Ltd.",
     year: 1985,
     court: "SCC",
@@ -88,7 +88,7 @@ export const charterCases = [
       "Established that a law with a purely religious purpose violates the freedom of conscience and religion under s. 2(a). The state cannot use its coercive power to enforce religious observance.",
   },
   {
-    citation: "1988 SCC 48",
+    citation: "[1988] 2 SCR 712",
     title: "Ford v. Quebec (AG)",
     year: 1988,
     court: "SCC",
@@ -105,7 +105,7 @@ export const charterCases = [
       "While the government can protect the French language by requiring it on signs, a total ban on other languages violates the freedom of expression under s. 2(b). Commercial expression is protected by the Charter.",
   },
   {
-    citation: "1992 SCC 15",
+    citation: "[1992] 1 SCR 452",
     title: "R. v. Butler",
     year: 1992,
     court: "SCC",
@@ -122,7 +122,7 @@ export const charterCases = [
       "Redefined obscenity from 'morality-based' to 'harm-based'. Materials that are degrading or dehumanizing (particularly to women) can be restricted under s. 1 because they cause societal harm, even if they are 'expression'.",
   },
   {
-    citation: "1995 SCC 16",
+    citation: "[1995] 2 SCR 513",
     title: "Egan v. Canada",
     year: 1995,
     court: "SCC",
@@ -134,7 +134,7 @@ export const charterCases = [
       "Although the claimants lost on the specific benefit at the time, this was the first case to establish that 'sexual orientation' is an 'analogous ground' of discrimination protected under s. 15 of the Charter.",
   },
   {
-    citation: "1998 SCC 29",
+    citation: "[1998] 1 SCR 493",
     title: "Vriend v. Alberta",
     year: 1998,
     court: "SCC",

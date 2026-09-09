@@ -3,6 +3,7 @@ import { charterCases } from "./charter.js";
 import { constitutionalCases } from "./constitutional.js";
 import { indigenousCases } from "./indigenous.js";
 import { administrativeCases } from "./administrative.js";
+import { familyCases } from "./family.js";
 
 /**
  * The Master Database aggregates all highly-curated Landmark Case Law sets
@@ -17,4 +18,5 @@ export const MASTER_CASE_LAW_DB = [
   ...constitutionalCases,
   ...indigenousCases,
   ...administrativeCases,
+  ...familyCases,
 ];

@@ -1,6 +1,6 @@
 export const administrativeCases = [
   {
-    citation: "1999 2 SCR 817",
+    citation: "[1999] 2 SCR 817",
     title: "Baker v. Canada",
     year: 1999,
     court: "SCC",
@@ -46,25 +46,7 @@ export const administrativeCases = [
       "Defines the standard of review for an Appeal Court: questions of law are reviewed on a standard of 'correctness', while questions of fact (and mixed fact/law) can only be overturned if there was a 'palpable and overriding error'.",
   },
   {
-    citation: "1992 3 SCR 813",
-    title: "Moge v. Moge",
-    year: 1992,
-    court: "SCC",
-    topics: ["Family Law", "Spousal Support"],
-    tags: [
-      "divorce",
-      "spousal support",
-      "economic disadvantage",
-      "equitable sharing",
-      "stay-at-home parent",
-    ],
-    facts:
-      "Following a long-term marriage where the wife stayed home to raise children, the husband sought to terminate spousal support, arguing she should be self-sufficient.",
-    ratio:
-      "Revolutionized spousal support by rejecting the 'clean break' model. Established that support must recognize the long-term economic disadvantages caused by the roles assumed during marriage (e.g., stay-at-home parents).",
-  },
-  {
-    citation: "1996 3 SCR 458",
+    citation: "[1996] 3 SCR 458",
     title: "Athey v. Leonati",
     year: 1996,
     court: "SCC",

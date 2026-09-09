@@ -115,7 +115,7 @@ export const criminalCases = [
 
   // ── SEXUAL ASSAULT & CONSENT ──────────────────────────────
   {
-    citation: "1999 SCC 3",
+    citation: "[1999] 1 SCR 330",
     title: "R. v. Ewanchuk",
     year: 1999,
     court: "SCC",
@@ -168,7 +168,7 @@ export const criminalCases = [
       "Evidence of a complainant's sexual history (including sex work) is strictly governed by the s. 276 rape shield provisions. Judges must explicitly instruct juries to dispel myths and stereotypes regarding Indigenous women and sex workers to ensure a fair trial.",
   },
   {
-    citation: "1991 SCC 45",
+    citation: "[1991] 2 SCR 714",
     title: "R. v. Jobidon",
     year: 1991,
     court: "SCC",
@@ -194,7 +194,7 @@ export const criminalCases = [
 
   // ── SENTENCING & GLADUE RIGHTS ────────────────────────────
   {
-    citation: "1999 SCC 20",
+    citation: "[1999] 1 SCR 688",
     title: "R. v. Gladue",
     year: 1999,
     court: "SCC",
@@ -280,7 +280,7 @@ export const criminalCases = [
 
   // ── DISCLOSURE & EVIDENCE ─────────────────────────────────
   {
-    citation: "1991 SCC 93",
+    citation: "[1991] 3 SCR 326",
     title: "R. v. Stinchcombe",
     year: 1991,
     court: "SCC",
@@ -294,7 +294,7 @@ export const criminalCases = [
 
   // ── THE OAKES TEST (CHARTER JUSTIFICATION) ────────────────
   {
-    citation: "1986 SCC 8",
+    citation: "[1986] 1 SCR 103",
     title: "R. v. Oakes",
     year: 1986,
     court: "SCC",
@@ -312,31 +312,43 @@ export const criminalCases = [
       "Establishes the 'Oakes test' for justifying Charter infringements under Section 1: The law must have a pressing and substantial objective, and the means must be proportional (rationally connected, minimally impairing, and balancing salutary/deleterious effects). The reverse onus provision failed the minimal impairment test.",
   },
   {
-    citation: "1980 SCC 77",
+    citation: "[1980] 2 SCR 331",
     title: "R. v. McLaughlin",
     year: 1980,
     court: "SCC",
-    topics: ["Robbery", "Weapons", "Criminal Code"],
-    tags: ["robbery", "s. 343", "weapon", "threat", "force"],
+    topics: ["Theft", "Criminal Code", "Computers"],
+    tags: [
+      "theft",
+      "s. 287",
+      "computer data",
+      "telecommunication facility",
+      "colour of right",
+    ],
     facts:
-      "The accused committed a robbery while using what appeared to be a firearm.",
+      "The accused used a computer, without colour of right, to obtain internal programs of the computer and information from other persons' files stored on it. He was charged with theft of a telecommunication service under s. 287(1)(b) of the Criminal Code.",
     ratio:
-      "In robbery law, objects used to intimidate victims can qualify as weapons where they are employed to threaten force and facilitate property taking.",
+      "A computer is a 'data processing facility', not a 'telecommunication facility' within s. 287(1)(b) of the Criminal Code: although intelligence was transmitted within the machine, it was not emitted to or received by outside facilities. Unauthorized computer use therefore did not constitute theft of a telecommunication, and the conviction was set aside. (Parliament later enacted the dedicated unauthorized-use-of-computer offence, s. 342.1.)",
   },
   {
-    citation: "1988 SCC 97",
+    citation: "[1988] 1 SCR 963",
     title: "R. v. Stewart",
     year: 1988,
     court: "SCC",
-    topics: ["Theft", "Property", "Criminal Code"],
-    tags: ["theft", "s. 322", "property", "dishonesty", "without consent"],
+    topics: ["Theft", "Property", "Confidential Information"],
+    tags: [
+      "theft",
+      "s. 322",
+      "confidential information",
+      "intangible property",
+      "what is property",
+    ],
     facts:
-      "The case considered the boundaries of what can constitute 'property' for theft purposes under the Criminal Code.",
+      "A man was hired to obtain the names, addresses and telephone numbers of a hotel's employees and offered a hotel security guard money for that confidential information. He was charged in connection with attempting to take it.",
     ratio:
-      "Clarifies limits of theft under s. 322 and reinforces that theft analysis focuses on dishonest taking or conversion of legally recognized property without consent.",
+      "Confidential information, by itself, is not 'property' capable of being stolen under the Criminal Code. Copying or memorizing confidential information deprives the owner of nothing tangible, so it is not theft (s. 322). The decision marks the outer limit of what can be the subject of theft.",
   },
   {
-    citation: "1990 SCC 1",
+    citation: "[1990] 1 SCR 852",
     title: "R. v. Lavallee",
     year: 1990,
     court: "SCC",
@@ -355,7 +367,7 @@ export const criminalCases = [
   },
   // ── CRIMINAL LIABILITY & FAULT ────────────────────────────
   {
-    citation: "1978 SCC 23",
+    citation: "[1978] 2 SCR 1299",
     title: "R. v. Sault Ste. Marie (City)",
     year: 1978,
     court: "SCC",
@@ -373,7 +385,7 @@ export const criminalCases = [
   },
   // ── SECTION 7 & FUNDAMENTAL JUSTICE ───────────────────────
   {
-    citation: "1985 SCC 31",
+    citation: "[1985] 2 SCR 486",
     title: "Re B.C. Motor Vehicle Act",
     year: 1985,
     court: "SCC",
@@ -398,7 +410,7 @@ export const criminalCases = [
   },
   // ── SECTION 8: WARRANTS & PRIVACY ─────────────────────────
   {
-    citation: "1984 SCC 14",
+    citation: "[1984] 2 SCR 145",
     title: "Hunter v. Southam Inc.",
     year: 1984,
     court: "SCC",
@@ -427,7 +439,7 @@ export const criminalCases = [
   },
   // ── EXCLUSION OF EVIDENCE (PRE-GRANT) ─────────────────────
   {
-    citation: "1997 SCC 48",
+    citation: "[1997] 1 SCR 607",
     title: "R. v. Stillman",
     year: 1997,
     court: "SCC",
@@ -467,5 +479,330 @@ export const criminalCases = [
       "The shooter in the Quebec City mosque shooting was sentenced to multiple consecutive 25-year blocks, effectively resulting in life without the possibility of parole for 40+ years.",
     ratio:
       "Consecutive life sentences that result in life without the realistic possibility of parole are 'cruel and unusual punishment' and violate s. 12 of the Charter. Such sentences deny the possibility of personal rehabilitation and human dignity.",
+  },
+
+  // ── SECTION 8: DIGITAL PRIVACY (INTERNET & PHONES) ────────
+  {
+    citation: "2014 SCC 43",
+    title: "R. v. Spencer",
+    year: 2014,
+    court: "SCC",
+    topics: ["Charter", "s. 8", "Search and Seizure", "Privacy"],
+    tags: [
+      "internet",
+      "ip address",
+      "isp subscriber information",
+      "anonymity",
+      "reasonable expectation of privacy",
+      "warrantless",
+    ],
+    facts:
+      "Police obtained the name and address of an internet subscriber from an ISP, without a warrant, by matching it to an IP address used to share child pornography. The accused argued this was an unreasonable search.",
+    ratio:
+      "There is a reasonable expectation of privacy in the subscriber information linked to anonymous internet activity, because it tends to reveal intimate details of the user's biographical core. Obtaining it from an ISP without prior judicial authorization or other lawful authority is a search under s. 8 and was unreasonable (though on these facts the evidence was admitted under s. 24(2)).",
+  },
+  {
+    citation: "2014 SCC 77",
+    title: "R. v. Fearon",
+    year: 2014,
+    court: "SCC",
+    topics: ["Charter", "s. 8", "Search Incident to Arrest", "Cell Phones"],
+    tags: [
+      "cell phone search",
+      "search incident to arrest",
+      "robbery",
+      "digital privacy",
+      "warrantless",
+    ],
+    facts:
+      "Following an arrest for an armed robbery, police searched the accused's cell phone without a warrant, finding a draft text message and photographs of a firearm.",
+    ratio:
+      "Police may search a cell phone incident to a lawful arrest, but only within strict limits: the search must be truly incidental to the arrest, tailored in scope to its purpose, and police must take detailed notes of what they examine. A general or exploratory rummaging through a phone's contents is not permitted.",
+  },
+
+  // ── SECTION 9: ARBITRARY DETENTION (MODERN) ───────────────
+  {
+    citation: "2019 SCC 34",
+    title: "R. v. Le",
+    year: 2019,
+    court: "SCC",
+    topics: ["Charter", "s. 9", "Arbitrary Detention", "Exclusion of Evidence"],
+    tags: [
+      "arbitrary detention",
+      "psychological detention",
+      "police entry",
+      "racial profiling",
+      "social context",
+      "s. 24(2)",
+    ],
+    facts:
+      "Three officers entered the private backyard of a townhouse where five young racialized men were talking, questioned them, and demanded identification, with no reasonable suspicion of any offence.",
+    ratio:
+      "A detention under s. 9 arose the moment police entered the backyard, and it was arbitrary because there were no reasonable grounds. The detention analysis must account for the impact of race and the broader social context of how racialized people experience police encounters. The evidence was excluded under s. 24(2).",
+  },
+
+  // ── UTTERING THREATS ──────────────────────────────────────
+  {
+    citation: "[1991] 3 SCR 72",
+    title: "R. v. McCraw",
+    year: 1991,
+    court: "SCC",
+    topics: ["Uttering Threats", "Criminal Code", "s. 264.1"],
+    tags: [
+      "uttering threats",
+      "s. 264.1",
+      "serious bodily harm",
+      "threat",
+      "objective test",
+    ],
+    facts:
+      "The accused sent letters to three women threatening to rape them and was charged with uttering threats to cause serious bodily harm under s. 264.1(1)(a).",
+    ratio:
+      "'Serious bodily harm' in s. 264.1 means any hurt or injury, physical or psychological, that interferes in a substantial way with the integrity, health or well-being of the victim. Whether words amount to a threat is decided objectively, in context, from the standpoint of a reasonable person; a threat to rape can be a threat to cause serious bodily harm.",
+  },
+
+  // ── EVIDENCE: CREDIBILITY & REASONABLE DOUBT ──────────────
+  {
+    citation: "[1991] 1 SCR 742",
+    title: "R. v. W.(D.)",
+    year: 1991,
+    court: "SCC",
+    topics: ["Evidence", "Credibility", "Reasonable Doubt"],
+    tags: [
+      "credibility",
+      "reasonable doubt",
+      "jury instruction",
+      "burden of proof",
+      "w(d)",
+    ],
+    facts:
+      "In a trial turning on whether the trier of fact believed the complainant or the accused, the defence argued the jury charge improperly framed the issue as a simple choice between the two versions.",
+    ratio:
+      "Where credibility is central, the trier of fact must apply reasonable doubt to credibility: (1) if they believe the accused, acquit; (2) if they do not believe the accused but are left in reasonable doubt by that evidence, acquit; (3) even if not left in doubt by the accused's evidence, they must acquit unless the evidence they do accept proves guilt beyond a reasonable doubt.",
+  },
+
+  // ── SECTION 12: MANDATORY MINIMUM SENTENCES ───────────────
+  {
+    citation: "2015 SCC 15",
+    title: "R. v. Nur",
+    year: 2015,
+    court: "SCC",
+    topics: ["Charter", "s. 12", "Mandatory Minimum", "Sentencing"],
+    tags: [
+      "mandatory minimum",
+      "cruel and unusual punishment",
+      "firearms",
+      "s. 95",
+      "reasonable hypothetical",
+      "grossly disproportionate",
+    ],
+    facts:
+      "The accused challenged the three-year mandatory minimum sentence for possession of a loaded prohibited firearm under s. 95 of the Criminal Code.",
+    ratio:
+      "A mandatory minimum sentence violates s. 12 if it is grossly disproportionate either for the offender before the court or in reasonably foreseeable ('reasonable hypothetical') applications. The s. 95 mandatory minimums were struck down because they could capture licensing-type conduct far less serious than the offence's core, producing grossly disproportionate sentences.",
+  },
+
+  // ── HOMICIDE: MENS REA ────────────────────────────────────
+  {
+    citation: "[1990] 2 SCR 633",
+    title: "R. v. Martineau",
+    year: 1990,
+    court: "SCC",
+    topics: ["Murder", "Mens Rea", "Charter", "s. 7"],
+    tags: [
+      "murder",
+      "subjective foresight",
+      "constructive murder",
+      "s. 230",
+      "fundamental justice",
+    ],
+    facts:
+      "The accused took part in a robbery during which his companion shot and killed the occupants. He was convicted of murder under the constructive (felony) murder provision, which did not require any foresight of death.",
+    ratio:
+      "A conviction for murder requires proof beyond a reasonable doubt of subjective foresight of death. The constructive-murder provision (then s. 213, now s. 230), which permitted a murder conviction without that foresight, violated ss. 7 and 11(d) of the Charter and was struck down.",
+  },
+  {
+    citation: "[1993] 3 SCR 3",
+    title: "R. v. Creighton",
+    year: 1993,
+    court: "SCC",
+    topics: ["Manslaughter", "Mens Rea", "Criminal Negligence"],
+    tags: [
+      "unlawful act manslaughter",
+      "objective foreseeability",
+      "bodily harm",
+      "s. 222",
+      "fault",
+    ],
+    facts:
+      "The accused injected another person with cocaine, with her consent; she died. He was charged with unlawful act manslaughter.",
+    ratio:
+      "The mens rea of unlawful act manslaughter is objective foreseeability of the risk of bodily harm that is neither trivial nor transitory, arising from a dangerous unlawful act — foreseeability of death is not required. The standard is that of a reasonable person in the circumstances of the accused.",
+  },
+
+  // ── CONFESSIONS & INTERROGATION ───────────────────────────
+  {
+    citation: "2000 SCC 38",
+    title: "R. v. Oickle",
+    year: 2000,
+    court: "SCC",
+    topics: ["Confessions", "Voluntariness", "Evidence"],
+    tags: [
+      "confessions rule",
+      "voluntariness",
+      "threats or promises",
+      "oppression",
+      "operating mind",
+      "police trickery",
+      "interrogation",
+    ],
+    facts:
+      "The accused confessed to setting a series of fires during a police interrogation that involved suggestions of leniency and psychological pressure. The admissibility of the confession was challenged.",
+    ratio:
+      "Restates the common-law confessions rule: a statement to a person in authority is inadmissible unless the Crown proves beyond a reasonable doubt that it was voluntary. Voluntariness is assessed contextually through threats or promises, oppression, the operating-mind requirement, and police trickery that would shock the community.",
+  },
+
+  // ── PARTIES TO AN OFFENCE ─────────────────────────────────
+  {
+    citation: "2010 SCC 13",
+    title: "R. v. Briscoe",
+    year: 2010,
+    court: "SCC",
+    topics: ["Parties to an Offence", "Mens Rea", "s. 21"],
+    tags: [
+      "aiding and abetting",
+      "party liability",
+      "wilful blindness",
+      "s. 21(1)",
+      "knowledge",
+      "intent",
+    ],
+    facts:
+      "The accused drove a group to a secluded location and helped during a kidnapping and murder, while claiming he did not know a killing would occur.",
+    ratio:
+      "To be liable as an aider or abettor under s. 21(1), the Crown must prove the accused did or omitted something to assist or encourage the principal, intended to do so, and knew the principal intended to commit the offence. Wilful blindness — deliberately declining to inquire once one's suspicion is aroused — can substitute for actual knowledge.",
+  },
+
+  // ── BAIL / JUDICIAL INTERIM RELEASE ───────────────────────
+  {
+    citation: "2017 SCC 27",
+    title: "R. v. Antic",
+    year: 2017,
+    court: "SCC",
+    topics: ["Bail", "Charter", "s. 11(e)", "Judicial Interim Release"],
+    tags: [
+      "bail",
+      "ladder principle",
+      "release",
+      "surety",
+      "cash bail",
+      "reasonable bail",
+      "s. 515",
+    ],
+    facts:
+      "An accused was detained when a bail review judge insisted on a cash deposit, despite other adequate forms of release being available.",
+    ratio:
+      "The right not to be denied reasonable bail without just cause (s. 11(e)) requires courts to follow the 'ladder principle' in s. 515: release on the least onerous form of bail appropriate, moving up the ladder only as necessary. Conditions must address a statutory ground for detention, not punish the accused or change behaviour; a cash deposit should not be required where other forms suffice.",
+  },
+
+  // ── DANGEROUS DRIVING ─────────────────────────────────────
+  {
+    citation: "2012 SCC 26",
+    title: "R. v. Roy",
+    year: 2012,
+    court: "SCC",
+    topics: ["Dangerous Driving", "Mens Rea", "Criminal Code"],
+    tags: [
+      "dangerous driving",
+      "marked departure",
+      "modified objective standard",
+      "criminal negligence",
+      "s. 320",
+    ],
+    facts:
+      "In poor winter visibility, the accused drove his motorhome from a stop onto a highway into the path of an oncoming tractor-trailer; the collision killed his passenger. He was convicted of dangerous driving causing death.",
+    ratio:
+      "The mens rea of dangerous driving is a marked departure from the standard of care a reasonable person would observe in the accused's circumstances (a modified objective standard). A momentary lapse or simple carelessness sufficient for civil negligence is not enough; the trier of fact must identify how the driving was a marked departure.",
+  },
+
+  // ── SECTION 8: STRIP SEARCH ───────────────────────────────
+  {
+    citation: "2001 SCC 83",
+    title: "R. v. Golden",
+    year: 2001,
+    court: "SCC",
+    topics: ["Charter", "s. 8", "Strip Search", "Search Incident to Arrest"],
+    tags: [
+      "strip search",
+      "search incident to arrest",
+      "reasonable grounds",
+      "dignity",
+      "s. 8",
+    ],
+    facts:
+      "Police strip-searched the accused in the stairwell of a restaurant after arresting him for drug trafficking, seizing cocaine.",
+    ratio:
+      "A strip search is inherently humiliating and is permissible incident to arrest only where police have reasonable and probable grounds for the strip search itself (beyond those grounding the arrest) and conduct it reasonably — generally at a police station, absent exigent circumstances. The search here breached s. 8.",
+  },
+
+  // ── SECTION 10(b): SCOPE OF RIGHT TO COUNSEL ──────────────
+  {
+    citation: "2010 SCC 35",
+    title: "R. v. Sinclair",
+    year: 2010,
+    court: "SCC",
+    topics: ["Charter", "s. 10(b)", "Right to Counsel", "Interrogation"],
+    tags: [
+      "right to counsel",
+      "interrogation",
+      "counsel present",
+      "custodial questioning",
+      "s. 10(b)",
+    ],
+    facts:
+      "After arrest for murder, the accused spoke briefly with counsel twice, then repeatedly asked to have his lawyer present during a lengthy interrogation; police continued questioning.",
+    ratio:
+      "Section 10(b) does not give a detainee the right to have counsel present throughout a custodial interrogation. The right is generally satisfied by a reasonable opportunity to consult counsel at the outset; a further consultation is required only where changed circumstances make it necessary (such as a new procedure or a significant change in jeopardy).",
+  },
+
+  // ── ENTRAPMENT ────────────────────────────────────────────
+  {
+    citation: "[1988] 2 SCR 903",
+    title: "R. v. Mack",
+    year: 1988,
+    court: "SCC",
+    topics: ["Entrapment", "Abuse of Process", "Criminal Code"],
+    tags: [
+      "entrapment",
+      "abuse of process",
+      "stay of proceedings",
+      "reasonable suspicion",
+      "police inducement",
+    ],
+    facts:
+      "Over roughly six months the accused repeatedly refused a police agent's requests to sell drugs, eventually relenting under persistent pressure and an implied threat. He raised entrapment.",
+    ratio:
+      "Entrapment occurs where (a) police provide a person the opportunity to commit an offence without reasonable suspicion that the person is already engaged in criminal activity (or without a bona fide inquiry), or (b) police go beyond providing an opportunity and actually induce the offence. Entrapment is an abuse of process; the remedy is a stay of proceedings, determined by the judge after a finding of guilt.",
+  },
+
+  // ── CONFESSIONS: MR. BIG OPERATIONS ───────────────────────
+  {
+    citation: "2014 SCC 52",
+    title: "R. v. Hart",
+    year: 2014,
+    court: "SCC",
+    topics: ["Confessions", "Evidence", "Mr. Big"],
+    tags: [
+      "mr big",
+      "undercover operation",
+      "confession",
+      "presumptively inadmissible",
+      "probative value",
+      "prejudicial effect",
+    ],
+    facts:
+      "Undercover officers running a 'Mr. Big' sting drew the accused into a fictitious criminal organization and elicited a confession to the deaths of his young daughters.",
+    ratio:
+      "Confessions obtained through 'Mr. Big' operations are presumptively inadmissible. The Crown must establish that the confession's probative value (a function of its reliability) outweighs its prejudicial effect; separately, abuse of process (such as coercion) can also require exclusion. The rule targets unreliable confessions and state abuse.",
   },
 ];

@@ -12,7 +12,7 @@ export const constitutionalCases = [
       "Established the 'Living Tree' doctrine: the Constitution must be interpreted in a broad, progressive manner capable of growth, officially ruling that women are 'persons'.",
   },
   {
-    citation: "1998 SCC 25",
+    citation: "[1998] 2 SCR 217",
     title: "Reference re Secession of Quebec",
     year: 1998,
     court: "SCC",
@@ -36,7 +36,7 @@ export const constitutionalCases = [
       "The federal government cannot unilaterally alter the fundamental nature and role of the Senate; significant changes require the 7/50 amending formula with substantial provincial consent.",
   },
   {
-    citation: "1959 SCR 121",
+    citation: "[1959] SCR 121",
     title: "Roncarelli v. Duplessis",
     year: 1959,
     court: "SCC",
@@ -48,7 +48,7 @@ export const constitutionalCases = [
       "Established that no public official is above the law. Discretionary powers must be exercised in good faith and for the purposes for which they were intended, not for personal or political retribution.",
   },
   {
-    citation: "1981 1 SCR 753",
+    citation: "[1981] 1 SCR 753",
     title: "Reference re Resolution to Amend the Constitution",
     year: 1981,
     court: "SCC",
