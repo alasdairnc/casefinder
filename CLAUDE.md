@@ -21,6 +21,8 @@ Run `npm run security:scan` before any pre-push check.
 
 ## Commands
 
+**Setup (new machine, macOS/Windows/Linux):** `npm install && npm run setup` — see `docs/local-setup.md`.
+
 `npm run dev` (frontend), `npm run dev:api` (full stack), `npm run build`, `npm test`, `npm run test:unit`, `npm run test:component`, `npm run test:guardrails` (pre-PR: sanitizer + retrieval-failures + filter), `npm run test:retrieval-failures`
 
 **Filter tuning:** `npm run test:filter` (report), `npm run test:filter:calibrate` (recalibrate thresholds), `npm run test:filter:compare` (before/after diff)
@@ -73,6 +75,7 @@ Save non-obvious decisions/gotchas to `.claude/projects/*/memory/` immediately.
 ## Reference Files (read on demand)
 
 - `docs/README.md` (documentation index)
+- `docs/local-setup.md` (macOS & Windows local dev setup)
 - `docs/architecture.md`, `docs/design-system.md`, `docs/security.md`
 - `docs/filtering/FILTER_TUNING.md`, `docs/filtering/FILTER_TUNING_QUICKSTART.md`
 - `docs/operations/` (runbooks, snapshots, performance plan, audit log)

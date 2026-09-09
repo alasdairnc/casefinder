@@ -1,11 +1,33 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run test:unit)",
-      "Bash(npm run test:component)",
-      "Bash(npm run test:integration)",
+      "Bash(npm install)",
+      "Bash(npm ci)",
+      "Bash(npm audit)",
+      "Bash(npm run setup)",
+      "Bash(npm run setup -- --dry-run)",
+      "Bash(npm test)",
+      "Bash(npm run test:*)",
       "Bash(npm run build)",
-      "Bash(npm audit)"
+      "Bash(npm run dev)",
+      "Bash(npm run dev:api)",
+      "Bash(npm run preview)",
+      "Bash(npm run docs:*)",
+      "Bash(npm run perf:monitor)",
+      "Bash(npm run security:scan)",
+      "Bash(npm run security:scan:all)",
+      "Bash(npm run security:hooks)",
+      "Bash(npx playwright install*)",
+      "Bash(node scripts/*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(git fetch*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git config core.hooksPath*)"
     ],
     "deny": [
       "Bash(rm -rf *)",
@@ -25,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"\nimport subprocess, sys, json\n\ndef run(cmd):\n    r = subprocess.run(cmd, shell=True, capture_output=True, text=True)\n    return r.stdout.strip()\n\nbranch    = run('git branch --show-current')\ncommits   = run('git log --oneline -3')\nunstaged  = run('git diff --name-only')\nstaged    = run('git diff --cached --name-only')\nfocus     = ''\ntry:\n    with open('CLAUDE.md') as f:\n        for line in f:\n            if 'Current focus' in line or 'Active Development' in line:\n                focus = line.strip()\n                break\nexcept:\n    pass\n\nprint('--- COMPACTION CONTEXT ---')\nprint(f'Branch: {branch}')\nprint(f'Last 3 commits:\\n{commits}')\nif unstaged:\n    print(f'Unstaged changes: {unstaged}')\nif staged:\n    print(f'Staged changes: {staged}')\nif not unstaged and not staged:\n    print('Working tree: clean')\nif focus:\n    print(f'Active focus: {focus}')\nprint('--------------------------')\n\"",
+            "command": "node .claude/hooks/precompact-context.mjs",
             "statusMessage": "Saving compaction context..."
           }
         ]
@@ -37,7 +59,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"\nimport sys, json, re\ndata = json.load(sys.stdin)\npath = data.get('tool_input', {}).get('file_path', '')\nfilename = path.split('/')[-1]\nif 'node_modules' in path:\n    print('Blocked: do not write into node_modules.', file=sys.stderr)\n    sys.exit(2)\nif re.match(r'^\\.env(\\.|$)', filename):\n    print('Blocked: .env files must not be edited via Claude. Edit manually or use \\\"vercel env\\\".', file=sys.stderr)\n    sys.exit(2)\nif filename == 'vercel.json':\n    print('Blocked: vercel.json controls CORS and routing. Edit manually and confirm changes.', file=sys.stderr)\n    sys.exit(2)\nif filename == 'package-lock.json':\n    print('Blocked: package-lock.json is auto-generated. Run npm install instead.', file=sys.stderr)\n    sys.exit(2)\n\""
+            "command": "node .claude/hooks/block-protected-writes.mjs"
           }
         ]
       },
@@ -46,7 +68,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"\nimport sys, json, re\ndata = json.load(sys.stdin)\ncmd = data.get('tool_input', {}).get('command', '')\ndangerous = [r'rm\\s+-rf', r'git\\s+push\\s+--force', r'git\\s+reset\\s+--hard', r'chmod\\s+777', r'\\|\\s*bash', r'\\|\\s*sh']\nfor pattern in dangerous:\n    if re.search(pattern, cmd):\n        print(f'Blocked: dangerous command pattern detected: {cmd[:80]}', file=sys.stderr)\n        sys.exit(2)\n\""
+            "command": "node .claude/hooks/block-dangerous-bash.mjs"
           }
         ]
       }
@@ -57,33 +79,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh .claude/hooks/lint-on-save.sh",
+            "command": "node .claude/hooks/lint-on-save.mjs",
             "statusMessage": "Linting..."
           },
           {
             "type": "command",
-            "command": "python3 -c \"\nimport sys, json\ndata = json.load(sys.stdin)\npath = data.get('tool_input', {}).get('file_path', '')\nfilename = path.split('/')[-1]\nif '/api/' in path and path.endswith('.js') and not filename.startswith('_'):\n    print(json.dumps({'systemMessage': f'api/{filename} edited — run api-invariant-reviewer before committing.'}))\n\"",
-            "statusMessage": "Checking api/ invariants..."
+            "command": "node .claude/hooks/post-edit-reviews.mjs",
+            "statusMessage": "Checking review triggers..."
           },
           {
             "type": "command",
-            "command": "python3 -c \"\nimport sys, json\ndata = json.load(sys.stdin)\npath = data.get('tool_input', {}).get('file_path', '')\nfilename = path.split('/')[-1]\nif '/api/' in path and path.endswith('.js') and not filename.startswith('_'):\n    try:\n        with open(path) as f:\n            src = f.read()\n        if any(t in src for t in ('anthropic.', 'messages.create', 'api.canlii.org', 'fetch(', '_retrievalOrchestrator', '_caseLawRetrieval')):\n            print(json.dumps({'systemMessage': f'api/{filename} makes an external call — run caching-reviewer before committing.'}))\n    except OSError:\n        pass\n\"",
-            "statusMessage": "Checking cache coverage..."
-          },
-          {
-            "type": "command",
-            "command": "sh .claude/hooks/js-syntax-check.sh",
+            "command": "node .claude/hooks/js-syntax-check.mjs",
             "statusMessage": "Checking JS syntax..."
           },
           {
             "type": "command",
             "command": "git status --short",
             "statusMessage": "Checking git status..."
-          },
-          {
-            "type": "command",
-            "command": "python3 -c \"\nimport sys, json\ndata = json.load(sys.stdin)\npath = data.get('tool_input', {}).get('file_path', '')\nlegal_files = ['criminalCodeData.js', 'civilLawData.js', 'charterData.js']\nif any(f in path for f in legal_files):\n    print(json.dumps({'systemMessage': 'Legal data file edited — run legal-data-validator before committing.'}))\n\"",
-            "statusMessage": "Checking legal data files..."
           }
         ]
       }
@@ -93,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"\nimport subprocess, sys\nresult = subprocess.run(['git', 'diff', '--name-only'], capture_output=True, text=True)\nfiles = result.stdout.strip()\nif files:\n    sensitive = [f for f in files.splitlines() if '.env' in f or 'secret' in f.lower() or 'credential' in f.lower()]\n    if sensitive:\n        print(f'Warning: session ended with potentially sensitive files modified: {sensitive}', file=sys.stderr)\n\""
+            "command": "node .claude/hooks/stop-sensitive-check.mjs"
           }
         ]
       }

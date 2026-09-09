@@ -2,6 +2,7 @@
 
 ## Core
 
+- `local-setup.md` — Local dev setup for macOS & Windows (one-command `npm run setup`).
 - `architecture.md` — System architecture and component boundaries.
 - `design-system.md` — UI patterns, tokens, and design conventions.
 - `security.md` — Security posture and safeguards.

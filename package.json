@@ -5,7 +5,11 @@
   "packageManager": "npm@11.11.0",
   "description": "AI-powered Canadian legal research tool",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "dev": "vite",
     "dev:api": "vercel dev",
     "build": "vite build",
