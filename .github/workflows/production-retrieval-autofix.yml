@@ -387,7 +387,10 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add api/_filterConfig.js reports/retrieval-autofix scripts/apply-retrieval-autofix.js scripts/collect-production-no-caselaw.js
+          # Only _filterConfig.js is written by --apply. reports/retrieval-autofix
+          # is gitignored (it was here before, which aborted `git add` under
+          # `set -e` and blocked the PR); the report is embedded in the PR body.
+          git add api/_filterConfig.js
           git commit -m "fix(retrieval): daily no-case-law autofix $(date +%Y-%m-%d)"
           git push origin "$BRANCH"
 
